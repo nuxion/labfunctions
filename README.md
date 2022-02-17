@@ -1,5 +1,10 @@
 # NB Workflows
 
+![readthedocs](https://readthedocs.org/projects/nb_workflows/badge/?version=latest)
+![PyPI - Format](https://img.shields.io/pypi/format/nb_workflows)
+![PyPI - Status](https://img.shields.io/pypi/status/nb_workflows)
+
+
 ## Description 
 
 If SQL is a lingua franca for querying data, Jupyter should be a lingua franca for data explorations, model training, and complex and unique tasks related to data. 
