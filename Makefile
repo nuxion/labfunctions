@@ -113,6 +113,10 @@ docker-env:
 redis-cli:
 	docker-compose exec redis redis-cli
 
+.PHONY: docs-server
+docs-serve:
+	sphinx-autobuild docs docs/_build/html --port 9292 --watch ./
+
 .PHONY: tag
 tag:
 	# https://git-scm.com/docs/pretty-formats/2.20.0
