@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+# This is a simple script to create user services with full privileges.
+# Be careful!. 
+
+DOCKER_IMAGE="postgres"
+RAND=`strings /dev/urandom | grep -o '[[:alnum:]]' | head -n 30 | tr -d '\n'; echo`
+
+DBNAME=${1:-my_pg_user}
+DBUSER=${2:-my_awesome_db}
+DBUSER_PASS=${3:-$RAND}
+
+# Standalone creation
+#sudo su postgres <<EOF
+#createdb  $DB_NAME;
+#psql -c "CREATE USER $DBUSER WITH PASSWORD '$DBUSER_PASS';"
+#psql -c "grant all privileges on database $DBNAME to $DBUSER;"
+#echo "Postgres User '$DBUSER' and database '$DBNAME' created."
+#EOF
+
+# Docker creation
+docker-compose exec $DOCKER_IMAGE psql -U postgres -c "CREATE DATABASE $DBNAME WITH ENCODING 'UTF8'"
+docker-compose exec $DOCKER_IMAGE psql -U postgres -c "create user $DBUSER with encrypted password '$DBUSER_PASS'"
+docker-compose exec $DOCKER_IMAGE psql -U postgres -c "grant all privileges on database $DBNAME to $DBUSER;"
+
+
+echo $DBUSER_PASS

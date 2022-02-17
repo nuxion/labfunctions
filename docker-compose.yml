@@ -1,0 +1,32 @@
+version: "3.5"
+volumes:
+  pgdata14:
+  pgadmin:
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    env_file: .env.dev.docker
+    volumes:
+      - pgdata14:/var/lib/postgresql/data
+    ports:
+      - 127.0.0.1:5432:5432
+    networks:
+      - nb_workflows
+  pgadmin:
+    image: dpage/pgadmin4:6.4
+    networks:
+      - nb_workflows
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - 127.0.0.1:9500:80
+      - 127.0.0.1:10002:443
+    env_file: .env.dev.docker
+  redis:
+    image: redis:6-alpine
+    ports:
+      - 127.0.0.1:6379:6379
+
+networks:
+  nb_workflows: 
