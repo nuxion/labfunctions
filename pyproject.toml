@@ -1,11 +1,27 @@
 [tool.poetry]
-name = "nb_workflow"
+name = "nb_workflows"
 version = "0.1.0"
 description = ""
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [
    { include = "nb_workflows"},
 ]
+license = "Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/nuxion/nb_workflows"
+repository = "https://github.com/nuxion/nb_workflows"
+documentation = "https://nb-workflows.readthedocs.io/"
+keywords = ["papermill", "jupyter", "workflows", "data"]
+include = ["LICENSE"]
+classifiers = [
+	"Environment :: Console",
+	"Environment :: Web Environment",
+	"Framework :: Jupyter :: JupyterLab",
+	"License :: OSI Approved :: Apache Software License",
+	"Operating System :: POSIX :: Linux",
+	"Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+
 
 [tool.poetry.scripts]
 nb = "nb_workflows.cli:cli"

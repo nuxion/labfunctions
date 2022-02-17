@@ -40,6 +40,7 @@ clean:
 	find . ! -path "./.eggs/*" -name ".coverage" -exec rm {} \;
 	rm -rf build/* > /dev/null 2>&1
 	rm -rf dist/* > /dev/null 2>&1
+	rm -rf .ipynb_checkpoints/* > /dev/null 2>&1
 
 lock:
 	poetry export -f requirements.txt --output requirements.txt --without-hashes
@@ -103,7 +104,11 @@ release:
 
 .PHONY: publish
 publish:
-	python3 scripts/publish.py
+	poetry publish --build
+
+.PHONY: publish-test
+publish-test:
+	poetry publish --build -r testpypi
 
 .PHONY: docker-env
 docker-env:
