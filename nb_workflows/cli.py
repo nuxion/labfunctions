@@ -27,7 +27,10 @@ def cli():
 @click.option(
     "--auto-reload", "-A", default=False, is_flag=True, help="Enable Auto reload"
 )
-def web(host, port, workers, apps, auto_reload):
+@click.option(
+    "--debug", "-D", default=Config.DEBUG, is_flag=True, help="Enable Auto reload"
+)
+def web(host, port, workers, apps, auto_reload, debug):
     """Run web server"""
     # pylint: disable=import-outside-toplevel
     from nb_workflows.server import app
@@ -35,7 +38,7 @@ def web(host, port, workers, apps, auto_reload):
     list_bp = apps.split(",")
     init_blueprints(app, list_bp)
     w = int(workers)
-    app.run(host=host, port=int(port), workers=w, auto_reload=auto_reload)
+    app.run(host=host, port=int(port), workers=w, auto_reload=auto_reload, debug=debug)
 
 
 @click.command()

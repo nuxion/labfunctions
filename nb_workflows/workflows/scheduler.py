@@ -3,19 +3,17 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
+from nb_workflows.conf import Config
+from nb_workflows.db.sync import SQL
+from nb_workflows.hashes import Hash96
+from nb_workflows.workflows.core import NBTask, nb_job_executor
+from nb_workflows.workflows.models import ScheduleModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
 from rq.registry import FailedJobRegistry, StartedJobRegistry
 from rq_scheduler import Scheduler
 from sqlalchemy import delete, select
-
-from nb_workflows.conf import Config
-from nb_workflows.db.sync import SQL
-from nb_workflows.hashes import Hash96
-from nb_workflows.workflows.core import NBTask, nb_job_executor
-from nb_workflows.workflows.models import ScheduleModel
-from nb_workflows.workflows.registers import rq_job_error, rq_job_ok
 
 
 @dataclass
@@ -86,6 +84,9 @@ def scheduler_wrapper(jobid):
     """Because rq-scheduler has some limitations
     and could be abandoned in the future, this abstraction was created
     where the idea is to use the scheduler only to enqueue through rq.
+
+    Also, this way of schedule allows dinamically changes to the workflow
+    task because the params are got from the database.
     """
     db = SQL(Config.SQL)
     _cfg = Config.rq2dict()
@@ -97,7 +98,7 @@ def scheduler_wrapper(jobid):
     with Session() as session:
         obj_model = get_job(session, jobid)
         if obj_model and obj_model.enabled:
-            id_ = scheduler.jobid()
+            id_ = scheduler.executionid()
             schedule_data = _parse_job_detail(obj_model.to_dict())
             # setting jobid for the workflow_history table
             schedule_data.task.jobid = jobid
@@ -166,6 +167,16 @@ class SchedulerExecutor:
 
     @staticmethod
     def jobid():
+        """ jobid refers to the workflow id, this is only defined once, when the
+        workflow is created, and should to be unique. """
+        return Hash96.time_random_string().id_hex
+
+    @staticmethod
+    def executionid():
+        """ executionid refers to unique id randomly generated for each execution
+        of a workflow. It can be thought of as the id of an instance.
+        of the NB Workflow definition.
+        """
         return Hash96.time_random_string().id_hex
 
     def _cron2redis(self, jobid: str, cron: ScheduleCron):
@@ -205,7 +216,8 @@ class SchedulerExecutor:
     async def get_by_alias(self, session, alias) -> Union[Dict[str, Any], None]:
         if alias:
             stmt = (
-                select(ScheduleModel).where(ScheduleModel.alias == alias).limit(1)
+                select(ScheduleModel).where(
+                    ScheduleModel.alias == alias).limit(1)
             )
             result = await session.execute(stmt)
             row = result.scalar()
@@ -218,7 +230,8 @@ class SchedulerExecutor:
         rows = result.scalars()
         return [r.to_dict() for r in rows]
 
-    async def run_async(self, func, *args, **kwargs):
+    @staticmethod
+    async def run_async(func, *args, **kwargs):
         loop = asyncio.get_running_loop()
         rsp = await loop.run_in_executor(None, func, *args, **kwargs)
         return rsp
@@ -255,9 +268,9 @@ class SchedulerExecutor:
 
         sch = ScheduleModel(
             jobid=jobid,
-            name=obj.task.name,
-            job_detail=data_dict,
+            nb_name=obj.task.name,
             alias=obj.alias,
+            job_detail=data_dict,
             enabled=obj.enabled,
         )
         session.add(sch)
@@ -272,7 +285,7 @@ class SchedulerExecutor:
 
         sch = ScheduleModel(
             jobid=jobid,
-            name=obj.task.name,
+            nb_name=obj.task.nb_name,
             job_detail=data_dict,  # schedule_detail
             alias=obj.alias,
             enabled=obj.enabled,

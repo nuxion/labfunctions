@@ -20,7 +20,8 @@ class Config:
     WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://0.0.0.0:8000")
     # MISC
     LOGLEVEL = os.getenv("NB_LOG", "INFO")
-    DEBUG = os.getenv("NB_DEBUG")
+    # None should be false, anything else true
+    DEBUG = bool(os.getenv("NB_DEBUG", None))
 
     # Folders
     BASE_PATH = os.getenv("NB_BASEPATH")

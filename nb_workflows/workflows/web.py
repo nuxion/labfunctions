@@ -4,20 +4,16 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
-from sanic import Blueprint, Sanic
-from sanic.response import json
-from sanic_ext import openapi
-
 from nb_workflows.conf import Config
 from nb_workflows.utils import get_query_param, list_workflows, run_async
 from nb_workflows.workflows.core import NBTask, nb_job_executor
-from nb_workflows.workflows.scheduler import (
-    QueueExecutor,
-    ScheduleCron,
-    ScheduleInterval,
-    SchedulerExecutor,
-    scheduler_wrapper,
-)
+from nb_workflows.workflows.scheduler import (QueueExecutor, ScheduleCron,
+                                              ScheduleInterval,
+                                              SchedulerExecutor,
+                                              scheduler_wrapper)
+from sanic import Blueprint, Sanic
+from sanic.response import json
+from sanic_ext import openapi
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
 
@@ -61,16 +57,19 @@ def startserver(current_app, loop):
 def launch_task(request):
     """
     Prepare and execute a Notebook Workflow Job based on a filename
+    This endpoint allows to execution any notebook without restriction.
+    The file should exist remotetly but it doesn't need to be
+    previously scheduled
     """
     current_app = Sanic.get_app("nb_workflows")
     nb_task = NBTask(**request.json)
 
-    jobid = SchedulerExecutor.jobid()
+    executionid = SchedulerExecutor.executionid()
 
     # job = Job.create(nb_job_executor, args=nb_task, id=jobid)
     # current_app.ctx.Q.enqueue_job(job)
     job = current_app.ctx.Q.enqueue(
-        nb_job_executor, nb_task, job_id=jobid, job_timeout=nb_task.timeout
+        nb_job_executor, nb_task, job_id=executionid, job_timeout=nb_task.timeout
     )
     return json(dict(jobid=job.id), status=202)
 

@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import papermill as pm
-
 from nb_workflows.conf import Config
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import today_string
@@ -17,8 +16,12 @@ _NB_WORKFLOWS = f"{Config.BASE_PATH}/{Config.NB_WORKFLOWS}"
 
 
 @dataclass
-class WorkflowTask:
-    taskid: str
+class ExecutionTask:
+    """ It will be send to task_handler, and it has the
+    configuration needed for papermill to run a specific notebook.
+    """
+    jobid: str
+    executionid: str
     name: str
     params: Dict[str, Any]
     workflow: str
@@ -27,8 +30,12 @@ class WorkflowTask:
 
 
 @dataclass
-class TaskResult:
-    taskid: str
+class ExecutionResult:
+    """
+    Is the result of a ExecutionTask execution.
+    """
+    executionid: str
+    jobid: str
     name: str
     params: Dict[str, Any]
     input_: str
@@ -43,7 +50,11 @@ class TaskResult:
 @dataclass
 class NBTask:
     """
-    :param name: is the name of the notebook to run
+    NBTask is the task definition. It will be executed by papermill.
+    This interface is used together with the ScheduleCron or ScheduleInterval
+    to define a job.
+
+    :param nb_name: is the name of the notebook to run
     :param params: a dict with the params to run the specific notebook, wrapper around papermill.
     :param jobid: jobid from ScheduleModel
     :param timeout: time in secs to wait from the start of the task to mark the task as failed.
@@ -51,7 +62,7 @@ class NBTask:
     but internally the task also send a notification if the user wants.
     """
 
-    name: str
+    nb_name: str
     params: Dict[str, Any]
     jobid: Optional[str] = None
     timeout: int = 10800  # secs 3h default
@@ -67,30 +78,32 @@ def make_dir(dirpath):
 
 
 def make_workflow_task(
-    name,
-    params,
-    taskid=None,
+    jobid: str,
+    name: str,
+    params: Dict[str, Any],
+    executionid: Optional[str] = None,
     inject_task=True,
     nb_output=_NB_OUTPUT,
     nb_workflows=_NB_WORKFLOWS,
-) -> WorkflowTask:
+) -> ExecutionTask:
     """
     Taskid could be generate inside the task or from external, when using
     rq scheduling system.
     inject_task param will injects inside of the notebook execution,
     date and taskid
     """
-    if not taskid:
+    if not executionid:
         _hash = Hash96.time_random_string()
-        taskid = _hash.id_hex
+        executionid = _hash.id_hex
     _now = datetime.utcnow().isoformat()
     _params = params.copy()
     if inject_task:
-        _params["TASKID"] = _hash.id_hex
+        _params["EXECUTIONID"] = _hash.id_hex
         _params["NOW"] = _now
 
-    return WorkflowTask(
-        taskid=taskid,
+    return ExecutionTask(
+        jobid=jobid,
+        executionid=executionid,
         name=name,
         params=_params,
         workflow=nb_workflows,
@@ -99,7 +112,7 @@ def make_workflow_task(
     )
 
 
-def task_handler(task: WorkflowTask) -> TaskResult:
+def task_handler(etask: ExecutionTask) -> ExecutionResult:
     """task_handler is a generic wrapper to execute notebooks
     using papermill. This could be used from dask or standalone.
     """
@@ -108,38 +121,39 @@ def task_handler(task: WorkflowTask) -> TaskResult:
     _started = time.time()
     today = today_string(format_="day")
 
-    nb_input = build_workflow_name_path(task.workflow, task.name)
-    output_name = f"{task.name}.{task.taskid}.ipynb"
-    output_dir = f"{task.output}/{today}"
-    error_dir = f"{task.output}/errors/{today}"
+    nb_input = build_workflow_name_path(etask.workflow, etask.name)
+    output_name = f"{etask.name}.{etask.executionid}.ipynb"
+    output_dir = f"{etask.output}/{today}"
+    error_dir = f"{etask.output}/errors/{today}"
     print(output_dir)
     make_dir(output_dir)
 
     nb_output = f"{output_dir}/{output_name}"
 
-    print("Running..", task.name, task.taskid)
+    print("Running..", etask.name, etask.jobid)
     try:
 
-        pm.execute_notebook(nb_input, nb_output, parameters=task.params)
+        pm.execute_notebook(nb_input, nb_output, parameters=etask.params)
     except pm.exceptions.PapermillExecutionError as e:
-        print(f"Task {task.taskid} failed", e)
+        print(f"Task {etask.taskid} failed", e)
         make_dir(error_dir)
 
         _error = True
         error_handler(nb_output, output_name, error_dir)
 
     elapsed = time.time() - _started
-    return TaskResult(
-        taskid=task.taskid,
-        name=task.name,
-        params=task.params,
+    return ExecutionResult(
+        jobid=etask.jobid,
+        executionid=etask.executionid,
+        name=etask.name,
+        params=etask.params,
         input_=nb_input,
         output_dir=output_dir,
         output_name=output_name,
         error_dir=error_dir,
         error=_error,
         elapsed=round(elapsed, 2),
-        created_at=task.created_at,
+        created_at=etask.created_at,
     )
 
 
@@ -147,26 +161,21 @@ def error_handler(nb_output, output_name, error_dir):
     shutil.move(nb_output, f"{error_dir}/{output_name}")
 
 
-def nb_job_executor(nb_task: NBTask) -> TaskResult:
-    """This is a top level executor for workflows.
-    It will try first to get a dask client from the global scope.
-    If anything exists, then it will initilize a dask client,
-    send the task.. wait until it finish and then, it release the Dask Future
-    and close de dask client connection.
+def nb_job_executor(nb_task: NBTask) -> ExecutionResult:
+    """This is a top level executor for nb workflows.
+    This function is called by RQ Worker.
+    First it will prepare the ExecutionTask, then the task will be
+    executed by papermill in the task_handler function.
 
-
-    By default, if the Dask Worker dies, the task will restart endless in the dask cluster.
-    Therefore, we have at least two ways to avoid this scenario.
-    One is closing the driver conn, and the other one, is releasing
-    the dask's task reference (a.k.a the future returned by dask client)
+    Finally the task_result is stored in the database.
 
     TODO: what happens if the JOB RQ dies?
     """
 
-    wt = make_workflow_task(nb_task.name, nb_task.params)
+    wt = make_workflow_task(nb_task.jobid, nb_task.nb_name, nb_task.params)
 
-    task_result: TaskResult = task_handler(wt)
+    execution_result: ExecutionResult = task_handler(wt)
 
-    job_history_register(task_result, nb_task)
+    job_history_register(execution_result, nb_task)
 
-    return task_result
+    return execution_result

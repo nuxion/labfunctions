@@ -24,8 +24,8 @@ class HistoryModel(Base, SerializerMixin):
 
     id = Column(BigInteger, primary_key=True)
     jobid = Column(String(24))
-    taskid = Column(String(24))  # should be execution id
-    name = Column(String(), nullable=False)
+    executionid = Column(String(24))  # should be execution id
+    nb_name = Column(String(), nullable=False)
     result = Column(JSONB(), nullable=False)
     status = Column(Integer, index=True)
     # code = Column(BigInteger, index=True, unique=True, nullable=False)
@@ -41,6 +41,7 @@ class ScheduleModel(Base, SerializerMixin):
     workflows, an alias was added to identify each instance, and is more
     friendly than jobid.
     :param name: name of the notebook file.
+    :param description: A friendly description of the purpose of this workflow
     :param job_detail: details of the execution. It is composed by two nested
     entities: ScheduleData and NBTask.
     :param enabled: if the task should run or not.
@@ -54,7 +55,8 @@ class ScheduleModel(Base, SerializerMixin):
     id = Column(Integer, primary_key=True)
     jobid = Column(String(24), index=True, unique=True)
     alias = Column(String(), index=True, unique=True, nullable=True)
-    name = Column(String(), nullable=False)
+    nb_name = Column(String(), nullable=False)
+    description = Column(String(), nullable=True)
     job_detail = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
 
