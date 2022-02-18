@@ -33,6 +33,7 @@ class NBTask:
     """
     nb_name: str
     params: Dict[str, Any]
+    description: Optional[str] = None
     jobid: Optional[str] = None
     qname: str = "default"
     timeout: int = 10800  # secs 3h default

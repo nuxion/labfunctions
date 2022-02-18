@@ -7,7 +7,7 @@ from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
 from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import (NBTask, ScheduleData)
+from nb_workflows.workflows.entities import NBTask, ScheduleData
 from nb_workflows.workflows.models import ScheduleModel
 from redis import Redis
 from rq import Queue

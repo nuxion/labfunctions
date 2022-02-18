@@ -189,7 +189,7 @@ async def create_notebook_schedule(request):
 
     async with session.begin():
         try:
-            rsp = await scheduler.schedule2(session, request.json)
+            rsp = await scheduler.schedule(session, request.json)
         except KeyError:
             return json(dict(msg="notebook workflow already exists"),
                         status=200)
@@ -213,16 +213,16 @@ async def schedule_delete(request, jobid):
 
 @workflows_bp.post("/schedule/<jobid>/_run")
 @openapi.parameter("jobid", str, "path")
-@openapi.response(202, JobResponse, "Relaunch accepted")
+@openapi.response(202, dict(executionid=str), "Execution id of the task")
 def schedule_run(request, jobid):
     """
     Manually execute a registered schedule task
     """
-    current_app = Sanic.get_app("nb_workflows")
+    Q = _get_q_executor()
 
-    job = current_app.ctx.Q.enqueue(scheduler_dispatcher, jobid)
+    job = Q.enqueue(scheduler_dispatcher, jobid)
 
-    return json(dict(jobid=job.id), status=202)
+    return json(dict(executionid=job.id), status=202)
 
 
 @workflows_bp.delete("/schedule/rqjobs/_cancel/<jobid>")
