@@ -4,20 +4,15 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
-from sanic import Blueprint, Sanic
-from sanic.response import json
-from sanic_ext import openapi
-
 from nb_workflows.conf import Config
 from nb_workflows.utils import get_query_param, list_workflows, run_async
-from nb_workflows.workflows.core import NBTask, nb_job_executor
-from nb_workflows.workflows.scheduler import (
-    QueueExecutor,
-    ScheduleCron,
-    ScheduleInterval,
-    SchedulerExecutor,
-    scheduler_wrapper,
-)
+from nb_workflows.workflows.core import nb_job_executor
+from nb_workflows.workflows.entities import NBTask
+from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
+                                              scheduler_dispatcher)
+from sanic import Blueprint, Sanic, exceptions
+from sanic.response import json
+from sanic_ext import openapi
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
 
@@ -49,7 +44,6 @@ class JobDetail:
 @workflows_bp.listener("before_server_start")
 def startserver(current_app, loop):
     _cfg = Config.rq2dict()
-    # current_app.ctx.redis = SchedulerExecutor(_cfg)
     current_app.ctx.scheduler = SchedulerExecutor(_cfg)
     current_app.ctx.Q = QueueExecutor(_cfg)
     # current_app.ctx.queue = queue_init(_cfg)
@@ -57,25 +51,41 @@ def startserver(current_app, loop):
 
 @workflows_bp.post("/notebooks/_run")
 @openapi.body({"application/json": NBTask})
-@openapi.response(202, JobResponse, "Task executed")
+@openapi.response(202, {"executionid": str}, "Task executed")
+@openapi.response(400, {"msg": str}, "Wrong params")
 def launch_task(request):
     """
     Prepare and execute a Notebook Workflow Job based on a filename
+    This endpoint allows to execution any notebook without restriction.
+    The file should exist remotetly but it doesn't need to be
+    previously scheduled
     """
-    current_app = Sanic.get_app("nb_workflows")
-    nb_task = NBTask(**request.json)
+    try:
+        nb_task = NBTask(**request.json)
+    except TypeError:
+        return json(dict(msg="wrong params"), 400)
 
-    jobid = SchedulerExecutor.jobid()
+    Q = _get_q_executor()
 
-    # job = Job.create(nb_job_executor, args=nb_task, id=jobid)
-    # current_app.ctx.Q.enqueue_job(job)
-    job = current_app.ctx.Q.enqueue(
-        nb_job_executor, nb_task, job_id=jobid, job_timeout=nb_task.timeout
-    )
-    return json(dict(jobid=job.id), status=202)
+    job = Q.enqueue_notebook(nb_task)
+
+    return json(dict(executionid=job.id), status=202)
 
 
-@workflows_bp.get("/notebooks/_fetch/<jobid>")
+@workflows_bp.get("/notebooks/_files")
+# @openapi.response(201, WorkflowTask, "Task executed")
+def list_nb_workflows(request):
+    """
+    List file workflows
+    """
+    # pylint: disable=unused-argument
+
+    nb_files = list_workflows()
+
+    return json(nb_files)
+
+
+@workflows_bp.get("/rqjobs/<jobid>")
 @openapi.parameter("jobid", str, "path")
 def get_job_result(request, jobid):
     """Get job result from the queue"""
@@ -95,9 +105,9 @@ def get_job_result(request, jobid):
     )
 
 
-@workflows_bp.get("/notebooks/failed")
+@workflows_bp.get("/rqjobs/failed")
 def get_failed_jobs(request):
-    """Get jobs failed"""
+    """Get jobs failed in RQ"""
     Q = _get_q_executor()
 
     jobs = Q.get_jobs_ids("failed")
@@ -105,7 +115,7 @@ def get_failed_jobs(request):
     return json(dict(rows=jobs, total=len(jobs)))
 
 
-@workflows_bp.delete("/notebooks/failed")
+@workflows_bp.delete("/rqjobs/failed")
 @openapi.parameter("remove", bool, "query")
 def delete_failed_jobs(request):
     """Remove failed jobs from the queue"""
@@ -118,9 +128,9 @@ def delete_failed_jobs(request):
     return json(dict(rows=jobs, total=len(jobs)))
 
 
-@workflows_bp.get("/notebooks/running")
+@workflows_bp.get("/rqjobs/running")
 def get_running_jobs(request):
-    """Get jobs failed"""
+    """Get jobs Running"""
     Q = _get_q_executor()
 
     jobs = Q.get_jobs_ids("started")
@@ -128,65 +138,9 @@ def get_running_jobs(request):
     return json(dict(rows=jobs, total=len(jobs)))
 
 
-@workflows_bp.get("/notebooks/_files")
-# @openapi.response(201, WorkflowTask, "Task executed")
-def list_nb_workflows(request):
-    """
-    List file workflows
-    """
-    # pylint: disable=unused-argument
-
-    nb_files = list_workflows()
-
-    return json(nb_files)
-
-
-@workflows_bp.post("/schedule/interval")
-@openapi.body({"application/json": ScheduleInterval})
-# @openapi.response(201, WorkflowTask, "Task Scheduled")
-async def schedule_interval(request):
-    """
-    Create and Schedule a workflow using interval syntax
-    """
-    # pylint: disable=not-a-mapping
-
-    scheduler = _get_scheduler()
-    session = request.ctx.session
-    alias = request.json.get("alias")
-    async with session.begin():
-        w = await scheduler.get_by_alias(session, alias)
-        if not w:
-            jobid = await scheduler.schedule_interval(session, request.json)
-            await session.commit()
-            return json(dict(jobid=jobid), 201)
-
-        return json(dict(jobid=w.jobid), 200)
-
-
-@workflows_bp.post("/schedule/cron")
-@openapi.body({"application/json": ScheduleCron})
-# @openapi.response(201, WorkflowTask, "Task Scheduled")
-async def schedule_cron(request):
-    """
-    Create and Schedule a workflow using CRON syntax
-    """
-    # pylint: disable=not-a-mapping
-    current_app = Sanic.get_app("nb_workflows")
-    jobid = SchedulerExecutor.jobid()
-    session = request.ctx.session
-    async with session.begin():
-        await current_app.ctx.scheduler.scheduler_cron(
-            jobid, session, request.json
-        )
-        await session.commit()
-
-    return json(dict(jobid=jobid), 201)
-    # return json(asdict(wt), 201)
-
-
 @workflows_bp.get("/schedule")
 # @openapi.response(200, List[JobDetail], "Task Scheduled")
-async def list_schedue(request):
+async def list_schedule(request):
     """List jobs registered in the database"""
     # pylint: disable=unused-argument
 
@@ -199,7 +153,7 @@ async def list_schedue(request):
     return json(result)
 
 
-@workflows_bp.get("/schedule/_redis")
+@workflows_bp.get("/schedule/rqjobs")
 @openapi.response(200, List[JobDetail], "Task Scheduled")
 def list_scheduled_redis(request):
     """
@@ -213,11 +167,40 @@ def list_scheduled_redis(request):
     return json(jobs, 200)
 
 
+@workflows_bp.post("/schedule")
+@openapi.body({"application/json": NBTask})
+@openapi.response(200, {"msg": str}, "Notebook Workflow already exist")
+@openapi.response(201, {"jobid": str}, "Notebook Workflow registered")
+@openapi.response(400, {"msg": str}, description="wrong params")
+async def create_notebook_schedule(request):
+    """
+    Register a notebook workflow and schedule it
+    """
+
+    try:
+        nb_task = NBTask(**request.json)
+        if not nb_task.schedule:
+            return json(dict(msg="schedule information is needed"), 400)
+    except TypeError:
+        return json(dict(msg="wrong params"), 400)
+
+    session = request.ctx.session
+    scheduler = _get_scheduler()
+
+    async with session.begin():
+        try:
+            rsp = await scheduler.schedule2(session, request.json)
+        except KeyError:
+            return json(dict(msg="notebook workflow already exists"),
+                        status=200)
+
+    return json(dict(jobid=rsp), status=201)
+
+
 @workflows_bp.delete("/schedule/<jobid>")
-# @openapi.body({"application/json": ScheduleCron})
 @openapi.parameter("jobid", str, "path")
 async def schedule_delete(request, jobid):
-    """delete a job from scheduler"""
+    """Delete a job from RQ and DB"""
     # pylint: disable=unused-argument
     scheduler = _get_scheduler()
     session = request.ctx.session
@@ -237,15 +220,15 @@ def schedule_run(request, jobid):
     """
     current_app = Sanic.get_app("nb_workflows")
 
-    job = current_app.ctx.Q.enqueue(scheduler_wrapper, jobid)
+    job = current_app.ctx.Q.enqueue(scheduler_dispatcher, jobid)
 
     return json(dict(jobid=job.id), status=202)
 
 
-@workflows_bp.delete("/schedule/_cancel/<jobid>")
+@workflows_bp.delete("/schedule/rqjobs/_cancel/<jobid>")
 @openapi.parameter("jobid", str, "path")
 async def schedule_cancel(request, jobid):
-    """delete a job from scheduler"""
+    """delete a scheduler job from redis"""
     # pylint: disable=unused-argument
 
     scheduler = _get_scheduler()
@@ -253,9 +236,7 @@ async def schedule_cancel(request, jobid):
     return json(dict(msg="done"), 200)
 
 
-@workflows_bp.delete("/schedule/_cancel_all")
-# @openapi.body({"application/json": ScheduleCron})
-# @openapi.parameter("jobid", str, "path")
+@workflows_bp.delete("/schedule/rqjobs/_cancel_all")
 async def schedule_cancel_all(request):
     """Cancel all the jobs in the queue"""
     # pylint: disable=unused-argument

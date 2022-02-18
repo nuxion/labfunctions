@@ -1,7 +1,6 @@
 from dataclasses import asdict
 
 from discord_webhook import DiscordWebhook
-
 from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
 from nb_workflows.workflows.models import HistoryModel
@@ -30,10 +29,10 @@ def rq_job_ok(job, connection, result, *args, **kwargs):
 
     status = 0
     if result.error:
-        send_discord_error(msg=f"{result.taskid} failed. {result.error}")
+        send_discord_error(msg=f"{result.executionid} failed. {result.error}")
         status = -1
     row = HistoryModel(
-        taskid=job.id,
+        executionid=job.id,
         # jobid=result.alias,
         name=result.name,
         result=result_data,
@@ -54,7 +53,7 @@ def rq_job_error(job, connection, type, value, traceback):
     if job.params:
         name = job.params[0].get("name", name)
 
-    row = HistoryModel(taskid=job.id, name=name, result=data, status=-2)
+    row = HistoryModel(executionid=job.id, name=name, result=data, status=-2)
     session = db.sessionmaker()()
     session.add(row)
     session.commit()
@@ -63,23 +62,24 @@ def rq_job_error(job, connection, type, value, traceback):
     send_discord_error(msg=f"{job.id} failed. {name}")
 
 
-def job_history_register(task_result, nb_task):
+def job_history_register(execution_result, nb_task):
     """run inside of the nb_job_executor"""
     db = SQL(Config.SQL)
 
-    result_data = asdict(task_result)
+    result_data = asdict(execution_result)
 
     status = 0
-    if task_result.error:
+    if execution_result.error:
         status = -1
         send_discord_error(
-            msg=f"{task_result.taskid} failed. { task_result.name }"
+            msg=f"{execution_result.executionid} failed. { execution_result.name }"
         )
 
     row = HistoryModel(
-        taskid=task_result.taskid,
         jobid=nb_task.jobid,
-        name=task_result.name,
+        executionid=execution_result.executionid,
+        elapsed_secs=execution_result.elapsed_secs,
+        nb_name=execution_result.name,
         result=result_data,
         status=status,
     )
@@ -89,4 +89,4 @@ def job_history_register(task_result, nb_task):
     session.close()
 
     if nb_task.notificate and status == 0:
-        send_discord_ok(msg=f"{task_result.taskid} finished ok")
+        send_discord_ok(msg=f"{execution_result.executionid} finished ok")

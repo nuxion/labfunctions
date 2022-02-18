@@ -1,7 +1,7 @@
 # pylint: disable=too-few-public-methods
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String, Float
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_serializer import SerializerMixin
 
@@ -16,6 +16,7 @@ class HistoryModel(Base, SerializerMixin):
     :param taskid: is random id generated for each execution of the workflow
     :param name: the filename of the notebook executed
     :param result: is the result of the task. TaskResult
+    :param elapsed_secs: Time in seconds from the start of the task to the end.
     :param status: -1 fail, 0 ok.
     """
 
@@ -24,9 +25,10 @@ class HistoryModel(Base, SerializerMixin):
 
     id = Column(BigInteger, primary_key=True)
     jobid = Column(String(24))
-    taskid = Column(String(24))  # should be execution id
-    name = Column(String(), nullable=False)
+    executionid = Column(String(24))  # should be execution id
+    nb_name = Column(String(), nullable=False)
     result = Column(JSONB(), nullable=False)
+    elapsed_secs = Column(Float(), nullable=False)
     status = Column(Integer, index=True)
     # code = Column(BigInteger, index=True, unique=True, nullable=False)
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
@@ -41,6 +43,7 @@ class ScheduleModel(Base, SerializerMixin):
     workflows, an alias was added to identify each instance, and is more
     friendly than jobid.
     :param name: name of the notebook file.
+    :param description: A friendly description of the purpose of this workflow
     :param job_detail: details of the execution. It is composed by two nested
     entities: ScheduleData and NBTask.
     :param enabled: if the task should run or not.
@@ -54,7 +57,8 @@ class ScheduleModel(Base, SerializerMixin):
     id = Column(Integer, primary_key=True)
     jobid = Column(String(24), index=True, unique=True)
     alias = Column(String(), index=True, unique=True, nullable=True)
-    name = Column(String(), nullable=False)
+    nb_name = Column(String(), nullable=False)
+    description = Column(String(), nullable=True)
     job_detail = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
 
