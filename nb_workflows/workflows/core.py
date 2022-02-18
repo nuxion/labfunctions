@@ -1,6 +1,5 @@
 import shutil
 import time
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -9,64 +8,12 @@ import papermill as pm
 from nb_workflows.conf import Config
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import today_string
+from nb_workflows.workflows.entities import (ExecutionResult, ExecutionTask,
+                                             NBTask)
 from nb_workflows.workflows.registers import job_history_register
 
 _NB_OUTPUT = f"{Config.BASE_PATH}/{Config.NB_OUTPUT}"
 _NB_WORKFLOWS = f"{Config.BASE_PATH}/{Config.NB_WORKFLOWS}"
-
-
-@dataclass
-class ExecutionTask:
-    """ It will be send to task_handler, and it has the
-    configuration needed for papermill to run a specific notebook.
-    """
-    jobid: str
-    executionid: str
-    name: str
-    params: Dict[str, Any]
-    workflow: str
-    output: str
-    created_at: str
-
-
-@dataclass
-class ExecutionResult:
-    """
-    Is the result of a ExecutionTask execution.
-    """
-    executionid: str
-    jobid: str
-    name: str
-    params: Dict[str, Any]
-    input_: str
-    output_name: str
-    output_dir: str
-    error_dir: str
-    error: bool
-    elapsed: float
-    created_at: str
-
-
-@dataclass
-class NBTask:
-    """
-    NBTask is the task definition. It will be executed by papermill.
-    This interface is used together with the ScheduleCron or ScheduleInterval
-    to define a job.
-
-    :param nb_name: is the name of the notebook to run
-    :param params: a dict with the params to run the specific notebook, wrapper around papermill.
-    :param jobid: jobid from ScheduleModel
-    :param timeout: time in secs to wait from the start of the task to mark the task as failed.
-    :param notificate: by default if the job fails it will send a notification though discord,
-    but internally the task also send a notification if the user wants.
-    """
-
-    nb_name: str
-    params: Dict[str, Any]
-    jobid: Optional[str] = None
-    timeout: int = 10800  # secs 3h default
-    notificate: bool = False
 
 
 def build_workflow_name_path(workflow_dir, workflow_name):
@@ -135,7 +82,7 @@ def task_handler(etask: ExecutionTask) -> ExecutionResult:
 
         pm.execute_notebook(nb_input, nb_output, parameters=etask.params)
     except pm.exceptions.PapermillExecutionError as e:
-        print(f"Task {etask.taskid} failed", e)
+        print(f"Task {etask.executionid} failed", e)
         make_dir(error_dir)
 
         _error = True
@@ -152,7 +99,7 @@ def task_handler(etask: ExecutionTask) -> ExecutionResult:
         output_name=output_name,
         error_dir=error_dir,
         error=_error,
-        elapsed=round(elapsed, 2),
+        elapsed_secs=round(elapsed, 2),
         created_at=etask.created_at,
     )
 

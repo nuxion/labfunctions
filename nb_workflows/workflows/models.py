@@ -1,7 +1,7 @@
 # pylint: disable=too-few-public-methods
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String, Float
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_serializer import SerializerMixin
 
@@ -16,6 +16,7 @@ class HistoryModel(Base, SerializerMixin):
     :param taskid: is random id generated for each execution of the workflow
     :param name: the filename of the notebook executed
     :param result: is the result of the task. TaskResult
+    :param elapsed_secs: Time in seconds from the start of the task to the end.
     :param status: -1 fail, 0 ok.
     """
 
@@ -27,6 +28,7 @@ class HistoryModel(Base, SerializerMixin):
     executionid = Column(String(24))  # should be execution id
     nb_name = Column(String(), nullable=False)
     result = Column(JSONB(), nullable=False)
+    elapsed_secs = Column(Float(), nullable=False)
     status = Column(Integer, index=True)
     # code = Column(BigInteger, index=True, unique=True, nullable=False)
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)

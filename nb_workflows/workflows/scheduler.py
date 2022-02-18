@@ -6,7 +6,8 @@ from typing import Any, Dict, List, Optional, Union
 from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
-from nb_workflows.workflows.core import NBTask, nb_job_executor
+from nb_workflows.workflows.core import nb_job_executor
+from nb_workflows.workflows.entities import (NBTask, ScheduleData)
 from nb_workflows.workflows.models import ScheduleModel
 from redis import Redis
 from rq import Queue
@@ -14,45 +15,12 @@ from rq.job import Job
 from rq.registry import FailedJobRegistry, StartedJobRegistry
 from rq_scheduler import Scheduler
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
+
+_DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
 
-@dataclass
-class ScheduleInterval:
-    task: NBTask
-    interval: int  # seconds
-    qname: str = "default"
-    alias: Optional[str] = None
-    start_in_min: int = 0
-    repeat: Optional[int] = None
-    enabled: bool = True
-
-
-@dataclass
-class ScheduleCron:
-    task: NBTask
-    cron: str
-    qname: str = "default"
-    alias: Optional[str] = None
-    start_in_min: int = 0
-    repeat: Optional[int] = None
-    enabled: bool = True
-
-
-@dataclass
-class ScheduleData:
-    """Used as generic structure when querying database"""
-
-    task: NBTask
-    qname: str = "default"
-    alias: Optional[str] = None
-    start_in_min: int = 0
-    repeat: Optional[int] = None
-    cron: Optional[str] = None
-    interval: Optional[str] = None
-    enabled: bool = True
-
-
-def get_job(session, jobid) -> Union[ScheduleModel, None]:
+def get_job_from_db(session, jobid) -> Union[ScheduleModel, None]:
     stmt = select(ScheduleModel).where(ScheduleModel.jobid == jobid)
     result = session.execute(stmt)
     row = result.scalar()
@@ -62,25 +30,7 @@ def get_job(session, jobid) -> Union[ScheduleModel, None]:
     return None
 
 
-def _parse_job_detail(data_dict) -> ScheduleData:
-    _task = NBTask(**data_dict["job_detail"]["task"])
-    s_data = ScheduleData(**data_dict["job_detail"])
-    s_data.task = _task
-    return s_data
-
-
-def get_and_parse_job(session, jobid) -> Union[ScheduleData, None]:
-    stmt = select(ScheduleModel).where(ScheduleModel.jobid == jobid)
-    result = session.execute(stmt)
-    row = result.scalar()
-
-    if row:
-        s_data = _parse_job_detail(row.to_dict())
-        return s_data
-    return None
-
-
-def scheduler_wrapper(jobid):
+def scheduler_dispatcher(jobid):
     """Because rq-scheduler has some limitations
     and could be abandoned in the future, this abstraction was created
     where the idea is to use the scheduler only to enqueue through rq.
@@ -96,26 +46,30 @@ def scheduler_wrapper(jobid):
     Session = db.sessionmaker()
 
     with Session() as session:
-        obj_model = get_job(session, jobid)
+        obj_model = get_job_from_db(session, jobid)
         if obj_model and obj_model.enabled:
             id_ = scheduler.executionid()
-            schedule_data = _parse_job_detail(obj_model.to_dict())
-            # setting jobid for the workflow_history table
-            schedule_data.task.jobid = jobid
+            task = NBTask(**obj_model.job_detail)
+            task.jobid = jobid
+            task.schedule = ScheduleData(**task.schedule)
             _job = Q.enqueue(
                 nb_job_executor,
-                schedule_data.task,
+                task,
                 job_id=id_,
-                job_timeout=schedule_data.task.timeout,
+                job_timeout=task.timeout,
             )
         else:
             if not obj_model:
-                raise IndexError(f"job: {jobid} not found")
-            else:
-                print(f"Job: {jobid} disabled")
+                scheduler.cancel(jobid)
+                print(f"job: {jobid} not found, deleted")
+                # raise IndexError(f"job: {jobid} not found")
+
+            print(f"Job: {jobid} disabled")
 
 
 class QueueExecutor:
+    """A thin wrapper over the Queue object of rq"""
+
     def __init__(self, redis, qname="default"):
         self.redis = Redis(**redis)
         self.Q = Queue(qname, connection=self.redis)
@@ -127,12 +81,28 @@ class QueueExecutor:
         # self.started = StartedJobRegistry(name=qname, connection=self.redis)
 
     def enqueue(self, f, *args, **kwargs) -> Job:
+        """ A wrapper over the Queue.enqueue() function of RQ lib
+        """
         job = self.Q.enqueue(
             f,
             # on_success=rq_job_ok,
             # on_failure=rq_job_error,
             *args,
             **kwargs,
+        )
+        return job
+
+    def enqueue_notebook(self, task: NBTask, executionid=None) -> Job:
+        """ Enqueue in redis a notebook workflow
+        :param task: NBTask object
+        :param executionid: An optional executionid
+        """
+        _id = executionid or SchedulerExecutor.executionid()
+        job = self.Q.enqueue(
+            nb_job_executor,
+            task,
+            job_id=_id,
+            job_timeout=task.timeout,
         )
         return job
 
@@ -179,32 +149,6 @@ class SchedulerExecutor:
         """
         return Hash96.time_random_string().id_hex
 
-    def _cron2redis(self, jobid: str, cron: ScheduleCron):
-        self.scheduler.cron(
-            cron.cron,
-            id=jobid,
-            func=nb_job_executor,
-            args=[cron.task],
-            repeat=cron.repeat,
-            queue_name=cron.qname,
-            # on_success=rq_job_ok,
-            # on_failure=rq_job_error,
-        )
-
-    def _interval2redis(self, jobid: str, interval: ScheduleInterval):
-        start_in_dt = datetime.utcnow() + timedelta(minutes=interval.start_in_min)
-
-        self.scheduler.schedule(
-            id=jobid,
-            scheduled_time=start_in_dt,
-            func=scheduler_wrapper,
-            args=[jobid],
-            interval=interval.interval,
-            repeat=interval.repeat,
-            queue_name=interval.qname,
-            timeout=60 * 5,  # 5 minutes
-        )
-
     async def get_jobid_db(self, session, jobid):
         stmt = select(ScheduleModel).where(ScheduleModel.jobid == jobid)
         result = await session.execute(stmt)
@@ -236,63 +180,59 @@ class SchedulerExecutor:
         rsp = await loop.run_in_executor(None, func, *args, **kwargs)
         return rsp
 
-    @staticmethod
-    def _parse_interval_dict(data_dict) -> ScheduleInterval:
-        _task = NBTask(**data_dict["task"])
-        interval = ScheduleInterval(**data_dict)
-        interval.task = _task
-        return interval
-
-    @staticmethod
-    def _parse_cron_dict(data_dict) -> ScheduleCron:
-        _task = NBTask(**data_dict["task"])
-        cron = ScheduleCron(**data_dict)
-        cron.task = _task
-        return cron
-
-    async def schedule(self, session, data_dict, jobid=None) -> str:
-        if data_dict.get("interval"):
-            j = await self.schedule_interval(session, data_dict, jobid)
-        else:
-            j = await self.schedule_cron(session, data_dict, jobid)
-
-        return j
-
-    async def schedule_cron(self, session, data_dict, jobid=None) -> str:
-        """Entrypoint to register the task in the scheduler and
-        register it in the database."""
-
-        jobid = jobid or self.jobid()
-
-        obj = self._parse_cron_dict(data_dict)
+    async def schedule(self, session, data_dict) -> str:
+        schedule_data = data_dict["schedule"]
+        task = NBTask(**data_dict)
+        task.schedule = ScheduleData(**schedule_data)
+        jobid = self.jobid()
 
         sch = ScheduleModel(
             jobid=jobid,
-            nb_name=obj.task.name,
-            alias=obj.alias,
+            nb_name=task.nb_name,
+            alias=task.schedule.alias,
             job_detail=data_dict,
-            enabled=obj.enabled,
+            enabled=task.schedule.enabled
         )
         session.add(sch)
-        await self.run_async(self._cron2redis, jobid, obj)
+        # check error
+        try:
+            await session.commit()
+        except IntegrityError:
+            raise KeyError("NB workflow already exist")
+
+        if task.schedule.cron:
+            await self.run_async(self._cron2redis, jobid, task)
+        else:
+            await self.run_async(self._interval2redis, jobid, task)
+
         return jobid
 
-    async def schedule_interval(self, session, data_dict, jobid=None) -> str:
-        """Entrypoint to register the task in the scheduler and
-        register it in the database."""
-        jobid = jobid or self.jobid()
-        obj = self._parse_interval_dict(data_dict)
+    def _interval2redis(self, jobid: str, task: NBTask):
+        interval = task.schedule
+        start_in_dt = datetime.utcnow() + timedelta(
+            minutes=interval.start_in_min)
 
-        sch = ScheduleModel(
-            jobid=jobid,
-            nb_name=obj.task.nb_name,
-            job_detail=data_dict,  # schedule_detail
-            alias=obj.alias,
-            enabled=obj.enabled,
+        self.scheduler.schedule(
+            id=jobid,
+            scheduled_time=start_in_dt,
+            func=scheduler_dispatcher,
+            args=[jobid],
+            interval=interval.interval,
+            repeat=interval.repeat,
+            queue_name=task.qname,
+            timeout=_DEFAULT_SCH_TASK_TO,
         )
-        session.add(sch)
-        await self.run_async(self._interval2redis, jobid, obj)
-        return jobid
+
+    def _cron2redis(self, jobid: str, task: NBTask):
+        cron = task.schedule
+        self.scheduler.cron(
+            cron.cron,
+            id=jobid,
+            func=scheduler_dispatcher,
+            args=[jobid],
+            repeat=cron.repeat,
+            queue_name=task.qname,
+        )
 
     def list_jobs(self):
         """List jobs from Redis"""
