@@ -1,7 +1,7 @@
-
 import click
 import requests
 import toml
+
 from nb_workflows.conf import Config
 from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
@@ -9,12 +9,17 @@ from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 @click.command()
 @click.option(
-    "--from-file", "-f", default="workflows.toml", help="toml file with the configuration"
+    "--from-file",
+    "-f",
+    default="workflows.toml",
+    help="toml file with the configuration",
 )
 @click.option("--web", default=Config.WORKFLOW_SERVICE, help="Web server")
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
 # @click.option("--init", is_flag=True, help="Creates a example file of workflows.toml")
-@click.argument("action", type=click.Choice(["init", "push", "list", "exec", "delete"]))
+@click.argument(
+    "action", type=click.Choice(["init", "push", "list", "exec", "delete"])
+)
 def workflows(from_file, web, jobid, action):
     """Manage workflows"""
 

@@ -4,15 +4,19 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
+from sanic import Blueprint, Sanic, exceptions
+from sanic.response import json
+from sanic_ext import openapi
+
 from nb_workflows.conf import Config
 from nb_workflows.utils import get_query_param, list_workflows, run_async
 from nb_workflows.workflows.core import nb_job_executor
 from nb_workflows.workflows.entities import NBTask
-from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
-                                              scheduler_dispatcher)
-from sanic import Blueprint, Sanic, exceptions
-from sanic.response import json
-from sanic_ext import openapi
+from nb_workflows.workflows.scheduler import (
+    QueueExecutor,
+    SchedulerExecutor,
+    scheduler_dispatcher,
+)
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
 
@@ -191,8 +195,7 @@ async def create_notebook_schedule(request):
         try:
             rsp = await scheduler.schedule(session, request.json)
         except KeyError:
-            return json(dict(msg="notebook workflow already exists"),
-                        status=200)
+            return json(dict(msg="notebook workflow already exists"), status=200)
 
     return json(dict(jobid=rsp), status=201)
 

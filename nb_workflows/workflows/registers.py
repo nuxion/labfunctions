@@ -1,6 +1,7 @@
 from dataclasses import asdict
 
 from discord_webhook import DiscordWebhook
+
 from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
 from nb_workflows.workflows.models import HistoryModel

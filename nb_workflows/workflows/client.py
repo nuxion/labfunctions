@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 import httpx
 import toml
+
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 
@@ -45,7 +46,7 @@ class ScheduleListRsp:
 
 
 class NBClient:
-    """ NB Workflow client """
+    """NB Workflow client"""
 
     def __init__(self, conf: NBCliConfig):
         self._data = conf
@@ -60,9 +61,11 @@ class NBClient:
     def create_workflow(self, t: NBTask) -> WFCreateRsp:
         r = httpx.post(f"{self._addr}/workflows/schedule", json=asdict(t))
 
-        return WFCreateRsp(status_code=r.status_code,
-                           msg=r.json().get("msg"),
-                           jobid=r.json().get("jobid"))
+        return WFCreateRsp(
+            status_code=r.status_code,
+            msg=r.json().get("msg"),
+            jobid=r.json().get("jobid"),
+        )
 
     def push_all(self, refresh_workflows=True):
         for task in self._workflows:
@@ -71,7 +74,8 @@ class NBClient:
                 print(f"Workflow {task.schedule['alias']} already exist")
             elif r.status_code == 201:
                 print(
-                    f"Workflow {task.schedule['alias']} created. Jobid: {r.jobid}")
+                    f"Workflow {task.schedule['alias']} created. Jobid: {r.jobid}"
+                )
                 if refresh_workflows:
                     task.jobid = r.jobid
 
@@ -80,19 +84,20 @@ class NBClient:
 
     def list_scheduled(self) -> List[ScheduleListRsp]:
         r = httpx.get(f"{self._addr}/workflows/schedule")
-        data = [ScheduleListRsp(
-            nb_name=s["nb_name"],
-            jobid=s["jobid"],
-            enabled=s["enabled"],
-            description=s.get("description"),
-
-        ) for s in r.json()]
+        data = [
+            ScheduleListRsp(
+                nb_name=s["nb_name"],
+                jobid=s["jobid"],
+                enabled=s["enabled"],
+                description=s.get("description"),
+            )
+            for s in r.json()
+        ]
         return data
 
     def execute_remote(self, jobid) -> ScheduleExecRsp:
         r = httpx.post(f"{self._addr}/workflows/schedule/{jobid}/_run")
-        return ScheduleExecRsp(r.status_code,
-                               executionid=r.json()["executionid"])
+        return ScheduleExecRsp(r.status_code, executionid=r.json()["executionid"])
 
     def delete(self, jobid) -> int:
         r = httpx.delete(f"{self._addr}/workflows/schedule/{jobid}")
@@ -100,16 +105,17 @@ class NBClient:
 
 
 def init(url_service, version="0.1.0") -> NBClient:
-    t = NBTask(nb_name="test_workflow",
-               description="An example of how to configure a specific workflow",
-               params=dict(TIMEOUT=5),
-               schedule=ScheduleData(
-                   alias="notebook.example",
-                   repeat=1,
-                   interval=10,
-               ))
-    nbc = NBCliConfig(version=version, url_service=url_service,
-                      workflows=[t])
+    t = NBTask(
+        nb_name="test_workflow",
+        description="An example of how to configure a specific workflow",
+        params=dict(TIMEOUT=5),
+        schedule=ScheduleData(
+            alias="notebook.example",
+            repeat=1,
+            interval=10,
+        ),
+    )
+    nbc = NBCliConfig(version=version, url_service=url_service, workflows=[t])
 
     return NBClient(nbc)
 
