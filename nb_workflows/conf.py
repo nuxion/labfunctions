@@ -17,7 +17,7 @@ class Config:
     RQ_REDIS_DB = os.getenv("NB_RQ_DB", "2")
 
     WEB_REDIS = os.getenv("NB_WEB_REDIS", "redis://localhost:6379/0")
-    WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://0.0.0.0:8000")
+    WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://127.0.0.1:8000")
     # MISC
     LOGLEVEL = os.getenv("NB_LOG", "INFO")
     # None should be false, anything else true

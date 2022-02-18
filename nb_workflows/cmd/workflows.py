@@ -3,42 +3,52 @@ import requests
 import toml
 
 from nb_workflows.conf import Config
-
-
-def _open_toml(from_file: str):
-    with open(from_file, "r") as f:
-        tf = f.read()
-
-    tomconf = toml.loads(tf)
-    return tomconf
+from nb_workflows.workflows import client
+from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 
 @click.command()
 @click.option(
-    "--from-file", "-f", default=None, help="toml file with the configuration"
+    "--from-file",
+    "-f",
+    default="workflows.toml",
+    help="toml file with the configuration",
 )
 @click.option("--web", default=Config.WORKFLOW_SERVICE, help="Web server")
-def workflows(from_file, web):
-    """Store workflows"""
+@click.option("--jobid", "-J", default=None, help="Jobid to execute")
+# @click.option("--init", is_flag=True, help="Creates a example file of workflows.toml")
+@click.argument(
+    "action", type=click.Choice(["init", "push", "list", "exec", "delete"])
+)
+def workflows(from_file, web, jobid, action):
+    """Manage workflows"""
 
-    data = _open_toml(from_file)
-    _workflows = data["workflow"]
-    for w in _workflows:
+    if action == "init":
+        c = client.init(web)
+        c.write()
 
-        if w.get("interval"):
-            rsp = requests.post(f"{web}/workflows/schedule/interval", json=w)
-            d = rsp.json()
-            code = rsp.status_code
-        else:
-            rsp = requests.post(f"{web}/workflows/schedule/cron", json=w)
+    elif action == "push":
+        c = client.from_file(from_file)
+        c.push_all()
 
-            d = rsp.json()
-            code = rsp.status_code
-        if code == 201:
-            click.echo(
-                f"Inserted { w['task']['name'] } with id {d['jobid']}. {code}"
-            )
-        else:
-            click.echo(
-                f"Task { w['task']['name'] } with id {d['jobid']} already exist {code}"
-            )
+    elif action == "list":
+        c = client.from_file(from_file)
+        data = c.list_scheduled()
+        print("\nnb_name | jobid | description | is_enabled\n")
+        for d in data:
+            print(f"{d.nb_name} | {d.jobid} | {d.description} | [{d.enabled}]")
+
+    elif action == "exec":
+        c = client.from_file(from_file)
+        rsp = c.execute_remote(jobid)
+        if rsp.status_code == 202:
+            print(f"Jobid: {jobid}, scheduled.")
+            print(f"Executionid: {rsp.executionid}")
+
+    elif action == "delete":
+        c = client.from_file(from_file)
+        rsp = c.delete(jobid)
+        print(f"Jobid: {jobid}, deleted. Code {rsp}")
+
+    else:
+        print("Valid actions are: [init, push, list, exec, delete]")

@@ -39,7 +39,9 @@ def web(host, port, workers, apps, auto_reload, debug):
     init_blueprints(app, list_bp)
     w = int(workers)
     print("Debug mode: ", debug)
-    app.run(host=host, port=int(port), workers=w, auto_reload=auto_reload, debug=debug)
+    app.run(
+        host=host, port=int(port), workers=w, auto_reload=auto_reload, debug=debug
+    )
 
 
 @click.command()

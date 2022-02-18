@@ -1,7 +1,7 @@
 # pylint: disable=too-few-public-methods
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Integer, String, Float
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Float, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_serializer import SerializerMixin
 

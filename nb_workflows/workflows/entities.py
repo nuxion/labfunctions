@@ -31,8 +31,10 @@ class NBTask:
     notification though discord,
     but internally the task also send a notification if the user wants.
     """
+
     nb_name: str
     params: Dict[str, Any]
+    description: Optional[str] = None
     jobid: Optional[str] = None
     qname: str = "default"
     timeout: int = 10800  # secs 3h default
@@ -42,9 +44,10 @@ class NBTask:
 
 @dataclass
 class ExecutionTask:
-    """ It will be send to task_handler, and it has the
+    """It will be send to task_handler, and it has the
     configuration needed for papermill to run a specific notebook.
     """
+
     jobid: str
     executionid: str
     name: str
@@ -59,6 +62,7 @@ class ExecutionResult:
     """
     Is the result of a ExecutionTask execution.
     """
+
     executionid: str
     jobid: str
     name: str

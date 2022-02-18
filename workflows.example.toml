@@ -1,0 +1,18 @@
+url_service = "http://127.0.0.1:8000"
+version = "0.1.0"
+[[workflows]]
+nb_name = "test_workflow"
+description = "An example of how to configure a specific workflow"
+jobid = "00310810b5d2d11f9edef397"
+qname = "default"
+timeout = 10800
+notificate = false
+
+[workflows.params]
+TIMEOUT = 5
+[workflows.schedule]
+alias = "notebook.example2"
+start_in_min = 0
+repeat = 1
+interval = 10
+enabled = true

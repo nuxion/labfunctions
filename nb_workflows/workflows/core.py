@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import papermill as pm
+
 from nb_workflows.conf import Config
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import today_string
-from nb_workflows.workflows.entities import (ExecutionResult, ExecutionTask,
-                                             NBTask)
+from nb_workflows.workflows.entities import ExecutionResult, ExecutionTask, NBTask
 from nb_workflows.workflows.registers import job_history_register
 
 _NB_OUTPUT = f"{Config.BASE_PATH}/{Config.NB_OUTPUT}"
