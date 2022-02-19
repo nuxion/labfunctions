@@ -3,7 +3,6 @@ from typing import Dict, List, Optional
 
 import httpx
 import toml
-
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 
@@ -127,3 +126,14 @@ def from_file(filepath) -> NBClient:
     obj = NBClient(nbc)
 
     return obj
+
+
+def from_remote(url_service, version="0.1.0") -> NBClient:
+    r = httpx.get(f"{url_service}/workflows/schedule")
+    workflows = []
+    for w_data in r.json():
+        obj = NBTask(**w_data["job_detail"])
+        obj.jobid = w_data["jobid"]
+        workflows.append(obj)
+    nbc = NBCliConfig(url_service, version, workflows=workflows)
+    return NBClient(nbc)

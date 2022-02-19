@@ -1,7 +1,6 @@
 import click
 import requests
 import toml
-
 from nb_workflows.conf import Config
 from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
@@ -16,16 +15,20 @@ from nb_workflows.workflows.entities import NBTask, ScheduleData
 )
 @click.option("--web", default=Config.WORKFLOW_SERVICE, help="Web server")
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
-# @click.option("--init", is_flag=True, help="Creates a example file of workflows.toml")
+@click.option("--remote", "-r", default=False, is_flag=True, help="execute remote")
 @click.argument(
     "action", type=click.Choice(["init", "push", "list", "exec", "delete"])
 )
-def workflows(from_file, web, jobid, action):
+def workflows(from_file, web, jobid, remote, action):
     """Manage workflows"""
 
     if action == "init":
-        c = client.init(web)
-        c.write()
+        if remote:
+            c = client.from_remote(web)
+            c.write()
+        else:
+            c = client.init(from_file)
+            c.write()
 
     elif action == "push":
         c = client.from_file(from_file)
