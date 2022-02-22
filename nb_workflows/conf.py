@@ -4,6 +4,9 @@ from logging import NullHandler
 
 
 class Config:
+
+    SALT = os.getenv("SALT")
+    SECRET_KEY = os.getenv("SECRET_KEY")
     # Services
     SQL = os.getenv("NB_SQL")
     ASQL = os.getenv("NB_ASQL")

@@ -7,6 +7,7 @@ from typing import List, Optional
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
 from sanic_ext import openapi
+from sanic_jwt import protected
 
 from nb_workflows.conf import Config
 from nb_workflows.utils import get_query_param, list_workflows, run_async
@@ -57,6 +58,7 @@ def startserver(current_app, loop):
 @openapi.body({"application/json": NBTask})
 @openapi.response(202, {"executionid": str}, "Task executed")
 @openapi.response(400, {"msg": str}, "Wrong params")
+@protected()
 def launch_task(request):
     """
     Prepare and execute a Notebook Workflow Job based on a filename
@@ -77,7 +79,7 @@ def launch_task(request):
 
 
 @workflows_bp.get("/notebooks/_files")
-# @openapi.response(201, WorkflowTask, "Task executed")
+@protected()
 def list_nb_workflows(request):
     """
     List file workflows
@@ -91,6 +93,7 @@ def list_nb_workflows(request):
 
 @workflows_bp.get("/rqjobs/<jobid>")
 @openapi.parameter("jobid", str, "path")
+@protected()
 def get_job_result(request, jobid):
     """Get job result from the queue"""
     Q = _get_q_executor()
@@ -110,6 +113,7 @@ def get_job_result(request, jobid):
 
 
 @workflows_bp.get("/rqjobs/failed")
+@protected()
 def get_failed_jobs(request):
     """Get jobs failed in RQ"""
     Q = _get_q_executor()
@@ -121,6 +125,7 @@ def get_failed_jobs(request):
 
 @workflows_bp.delete("/rqjobs/failed")
 @openapi.parameter("remove", bool, "query")
+@protected()
 def delete_failed_jobs(request):
     """Remove failed jobs from the queue"""
 
@@ -133,6 +138,7 @@ def delete_failed_jobs(request):
 
 
 @workflows_bp.get("/rqjobs/running")
+@protected()
 def get_running_jobs(request):
     """Get jobs Running"""
     Q = _get_q_executor()
@@ -143,7 +149,7 @@ def get_running_jobs(request):
 
 
 @workflows_bp.get("/schedule")
-# @openapi.response(200, List[JobDetail], "Task Scheduled")
+@protected()
 async def list_schedule(request):
     """List jobs registered in the database"""
     # pylint: disable=unused-argument
@@ -159,6 +165,7 @@ async def list_schedule(request):
 
 @workflows_bp.get("/schedule/rqjobs")
 @openapi.response(200, List[JobDetail], "Task Scheduled")
+@protected()
 def list_scheduled_redis(request):
     """
     List the jobs scheduled in the scheduler
@@ -176,6 +183,7 @@ def list_scheduled_redis(request):
 @openapi.response(200, {"msg": str}, "Notebook Workflow already exist")
 @openapi.response(201, {"jobid": str}, "Notebook Workflow registered")
 @openapi.response(400, {"msg": str}, description="wrong params")
+@protected()
 async def create_notebook_schedule(request):
     """
     Register a notebook workflow and schedule it
@@ -202,6 +210,7 @@ async def create_notebook_schedule(request):
 
 @workflows_bp.delete("/schedule/<jobid>")
 @openapi.parameter("jobid", str, "path")
+@protected()
 async def schedule_delete(request, jobid):
     """Delete a job from RQ and DB"""
     # pylint: disable=unused-argument
@@ -217,6 +226,7 @@ async def schedule_delete(request, jobid):
 @workflows_bp.post("/schedule/<jobid>/_run")
 @openapi.parameter("jobid", str, "path")
 @openapi.response(202, dict(executionid=str), "Execution id of the task")
+@protected()
 def schedule_run(request, jobid):
     """
     Manually execute a registered schedule task
@@ -230,6 +240,7 @@ def schedule_run(request, jobid):
 
 @workflows_bp.delete("/schedule/rqjobs/_cancel/<jobid>")
 @openapi.parameter("jobid", str, "path")
+@protected()
 async def schedule_cancel(request, jobid):
     """delete a scheduler job from redis"""
     # pylint: disable=unused-argument
@@ -240,6 +251,7 @@ async def schedule_cancel(request, jobid):
 
 
 @workflows_bp.delete("/schedule/rqjobs/_cancel_all")
+@protected()
 async def schedule_cancel_all(request):
     """Cancel all the jobs in the queue"""
     # pylint: disable=unused-argument
