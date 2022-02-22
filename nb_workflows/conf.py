@@ -7,6 +7,7 @@ class Config:
 
     SALT = os.getenv("SALT")
     SECRET_KEY = os.getenv("SECRET_KEY")
+    CLIENT_TOKEN = os.getenv("NB_TOKEN")
     # Services
     SQL = os.getenv("NB_SQL")
     ASQL = os.getenv("NB_ASQL")

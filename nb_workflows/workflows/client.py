@@ -1,9 +1,10 @@
+import getpass
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import httpx
 import toml
-
+from nb_workflows.conf import Config
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 
@@ -48,10 +49,11 @@ class ScheduleListRsp:
 class NBClient:
     """NB Workflow client"""
 
-    def __init__(self, conf: NBCliConfig):
+    def __init__(self, token: str, conf: NBCliConfig):
         self._data = conf
         self._workflows = conf.workflows
         self._addr = conf.url_service
+        self._headers = {"Authorization": f"Bearer {token}"}
 
     def write(self, output="workflows.toml"):
         with open(output, "w", encoding="utf-8") as f:
@@ -59,8 +61,9 @@ class NBClient:
             f.write(_dump)
 
     def create_workflow(self, t: NBTask) -> WFCreateRsp:
-        breakpoint()
-        r = httpx.post(f"{self._addr}/workflows/schedule", json=asdict(t))
+        r = httpx.post(f"{self._addr}/workflows/schedule",
+                       json=asdict(t),
+                       headers=self._headers)
 
         return WFCreateRsp(
             status_code=r.status_code,
@@ -84,7 +87,8 @@ class NBClient:
             self.write()
 
     def list_scheduled(self) -> List[ScheduleListRsp]:
-        r = httpx.get(f"{self._addr}/workflows/schedule")
+        r = httpx.get(f"{self._addr}/workflows/schedule",
+                      headers=self._headers)
         data = [
             ScheduleListRsp(
                 nb_name=s["nb_name"],
@@ -97,11 +101,13 @@ class NBClient:
         return data
 
     def execute_remote(self, jobid) -> ScheduleExecRsp:
-        r = httpx.post(f"{self._addr}/workflows/schedule/{jobid}/_run")
+        r = httpx.post(f"{self._addr}/workflows/schedule/{jobid}/_run",
+                       headers=self._headers)
         return ScheduleExecRsp(r.status_code, executionid=r.json()["executionid"])
 
     def delete(self, jobid) -> int:
-        r = httpx.delete(f"{self._addr}/workflows/schedule/{jobid}")
+        r = httpx.delete(f"{self._addr}/workflows/schedule/{jobid}",
+                         headers=self._headers)
         return r.status_code
 
 
@@ -118,24 +124,35 @@ def init(url_service, version="0.1.0") -> NBClient:
     )
     nbc = NBCliConfig(version=version, url_service=url_service, workflows=[t])
 
-    return NBClient(nbc)
+    return NBClient(token="", conf=nbc)
 
 
-def from_file(filepath) -> NBClient:
+def from_file(filepath, token) -> NBClient:
     data_dict = _open_toml(filepath)
     nbc = NBCliConfig(**data_dict)
     nbc.workflows = [NBTask(**w) for w in data_dict["workflows"]]
-    obj = NBClient(nbc)
+    obj = NBClient(token, nbc)
 
     return obj
 
 
-def from_remote(url_service, version="0.1.0") -> NBClient:
-    r = httpx.get(f"{url_service}/workflows/schedule")
+def from_remote(url_service, token, version="0.1.0") -> NBClient:
+    headers = {"Authorization": f"Bearer {token}"}
+    r = httpx.get(f"{url_service}/workflows/schedule", headers=headers)
     workflows = []
     for w_data in r.json():
         obj = NBTask(**w_data["job_detail"])
         obj.jobid = w_data["jobid"]
         workflows.append(obj)
     nbc = NBCliConfig(url_service, version, workflows=workflows)
-    return NBClient(nbc)
+    return NBClient(token, nbc)
+
+
+def login_cli(with_server: str) -> Union[str, None]:
+    u = input("User: ")
+    p = getpass.getpass()
+    rsp = httpx.post(f"{with_server}/auth", json=dict(username=u, password=p))
+    try:
+        return rsp.json()["access_token"]
+    except KeyError:
+        return None
