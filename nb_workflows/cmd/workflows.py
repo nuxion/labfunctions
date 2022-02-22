@@ -1,6 +1,7 @@
 import click
 import requests
 import toml
+
 from nb_workflows.conf import Config
 from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
@@ -15,7 +16,9 @@ from nb_workflows.workflows.entities import NBTask, ScheduleData
 )
 @click.option("--web", default=Config.WORKFLOW_SERVICE, help="Web server")
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
-@click.option("--remote", "-r", default=False, is_flag=True, help="execute remote")
+@click.option(
+    "--remote", "-r", default=False, is_flag=True, help="execute remote"
+)
 @click.argument(
     "action", type=click.Choice(["init", "push", "list", "exec", "delete"])
 )

@@ -74,3 +74,10 @@ class ExecutionResult:
     error: bool
     elapsed_secs: float
     created_at: str
+
+
+@dataclass
+class ExecContext:
+    jobid: str
+    executionid: str
+    execution_dt: str

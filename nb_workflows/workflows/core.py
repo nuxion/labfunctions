@@ -9,7 +9,12 @@ import papermill as pm
 from nb_workflows.conf import Config
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import today_string
-from nb_workflows.workflows.entities import ExecutionResult, ExecutionTask, NBTask
+from nb_workflows.workflows.entities import (
+    ExecContext,
+    ExecutionResult,
+    ExecutionTask,
+    NBTask,
+)
 from nb_workflows.workflows.registers import job_history_register
 
 _NB_OUTPUT = f"{Config.BASE_PATH}/{Config.NB_OUTPUT}"
@@ -45,6 +50,7 @@ def make_workflow_task(
     _now = datetime.utcnow().isoformat()
     _params = params.copy()
     if inject_task:
+        _params["JOBID"] = jobid
         _params["EXECUTIONID"] = _hash.id_hex
         _params["NOW"] = _now
 
