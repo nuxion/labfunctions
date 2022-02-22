@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 import httpx
 import toml
+
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 
@@ -58,6 +59,7 @@ class NBClient:
             f.write(_dump)
 
     def create_workflow(self, t: NBTask) -> WFCreateRsp:
+        breakpoint()
         r = httpx.post(f"{self._addr}/workflows/schedule", json=asdict(t))
 
         return WFCreateRsp(
