@@ -7,6 +7,14 @@ from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 
+@click.group()
+def workflowscli():
+    """
+    wrapper
+    """
+    pass
+
+
 @click.command()
 @click.option(
     "--from-file",
@@ -58,3 +66,6 @@ def workflows(from_file, web, jobid, remote, action):
 
     else:
         print("Valid actions are: [init, push, list, exec, delete]")
+
+
+workflowscli.add_command(workflows)

@@ -4,16 +4,37 @@ import aioredis
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
+from sanic_jwt import Initialize
 
+from nb_workflows.auth import users
 from nb_workflows.conf import Config
 from nb_workflows.db.nosync import AsyncSQL
 
+
+def my_authenticate(requests, *args, **kwargs):
+    pass
+
+
 app = Sanic("nb_workflows")
+Initialize(
+    app,
+    authenticate=users.authenticate_web,
+    secret=Config.SECRET_KEY,
+)
+
 
 # app.blueprint(workflows_bp)
 
 app.config.CORS_ORIGINS = "*"
 Extend(app)
+app.ext.openapi.add_security_scheme(
+    "token",
+    "http",
+    scheme="bearer",
+    bearer_format="JWT",
+)
+app.ext.openapi.secured()
+app.ext.openapi.secured("token")
 
 db = AsyncSQL(Config.ASQL)
 _base_model_session_ctx = ContextVar("session")

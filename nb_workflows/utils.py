@@ -13,6 +13,7 @@ import redis
 from rq import Queue
 
 from nb_workflows.conf import Config
+from nb_workflows.hashes import PasswordScript
 
 _formats = {"hours": "%Y%m%d.%H%M%S", "day": "%Y%m%d", "month": "%Y%m"}
 
@@ -183,3 +184,8 @@ def create_redis_client(fullurl, decode_responses=True) -> redis.Redis:
     return redis.StrictRedis(
         host=h, port=p, db=db, decode_responses=decode_responses
     )
+
+
+def password_manager() -> PasswordScript:
+    s = Config.SALT
+    return PasswordScript(salt=s.encode("utf-8"))
