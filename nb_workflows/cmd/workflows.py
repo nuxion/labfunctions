@@ -7,6 +7,16 @@ from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 
+def _get_token(filepath):
+    nbc = client.open_config(filepath)
+    token = client.get_credentials()
+    if token:
+        v = client.validate_credentials(nbc.url_service, token)
+        if v:
+            return token
+    return client.login_cli(nbc.url_service)
+
+
 @click.group()
 def workflowscli():
     """
@@ -43,12 +53,12 @@ def workflows(from_file, web, jobid, remote, action):
             c.write()
 
     elif action == "push":
-        token = Config.CLIENT_TOKEN or client.login_cli(web)
+        token = _get_token(from_file)
         c = client.from_file(from_file, token)
         c.push_all()
 
     elif action == "list":
-        token = Config.CLIENT_TOKEN or client.login_cli(web)
+        token = _get_token(from_file)
         c = client.from_file(from_file, token)
         data = c.list_scheduled()
         print("\nnb_name | jobid | description | is_enabled\n")

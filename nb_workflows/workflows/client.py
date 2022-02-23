@@ -1,5 +1,7 @@
 import getpass
+import os
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import httpx
@@ -46,6 +48,18 @@ class ScheduleListRsp:
     description: Optional[str] = None
 
 
+def validate_credentials(websrv, token) -> bool:
+    _headers = {"Authorization": f"Bearer {token}"}
+
+    r = httpx.get(f"{websrv}/auth/verify",
+                  headers=_headers)
+    if r.status_code == 200:
+        return True
+    if r.status_code == 401:
+        return False
+    raise TypeError("Wrong communitacion against {websrv}")
+
+
 class NBClient:
     """NB Workflow client"""
 
@@ -86,7 +100,6 @@ class NBClient:
                 print(
                     "Auth failed"
                 )
-                    
 
         if refresh_workflows:
             self.write()
@@ -132,10 +145,15 @@ def init(url_service, version="0.1.0") -> NBClient:
     return NBClient(token="", conf=nbc)
 
 
-def from_file(filepath, token) -> NBClient:
+def open_config(filepath) -> NBCliConfig:
     data_dict = _open_toml(filepath)
     nbc = NBCliConfig(**data_dict)
-    nbc.workflows = [NBTask(**w) for w in data_dict["workflows"]]
+    return nbc
+
+
+def from_file(filepath, token) -> NBClient:
+    nbc = open_config(filepath)
+    nbc.workflows = [NBTask(**w) for w in nbc.workflows]
     obj = NBClient(token, nbc)
 
     return obj
@@ -158,6 +176,26 @@ def login_cli(with_server: str) -> Union[str, None]:
     p = getpass.getpass()
     rsp = httpx.post(f"{with_server}/auth", json=dict(username=u, password=p))
     try:
-        return rsp.json()["access_token"]
+        tkn = rsp.json()["access_token"]
+        store_credentials(tkn)
+        return tkn
     except KeyError:
+        return None
+
+
+def store_credentials(token, relative_path=".nb_workflows/"):
+    home = str(Path.home())
+    Path(f"{home}/{relative_path}").mkdir(parents=True, exist_ok=True)
+    with open(f"{home}/{relative_path}/credentials", "w", encoding="utf-8") as f:
+        f.write(token)
+
+
+def get_credentials(relative_path=".nb_workflows/") -> Union[str, None]:
+    home = str(Path.home())
+    Path(f"{home}/{relative_path}").mkdir(parents=True, exist_ok=True)
+    try:
+        with open(f"{home}/{relative_path}/credentials", "r", encoding="utf-8") as f:
+            data = f.read()
+            return data
+    except FileNotFoundError:
         return None
