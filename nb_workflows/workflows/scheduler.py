@@ -3,12 +3,6 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
-from nb_workflows.conf import Config
-from nb_workflows.db.sync import SQL
-from nb_workflows.hashes import Hash96
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import HistoryResult, NBTask, ScheduleData
-from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
@@ -17,6 +11,13 @@ from rq_scheduler import Scheduler
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
+
+from nb_workflows.conf import Config
+from nb_workflows.db.sync import SQL
+from nb_workflows.hashes import Hash96
+from nb_workflows.workflows.core import nb_job_executor
+from nb_workflows.workflows.entities import HistoryResult, NBTask, ScheduleData
+from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
@@ -37,10 +38,12 @@ def _create_or_update_schedule(jobid: str, task: NBTask, update=False):
         stmt = stmt.on_conflict_do_update(
             # constraint="crawlers_page_bucket_id_fkey",
             index_elements=["jobid"],
-            set_=dict(job_detail=task_dict,
-                      alias=task.alias,
-                      enabled=task.schedule.enabled,
-                      updated_at=datetime.utcnow())
+            set_=dict(
+                job_detail=task_dict,
+                alias=task.alias,
+                enabled=task.schedule.enabled,
+                updated_at=datetime.utcnow(),
+            ),
         )
 
     return stmt
@@ -186,8 +189,7 @@ class SchedulerExecutor:
     async def get_by_alias(self, session, alias) -> Union[Dict[str, Any], None]:
         if alias:
             stmt = (
-                select(ScheduleModel).where(
-                    ScheduleModel.alias == alias).limit(1)
+                select(ScheduleModel).where(ScheduleModel.alias == alias).limit(1)
             )
             result = await session.execute(stmt)
             row = result.scalar()
@@ -239,8 +241,7 @@ class SchedulerExecutor:
         try:
             await session.commit()
         except IntegrityError:
-            raise KeyError(
-                "An integrity error when saving the workflow into db")
+            raise KeyError("An integrity error when saving the workflow into db")
 
         if task.schedule.cron:
             await self.run_async(self._cron2redis, jobid, task)
@@ -251,8 +252,7 @@ class SchedulerExecutor:
 
     def _interval2redis(self, jobid: str, task: NBTask):
         interval = task.schedule
-        start_in_dt = datetime.utcnow() \
-            + timedelta(minutes=interval.start_in_min)
+        start_in_dt = datetime.utcnow() + timedelta(minutes=interval.start_in_min)
 
         self.scheduler.schedule(
             id=jobid,
@@ -306,11 +306,15 @@ class SchedulerExecutor:
         stmt = delete(table).where(table.c.jobid == jobid)
         await session.execute(stmt)
 
-    async def get_last_history(self, session, jobid: str) -> Union[HistoryResult, None]:
-        stmt = select(HistoryModel)\
-            .where(HistoryModel.jobid == jobid)\
-            .order_by(HistoryModel.created_at.desc())\
+    async def get_last_history(
+        self, session, jobid: str
+    ) -> Union[HistoryResult, None]:
+        stmt = (
+            select(HistoryModel)
+            .where(HistoryModel.jobid == jobid)
+            .order_by(HistoryModel.created_at.desc())
             .limit(1)
+        )
         r = await session.execute(stmt)
         result = r.scalar()
         if not result:

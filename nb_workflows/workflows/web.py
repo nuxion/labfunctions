@@ -4,17 +4,21 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
-from nb_workflows.conf import Config
-from nb_workflows.utils import get_query_param, list_workflows, run_async
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import NBTask
-from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
-                                              scheduler_dispatcher)
 from redis import Redis
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
+
+from nb_workflows.conf import Config
+from nb_workflows.utils import get_query_param, list_workflows, run_async
+from nb_workflows.workflows.core import nb_job_executor
+from nb_workflows.workflows.entities import NBTask
+from nb_workflows.workflows.scheduler import (
+    QueueExecutor,
+    SchedulerExecutor,
+    scheduler_dispatcher,
+)
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
 
@@ -243,8 +247,9 @@ async def update_notebook_schedule(request):
         try:
             rsp = await scheduler.schedule(session, request.json, update=True)
         except KeyError:
-            return json(dict(msg="An integrity error persisting the job"),
-                        status=503)
+            return json(
+                dict(msg="An integrity error persisting the job"), status=503
+            )
 
     return json(dict(jobid=rsp), status=202)
 

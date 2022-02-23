@@ -1,8 +1,9 @@
+from redislite import Redis
+from rq import Queue
+
 from nb_workflows.workflows import scheduler
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 from nb_workflows.workflows.models import HistoryModel, ScheduleModel
-from redislite import Redis
-from rq import Queue
 
 from .factories import history_factory, schedule_factory
 

@@ -1,7 +1,7 @@
-
 import click
 import requests
 import toml
+
 from nb_workflows.conf import Config
 from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
@@ -34,13 +34,19 @@ def workflowscli():
 )
 @click.option("--web", default=Config.WORKFLOW_SERVICE, help="Web server")
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
-@click.option("--update", "-u", is_flag=True, default=False,
-              help="Updates workflows when push")
+@click.option(
+    "--update",
+    "-u",
+    is_flag=True,
+    default=False,
+    help="Updates workflows when push",
+)
 @click.option(
     "--remote", "-r", default=False, is_flag=True, help="execute remote"
 )
 @click.argument(
-    "action", type=click.Choice(["init", "push", "list", "exec", "delete", "login"])
+    "action",
+    type=click.Choice(["init", "push", "list", "exec", "delete", "login"]),
 )
 def workflows(from_file, web, remote, update, action, jobid):
     """Manage workflows"""
@@ -107,7 +113,7 @@ def workflows(from_file, web, remote, update, action, jobid):
 )
 @click.argument("jobid")
 def history(from_file, jobid):
-    """ Get the last exectuion of a workflow from the history """
+    """Get the last exectuion of a workflow from the history"""
     token = _get_token(from_file)
     c = client.from_file(from_file, token)
     r = c.history_last(jobid)
@@ -126,11 +132,9 @@ def history(from_file, jobid):
     help="toml file with the configuration",
 )
 @click.option("--jobid", "-J", help="Jobid to operate with")
-@click.argument(
-    "action", type=click.Choice(["status"])
-)
+@click.argument("action", type=click.Choice(["status"]))
 def rq(from_file, jobid, action):
-    """ Information of running jobs """
+    """Information of running jobs"""
     token = _get_token(from_file)
     c = client.from_file(from_file, token)
     if action == "status":
