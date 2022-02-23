@@ -4,20 +4,17 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
-from sanic import Blueprint, Sanic, exceptions
-from sanic.response import json
-from sanic_ext import openapi
-from sanic_jwt import protected
-
 from nb_workflows.conf import Config
 from nb_workflows.utils import get_query_param, list_workflows, run_async
 from nb_workflows.workflows.core import nb_job_executor
 from nb_workflows.workflows.entities import NBTask
-from nb_workflows.workflows.scheduler import (
-    QueueExecutor,
-    SchedulerExecutor,
-    scheduler_dispatcher,
-)
+from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
+                                              scheduler_dispatcher)
+from redis import Redis
+from sanic import Blueprint, Sanic, exceptions
+from sanic.response import json
+from sanic_ext import openapi
+from sanic_jwt import protected
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
 
@@ -49,8 +46,10 @@ class JobDetail:
 @workflows_bp.listener("before_server_start")
 def startserver(current_app, loop):
     _cfg = Config.rq2dict()
-    current_app.ctx.scheduler = SchedulerExecutor(_cfg)
-    current_app.ctx.Q = QueueExecutor(_cfg)
+    redis = Redis(**_cfg)
+    current_app.ctx.rq_redis = redis
+    current_app.ctx.scheduler = SchedulerExecutor(redis)
+    current_app.ctx.Q = QueueExecutor(redis)
     # current_app.ctx.queue = queue_init(_cfg)
 
 
@@ -188,7 +187,6 @@ async def create_notebook_schedule(request):
     """
     Register a notebook workflow and schedule it
     """
-
     try:
         nb_task = NBTask(**request.json)
         if not nb_task.schedule:

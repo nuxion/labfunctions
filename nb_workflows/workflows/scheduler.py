@@ -3,6 +3,12 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
+from nb_workflows.conf import Config
+from nb_workflows.db.sync import SQL
+from nb_workflows.hashes import Hash96
+from nb_workflows.workflows.core import nb_job_executor
+from nb_workflows.workflows.entities import NBTask, ScheduleData
+from nb_workflows.workflows.models import ScheduleModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
@@ -10,13 +16,6 @@ from rq.registry import FailedJobRegistry, StartedJobRegistry
 from rq_scheduler import Scheduler
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
-
-from nb_workflows.conf import Config
-from nb_workflows.db.sync import SQL
-from nb_workflows.hashes import Hash96
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import NBTask, ScheduleData
-from nb_workflows.workflows.models import ScheduleModel
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
@@ -41,8 +40,9 @@ def scheduler_dispatcher(jobid):
     """
     db = SQL(Config.SQL)
     _cfg = Config.rq2dict()
-    scheduler = SchedulerExecutor(_cfg)
-    Q = QueueExecutor(_cfg)
+    redis = Redis(**_cfg)
+    scheduler = SchedulerExecutor(redis=redis)
+    Q = QueueExecutor(redis=redis)
 
     Session = db.sessionmaker()
 
@@ -71,9 +71,9 @@ def scheduler_dispatcher(jobid):
 class QueueExecutor:
     """A thin wrapper over the Queue object of rq"""
 
-    def __init__(self, redis, qname="default"):
-        self.redis = Redis(**redis)
-        self.Q = Queue(qname, connection=self.redis)
+    def __init__(self, redis: Redis, qname="default", is_async=True):
+        self.redis = redis
+        self.Q = Queue(qname, is_async=is_async, connection=self.redis) 
         self.registries = {
             "failed": FailedJobRegistry(name=qname, connection=self.redis),
             "started": StartedJobRegistry(name=qname, connection=self.redis),
@@ -129,8 +129,8 @@ class QueueExecutor:
 
 
 class SchedulerExecutor:
-    def __init__(self, redis, qname="default"):
-        self.redis = Redis(**redis)
+    def __init__(self, redis: Redis, qname="default"):
+        self.redis = redis
         self.Q = Queue(qname, connection=self.redis)
         # on_success=rq_job_ok, on_failure=rq_job_error)
         self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
@@ -160,7 +160,8 @@ class SchedulerExecutor:
     async def get_by_alias(self, session, alias) -> Union[Dict[str, Any], None]:
         if alias:
             stmt = (
-                select(ScheduleModel).where(ScheduleModel.alias == alias).limit(1)
+                select(ScheduleModel).where(
+                    ScheduleModel.alias == alias).limit(1)
             )
             result = await session.execute(stmt)
             row = result.scalar()

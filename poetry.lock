@@ -546,6 +546,32 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "factory-boy"
+version = "3.2.1"
+description = "A versatile test fixtures replacement based on thoughtbot's factory_bot for Ruby."
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+Faker = ">=0.7.0"
+
+[package.extras]
+dev = ["coverage", "django", "flake8", "isort", "pillow", "sqlalchemy", "mongoengine", "wheel (>=0.32.0)", "tox", "zest.releaser"]
+doc = ["sphinx", "sphinx-rtd-theme", "sphinxcontrib-spelling"]
+
+[[package]]
+name = "faker"
+version = "13.2.0"
+description = "Faker is a Python package that generates fake data for you."
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+python-dateutil = ">=2.4"
+
+[[package]]
 name = "filprofiler"
 version = "2021.12.2"
 description = "A memory profiler for data batch processing applications."
@@ -1825,6 +1851,18 @@ hiredis = ["hiredis (>=1.0.0)"]
 ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
 
 [[package]]
+name = "redislite"
+version = "6.0.674960"
+description = "Redis built into a python package"
+category = "dev"
+optional = false
+python-versions = ">=3.6.0"
+
+[package.dependencies]
+psutil = "*"
+redis = "*"
+
+[[package]]
 name = "regex"
 version = "2022.1.18"
 description = "Alternative regular expression module, to replace re."
@@ -2615,7 +2653,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "556fa225a618c0220935f3d2fdc5ef3a4bf4ccf707247ffbed202a44eb5f378e"
+content-hash = "25693f979f6f4bfb5a54ed01e93dd229c9c13e3d6c5d17321128eec4c22fb549"
 
 [metadata.files]
 aiodns = [
@@ -3110,6 +3148,14 @@ entrypoints = [
 et-xmlfile = [
     {file = "et_xmlfile-1.1.0-py3-none-any.whl", hash = "sha256:a2ba85d1d6a74ef63837eed693bcb89c3f752169b0e3e7ae5b16ca5e1b3deada"},
     {file = "et_xmlfile-1.1.0.tar.gz", hash = "sha256:8eb9e2bc2f8c97e37a2dc85a09ecdcdec9d8a396530a6d5a33b30b9a92da0c5c"},
+]
+factory-boy = [
+    {file = "factory_boy-3.2.1-py2.py3-none-any.whl", hash = "sha256:eb02a7dd1b577ef606b75a253b9818e6f9eaf996d94449c9d5ebb124f90dc795"},
+    {file = "factory_boy-3.2.1.tar.gz", hash = "sha256:a98d277b0c047c75eb6e4ab8508a7f81fb03d2cb21986f627913546ef7a2a55e"},
+]
+faker = [
+    {file = "Faker-13.2.0-py3-none-any.whl", hash = "sha256:206050b40d6dfb6efe8ccfbbb9866c56477c53edfdab83f80de3b59f38a88ce0"},
+    {file = "Faker-13.2.0.tar.gz", hash = "sha256:edb62f9511a0977abcea6a78e43b99d1f26c915d2142bbf4c6bf02a9bb597c7f"},
 ]
 filprofiler = [
     {file = "filprofiler-2021.12.2-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:43a0a9a7187ade3b1c71925461fd07c8fe04bad0c372c33e5a2639f47f4cf42c"},
@@ -4178,6 +4224,21 @@ pyzmq = [
 redis = [
     {file = "redis-4.1.4-py3-none-any.whl", hash = "sha256:04629f8e42be942c4f7d1812f2094568f04c612865ad19ad3ace3005da70631a"},
     {file = "redis-4.1.4.tar.gz", hash = "sha256:1d9a0cdf89fdd93f84261733e24f55a7bbd413a9b219fdaf56e3e728ca9a2306"},
+]
+redislite = [
+    {file = "redislite-6.0.674960-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:24c02a9b644d3397616989d93175a8b4c9940fbafe3a6b244c1513e0778c99d9"},
+    {file = "redislite-6.0.674960-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:c75a09b26ef05335e7276f416352f1af0db57e80cff25fe8aac38b92fffd0215"},
+    {file = "redislite-6.0.674960-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:f27402586a9639b66aeb59189e44d027065a71c7c01e56b701be865de8406fe8"},
+    {file = "redislite-6.0.674960-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ab26ec837b0c1a744e58288e2986c48b0c18773071efba5072117640e3795bd3"},
+    {file = "redislite-6.0.674960-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:937e4a200402590b02aff537a6327322162f02c0b8bf359e063ed680dc4f8bd3"},
+    {file = "redislite-6.0.674960-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:170eb1353e3ea56c58d58019029eb4797a24a4b9996dc8a8df2f774b66e54803"},
+    {file = "redislite-6.0.674960-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:10551f3c3acbb45e6b398120f4586d02cbf0a1499ede06b7817be6111c645089"},
+    {file = "redislite-6.0.674960-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:9859ca5d24bb0594a61c3cba87f62ec46934e3f539bb8cab373c53bcdb6f0a97"},
+    {file = "redislite-6.0.674960-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:66c927fae6df8e40d2f5ff16d47f3f4708ee62a37562394ebc18bacf8c99c034"},
+    {file = "redislite-6.0.674960-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:472abdf314ca20ba72e33864fd52405a8679a15433069180fba6c5baa3566918"},
+    {file = "redislite-6.0.674960-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:50e6c92dd07bc65dc64658b6bae2959d23e9e1ac85bfdb8214aab3ac8b30e807"},
+    {file = "redislite-6.0.674960-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:1ea50ae4da7ca65e618b5103bde77e0d27c0458c619a6c2f57d3069c04c2c5b3"},
+    {file = "redislite-6.0.674960.tar.gz", hash = "sha256:6ffc1c2233d5ca036f907e521ca8e0e0d5ce9957357e18de997332b4978357de"},
 ]
 regex = [
     {file = "regex-2022.1.18-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:34316bf693b1d2d29c087ee7e4bb10cdfa39da5f9c50fa15b07489b4ab93a1b5"},
