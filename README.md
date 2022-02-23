@@ -44,3 +44,9 @@ make rqscheduler
 - [Tensorflow metastore](https://www.tensorflow.org/tfx/guide/mlmd)
 - [Maintainable and collaborative pipelines](https://blog.jupyter.org/ploomber-maintainable-and-collaborative-pipelines-in-jupyter-acb3ad2101a7)
 
+### Alembic configuration
+- [version table per package](https://gist.github.com/miohtama/9088958fef0d37e5cb10)
+- [Alembic config inside of a package](https://github.com/openstack/neutron/blob/master/neutron/db/migration/alembic.ini)
+- [Distributing alembic files](https://stackoverflow.com/questions/42383400/python-packaging-alembic-migrations-with-setuptools)
+- [Command API](https://stackoverflow.com/questions/24622170/using-alembic-api-from-inside-application-code/35211383#35211383)
+
