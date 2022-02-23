@@ -2,14 +2,15 @@ from datetime import datetime
 from getpass import getpass
 
 import click
-from sqlalchemy import select
-
+from alembic import command
+from alembic.config import Config as AlembicConfig
 from nb_workflows.auth import users as users_mgt
 from nb_workflows.auth.models import GroupModel, UserModel
 from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
 from nb_workflows.utils import password_manager
 from nb_workflows.workflows.models import HistoryModel, ScheduleModel
+from sqlalchemy import select
 
 
 @click.group(chain=True)
@@ -20,18 +21,27 @@ def managercli():
     pass
 
 
+def alembic_ugprade(dburi, to="head"):
+    alembic_cfg = AlembicConfig('nb_workflows/db/alembic.ini')
+    alembic_cfg.set_main_option('sqlalchemy.url', dburi)
+    command.upgrade(alembic_cfg, to)
+
+
 @managercli.command()
 @click.option("--sql", "-s", default=Config.SQL, help="SQL Database")
-@click.argument("action", type=click.Choice(["create", "drop"]))
+@click.argument("action", type=click.Choice(["create", "drop", "upgrade"]))
 def db(sql, action):
     """Create or Drop tables from a database"""
     db = SQL(sql)
+    Config.SQL = sql
     if action == "create":
         db.create_all()
         click.echo("Created...")
     elif action == "drop":
         db.drop_all()
         click.echo("Droped...")
+    elif action == "upgrade":
+        alembic_ugprade(sql)
     else:
         click.echo("Wrong param...")
 
@@ -52,7 +62,8 @@ def users(sql, superuser, username, action):
 
         S = db.sessionmaker()
         with S() as session:
-            u = users_mgt.create_user(session, _u, _p, superuser, is_active=True)
+            u = users_mgt.create_user(
+                session, _u, _p, superuser, is_active=True)
             session.commit()
 
         click.echo(f"User {_u} created")
