@@ -9,8 +9,14 @@ RUN apt-get -y update \
     && apt-get install -y --no-install-recommends \
     build-essential \
     libopenblas-dev \
-    git \
-    && pip install --user -r /tmp/requirements.txt
+    git 
+    # && pip install --user -r /tmp/requirements.txt
+    # && python setup.py install 
+
+COPY --chown=root:root . /app/
+WORKDIR /app
+RUN python /app/setup.py install --user
+
 
 FROM python:3.8.10-slim as app
 LABEL maintener="Xavier Petit <nuxion@gmail.com>"
@@ -18,18 +24,14 @@ RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
     && apt-get update -y  \
     && apt-get install -y --no-install-recommends \
-    vim-tiny
-    # ssh openssh-client rsync libopenblas-base vim-tiny
+    vim-tiny \
+    && mkdir -p /app/workflows \
+    && mkdir -p /app/outputs \
+    && chown -R app:app /app
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
-COPY --chown=app:app . /app
-COPY --chown=app:app ./scripts/nb.bin /home/app/.local/bin/nb
 
 USER app
 WORKDIR /app
-# RUN mkdir /app/multiproc
-# ENV prometheus_multiproc_dir=multiproc
-# RUN python -m spacy download es_core_news_sm \
-# EXPOSE 3333
 ENV PATH=$PATH:/home/app/.local/bin
-ENV PYTHONPATH=/app
+# ENV PYTHONPATH=/app
 CMD ["nb"]
