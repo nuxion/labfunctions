@@ -1,5 +1,4 @@
 import click
-import requests
 import toml
 
 from nb_workflows.conf import Config
