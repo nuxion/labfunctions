@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 
 @dataclass
@@ -38,7 +38,9 @@ class NBTask:
     jobid: Optional[str] = None
     qname: str = "default"
     timeout: int = 10800  # secs 3h default
-    notificate: bool = False
+    notifications_ok: Optional[List[str]] = None
+    notifications_fail: Optional[List[str]] = None
+    # notifications: 
     schedule: Optional[ScheduleData] = None
 
 

@@ -92,6 +92,8 @@ pycallgraph2 = "^1.1.3"
 black = "^22.1.0"
 Sphinx = "^4.4.0"
 sphinx-autobuild = "^2021.3.14"
+redislite = "^6.0.674960"
+factory-boy = "^3.2.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

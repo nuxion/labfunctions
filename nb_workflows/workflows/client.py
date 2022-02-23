@@ -82,6 +82,11 @@ class NBClient:
                 )
                 if refresh_workflows:
                     task.jobid = r.jobid
+            elif r.status_code == 401:
+                print(
+                    "Auth failed"
+                )
+                    
 
         if refresh_workflows:
             self.write()

@@ -1,9 +1,9 @@
 from dataclasses import asdict
 
 from discord_webhook import DiscordWebhook
-
 from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
+from nb_workflows.workflows.entities import ExecutionResult, NBTask
 from nb_workflows.workflows.models import HistoryModel
 
 _EMOJI_ERROR = "🤬"
@@ -63,7 +63,8 @@ def rq_job_error(job, connection, type, value, traceback):
     send_discord_error(msg=f"{job.id} failed. {name}")
 
 
-def job_history_register(execution_result, nb_task):
+def job_history_register(execution_result: ExecutionResult,
+                         nb_task: NBTask):
     """run inside of the nb_job_executor"""
     db = SQL(Config.SQL)
 
@@ -72,9 +73,6 @@ def job_history_register(execution_result, nb_task):
     status = 0
     if execution_result.error:
         status = -1
-        send_discord_error(
-            msg=f"{execution_result.executionid} failed. { execution_result.name }"
-        )
 
     row = HistoryModel(
         jobid=nb_task.jobid,
@@ -89,5 +87,13 @@ def job_history_register(execution_result, nb_task):
     session.commit()
     session.close()
 
-    if nb_task.notificate and status == 0:
-        send_discord_ok(msg=f"{execution_result.executionid} finished ok")
+    if status == 0 and nb_task.notifications_ok:
+        # send_notification
+        # send_discord_ok(msg=f"{execution_result.executionid} finished ok")
+        pass
+    if status != 0 and nb_task.notifications_fail:
+        # send_discord_error(
+        #    msg=f"{execution_result.executionid} failed. { execution_result.name }"
+        # )
+        # send notification
+        pass
