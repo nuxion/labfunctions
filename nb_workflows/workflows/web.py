@@ -90,6 +90,19 @@ def list_nb_workflows(request):
     return json(nb_files)
 
 
+@workflows_bp.get("/notebooks/_upload")
+@protected()
+def upload_notebook(request):
+    """
+    Upload a notebook file to the server
+    """
+    # pylint: disable=unused-argument
+
+    nb_files = list_workflows()
+
+    return json(nb_files)
+
+
 @workflows_bp.get("/rqjobs/<jobid>")
 @openapi.parameter("jobid", str, "path")
 @protected()
@@ -206,6 +219,36 @@ async def create_notebook_schedule(request):
     return json(dict(jobid=rsp), status=201)
 
 
+@workflows_bp.put("/schedule")
+@openapi.body({"application/json": NBTask})
+@openapi.response(202, {"jobid": str}, "Notebook Workflow accepted")
+@openapi.response(400, {"msg": str}, description="wrong params")
+@openapi.response(503, {"msg": str}, description="Error persiting the job")
+@protected()
+async def update_notebook_schedule(request):
+    """
+    Register a notebook workflow and schedule it
+    """
+    try:
+        nb_task = NBTask(**request.json)
+        if not nb_task.schedule:
+            return json(dict(msg="schedule information is needed"), 400)
+    except TypeError:
+        return json(dict(msg="wrong params"), 400)
+
+    session = request.ctx.session
+    scheduler = _get_scheduler()
+
+    async with session.begin():
+        try:
+            rsp = await scheduler.schedule(session, request.json, update=True)
+        except KeyError:
+            return json(dict(msg="An integrity error persisting the job"),
+                        status=503)
+
+    return json(dict(jobid=rsp), status=202)
+
+
 @workflows_bp.delete("/schedule/<jobid>")
 @openapi.parameter("jobid", str, "path")
 @protected()
@@ -259,3 +302,21 @@ async def schedule_cancel_all(request):
     await run_async(scheduler.cancel_all)
 
     return json(dict(msg="done"), 200)
+
+
+@workflows_bp.get("/history/<jobid>")
+@openapi.parameter("jobid", str, "path")
+@openapi.response(200, "Found")
+@openapi.response(404, dict(msg=str), "Not Found")
+@protected()
+async def history_last_job(request, jobid):
+    """Delete a job from RQ and DB"""
+    # pylint: disable=unused-argument
+    scheduler = _get_scheduler()
+    session = request.ctx.session
+    async with session.begin():
+        h = await scheduler.get_last_history(session, jobid)
+        if h:
+            return json(asdict(h), 200)
+
+        return json(dict(msg="not found"), 404)

@@ -1,5 +1,5 @@
 import asyncio
-from dataclasses import dataclass
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
@@ -7,17 +7,43 @@ from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
 from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import NBTask, ScheduleData
-from nb_workflows.workflows.models import ScheduleModel
+from nb_workflows.workflows.entities import HistoryResult, NBTask, ScheduleData
+from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
 from rq.registry import FailedJobRegistry, StartedJobRegistry
 from rq_scheduler import Scheduler
 from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
+
+
+def _create_or_update_schedule(jobid: str, task: NBTask, update=False):
+    task_dict = asdict(task)
+
+    stmt = insert(ScheduleModel.__table__).values(
+        jobid=jobid,
+        nb_name=task.nb_name,
+        alias=task.alias,
+        job_detail=task_dict,
+        enabled=task.schedule.enabled,
+    )
+    if not update:
+        stmt = stmt.on_conflict_do_nothing()
+    else:
+        stmt = stmt.on_conflict_do_update(
+            # constraint="crawlers_page_bucket_id_fkey",
+            index_elements=["jobid"],
+            set_=dict(job_detail=task_dict,
+                      alias=task.alias,
+                      enabled=task.schedule.enabled,
+                      updated_at=datetime.utcnow())
+        )
+
+    return stmt
 
 
 def get_job_from_db(session, jobid) -> Union[ScheduleModel, None]:
@@ -73,7 +99,7 @@ class QueueExecutor:
 
     def __init__(self, redis: Redis, qname="default", is_async=True):
         self.redis = redis
-        self.Q = Queue(qname, is_async=is_async, connection=self.redis) 
+        self.Q = Queue(qname, is_async=is_async, connection=self.redis)
         self.registries = {
             "failed": FailedJobRegistry(name=qname, connection=self.redis),
             "started": StartedJobRegistry(name=qname, connection=self.redis),
@@ -180,25 +206,41 @@ class SchedulerExecutor:
         rsp = await loop.run_in_executor(None, func, *args, **kwargs)
         return rsp
 
-    async def schedule(self, session, data_dict) -> str:
+    async def register(self, session, task: NBTask, update=False):
+        jobid = self.jobid()
+        data_dict = asdict(task)
+
+        if update:
+            j = await self.get_jobid_db(session, task.jobid)
+            if j:
+                jobid = j["jobid"]
+
+            stmt = _create_or_update_schedule(jobid, task, update=True)
+            await session.execute(stmt)
+            await self.run_async(self.cancel, jobid)
+        else:
+            sch = ScheduleModel(
+                jobid=jobid,
+                nb_name=task.nb_name,
+                alias=task.alias,
+                job_detail=data_dict,
+                enabled=task.schedule.enabled,
+            )
+            session.add(sch)
+        return jobid
+
+    async def schedule(self, session, data_dict, update=False) -> str:
         schedule_data = data_dict["schedule"]
         task = NBTask(**data_dict)
         task.schedule = ScheduleData(**schedule_data)
-        jobid = self.jobid()
 
-        sch = ScheduleModel(
-            jobid=jobid,
-            nb_name=task.nb_name,
-            alias=task.schedule.alias,
-            job_detail=data_dict,
-            enabled=task.schedule.enabled,
-        )
-        session.add(sch)
-        # check error
+        jobid = await self.register(session, task, update=update)
+
         try:
             await session.commit()
         except IntegrityError:
-            raise KeyError("NB workflow already exist")
+            raise KeyError(
+                "An integrity error when saving the workflow into db")
 
         if task.schedule.cron:
             await self.run_async(self._cron2redis, jobid, task)
@@ -209,7 +251,8 @@ class SchedulerExecutor:
 
     def _interval2redis(self, jobid: str, task: NBTask):
         interval = task.schedule
-        start_in_dt = datetime.utcnow() + timedelta(minutes=interval.start_in_min)
+        start_in_dt = datetime.utcnow() \
+            + timedelta(minutes=interval.start_in_min)
 
         self.scheduler.schedule(
             id=jobid,
@@ -262,3 +305,27 @@ class SchedulerExecutor:
         table = ScheduleModel.__table__
         stmt = delete(table).where(table.c.jobid == jobid)
         await session.execute(stmt)
+
+    async def get_last_history(self, session, jobid: str) -> Union[HistoryResult, None]:
+        stmt = select(HistoryModel)\
+            .where(HistoryModel.jobid == jobid)\
+            .order_by(HistoryModel.created_at.desc())\
+            .limit(1)
+        r = await session.execute(stmt)
+        result = r.scalar()
+        if not result:
+            return None
+
+        return HistoryResult(
+            jobid=jobid,
+            executionid=result.executionid,
+            status=result.status,
+            result=result.result,
+            created_at=result.created_at.isoformat(),
+        )
+
+        # if not result:
+        #     j = self.Q.fetch_job(jobid)
+        #     if not j:
+        #         return None
+        #     status = j.get_status()

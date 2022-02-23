@@ -38,7 +38,6 @@ def schedule_factory(session):
         jobid = factory.Faker("text", max_nb_chars=24)
         alias = factory.Faker("text", max_nb_chars=24)
         nb_name = factory.Faker("text", max_nb_chars=24)
-        description = factory.Faker("text", max_nb_chars=24)
         job_detail = {}
         enabled = True
     return ScheduleFactory

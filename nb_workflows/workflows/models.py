@@ -58,7 +58,6 @@ class ScheduleModel(Base, SerializerMixin):
     jobid = Column(String(24), index=True, unique=True)
     alias = Column(String(), index=True, unique=True, nullable=True)
     nb_name = Column(String(), nullable=False)
-    description = Column(String(), nullable=True)
     job_detail = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
 

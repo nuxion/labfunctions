@@ -85,14 +85,29 @@ class NBClient:
             jobid=r.json().get("jobid"),
         )
 
-    def push_all(self, refresh_workflows=True):
+    def update_workflow(self, t: NBTask) -> WFCreateRsp:
+        r = httpx.put(f"{self._addr}/workflows/schedule",
+                      json=asdict(t),
+                      headers=self._headers)
+
+        return WFCreateRsp(
+            status_code=r.status_code,
+            msg=r.json().get("msg"),
+            jobid=r.json().get("jobid"),
+        )
+
+    def push_all(self, refresh_workflows=True, update=False):
+        _workflows = []
         for task in self._workflows:
-            r = self.create_workflow(task)
+            if update:
+                r = self.update_workflow(task)
+            else:
+                r = self.create_workflow(task)
             if r.status_code == 200:
-                print(f"Workflow {task.schedule['alias']} already exist")
+                print(f"Workflow {task.alias} already exist")
             elif r.status_code == 201:
                 print(
-                    f"Workflow {task.schedule['alias']} created. Jobid: {r.jobid}"
+                    f"Workflow {task.alias} created. Jobid: {r.jobid}"
                 )
                 if refresh_workflows:
                     task.jobid = r.jobid
@@ -100,8 +115,10 @@ class NBClient:
                 print(
                     "Auth failed"
                 )
+            _workflows.append(task)
 
         if refresh_workflows:
+            self._workflows = _workflows
             self.write()
 
     def list_scheduled(self) -> List[ScheduleListRsp]:
@@ -128,14 +145,24 @@ class NBClient:
                          headers=self._headers)
         return r.status_code
 
+    def history_last(self, jobid):
+        r = httpx.get(f"{self._addr}/workflows/history/{jobid}",
+                      headers=self._headers)
+        return r.json()
+
+    def rq_status(self, jobid):
+        r = httpx.get(f"{self._addr}/workflows/rqjobs/{jobid}",
+                      headers=self._headers)
+        return r.json()
+
 
 def init(url_service, version="0.1.0") -> NBClient:
     t = NBTask(
         nb_name="test_workflow",
+        alias="notebook.example",
         description="An example of how to configure a specific workflow",
         params=dict(TIMEOUT=5),
         schedule=ScheduleData(
-            alias="notebook.example",
             repeat=1,
             interval=10,
         ),
