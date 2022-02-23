@@ -1,6 +1,7 @@
 from dataclasses import asdict
 
 from discord_webhook import DiscordWebhook
+
 from nb_workflows.conf import Config
 from nb_workflows.db.sync import SQL
 from nb_workflows.workflows.entities import ExecutionResult, NBTask
@@ -63,8 +64,7 @@ def rq_job_error(job, connection, type, value, traceback):
     send_discord_error(msg=f"{job.id} failed. {name}")
 
 
-def job_history_register(execution_result: ExecutionResult,
-                         nb_task: NBTask):
+def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
     """run inside of the nb_job_executor"""
     db = SQL(Config.SQL)
 

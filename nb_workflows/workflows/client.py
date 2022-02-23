@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Union
 
 import httpx
 import toml
+
 from nb_workflows.conf import Config
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
@@ -51,8 +52,7 @@ class ScheduleListRsp:
 def validate_credentials(websrv, token) -> bool:
     _headers = {"Authorization": f"Bearer {token}"}
 
-    r = httpx.get(f"{websrv}/auth/verify",
-                  headers=_headers)
+    r = httpx.get(f"{websrv}/auth/verify", headers=_headers)
     if r.status_code == 200:
         return True
     if r.status_code == 401:
@@ -75,9 +75,11 @@ class NBClient:
             f.write(_dump)
 
     def create_workflow(self, t: NBTask) -> WFCreateRsp:
-        r = httpx.post(f"{self._addr}/workflows/schedule",
-                       json=asdict(t),
-                       headers=self._headers)
+        r = httpx.post(
+            f"{self._addr}/workflows/schedule",
+            json=asdict(t),
+            headers=self._headers,
+        )
 
         return WFCreateRsp(
             status_code=r.status_code,
@@ -85,28 +87,42 @@ class NBClient:
             jobid=r.json().get("jobid"),
         )
 
-    def push_all(self, refresh_workflows=True):
+    def update_workflow(self, t: NBTask) -> WFCreateRsp:
+        r = httpx.put(
+            f"{self._addr}/workflows/schedule",
+            json=asdict(t),
+            headers=self._headers,
+        )
+
+        return WFCreateRsp(
+            status_code=r.status_code,
+            msg=r.json().get("msg"),
+            jobid=r.json().get("jobid"),
+        )
+
+    def push_all(self, refresh_workflows=True, update=False):
+        _workflows = []
         for task in self._workflows:
-            r = self.create_workflow(task)
+            if update:
+                r = self.update_workflow(task)
+            else:
+                r = self.create_workflow(task)
             if r.status_code == 200:
-                print(f"Workflow {task.schedule['alias']} already exist")
+                print(f"Workflow {task.alias} already exist")
             elif r.status_code == 201:
-                print(
-                    f"Workflow {task.schedule['alias']} created. Jobid: {r.jobid}"
-                )
+                print(f"Workflow {task.alias} created. Jobid: {r.jobid}")
                 if refresh_workflows:
                     task.jobid = r.jobid
             elif r.status_code == 401:
-                print(
-                    "Auth failed"
-                )
+                print("Auth failed")
+            _workflows.append(task)
 
         if refresh_workflows:
+            self._workflows = _workflows
             self.write()
 
     def list_scheduled(self) -> List[ScheduleListRsp]:
-        r = httpx.get(f"{self._addr}/workflows/schedule",
-                      headers=self._headers)
+        r = httpx.get(f"{self._addr}/workflows/schedule", headers=self._headers)
         data = [
             ScheduleListRsp(
                 nb_name=s["nb_name"],
@@ -119,23 +135,37 @@ class NBClient:
         return data
 
     def execute_remote(self, jobid) -> ScheduleExecRsp:
-        r = httpx.post(f"{self._addr}/workflows/schedule/{jobid}/_run",
-                       headers=self._headers)
+        r = httpx.post(
+            f"{self._addr}/workflows/schedule/{jobid}/_run", headers=self._headers
+        )
         return ScheduleExecRsp(r.status_code, executionid=r.json()["executionid"])
 
     def delete(self, jobid) -> int:
-        r = httpx.delete(f"{self._addr}/workflows/schedule/{jobid}",
-                         headers=self._headers)
+        r = httpx.delete(
+            f"{self._addr}/workflows/schedule/{jobid}", headers=self._headers
+        )
         return r.status_code
+
+    def history_last(self, jobid):
+        r = httpx.get(
+            f"{self._addr}/workflows/history/{jobid}", headers=self._headers
+        )
+        return r.json()
+
+    def rq_status(self, jobid):
+        r = httpx.get(
+            f"{self._addr}/workflows/rqjobs/{jobid}", headers=self._headers
+        )
+        return r.json()
 
 
 def init(url_service, version="0.1.0") -> NBClient:
     t = NBTask(
         nb_name="test_workflow",
+        alias="notebook.example",
         description="An example of how to configure a specific workflow",
         params=dict(TIMEOUT=5),
         schedule=ScheduleData(
-            alias="notebook.example",
             repeat=1,
             interval=10,
         ),
@@ -194,7 +224,9 @@ def get_credentials(relative_path=".nb_workflows/") -> Union[str, None]:
     home = str(Path.home())
     Path(f"{home}/{relative_path}").mkdir(parents=True, exist_ok=True)
     try:
-        with open(f"{home}/{relative_path}/credentials", "r", encoding="utf-8") as f:
+        with open(
+            f"{home}/{relative_path}/credentials", "r", encoding="utf-8"
+        ) as f:
             data = f.read()
             return data
     except FileNotFoundError:

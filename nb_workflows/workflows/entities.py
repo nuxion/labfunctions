@@ -1,12 +1,11 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class ScheduleData:
     """Used as generic structure when querying database"""
 
-    alias: Optional[str] = None
     start_in_min: int = 0
     repeat: Optional[int] = None
     cron: Optional[str] = None
@@ -34,13 +33,13 @@ class NBTask:
 
     nb_name: str
     params: Dict[str, Any]
+    alias: Optional[str] = None
     description: Optional[str] = None
     jobid: Optional[str] = None
     qname: str = "default"
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
-    # notifications: 
     schedule: Optional[ScheduleData] = None
 
 
@@ -83,3 +82,14 @@ class ExecContext:
     jobid: str
     executionid: str
     execution_dt: str
+
+
+@dataclass
+class HistoryResult:
+    jobid: str
+    # posible status: queued, started, deferred,
+    # finished, stopped, scheduled, canceled, failed.
+    status: int
+    result: Optional[ExecutionResult] = None
+    executionid: Optional[str] = None
+    created_at: Optional[str] = None
