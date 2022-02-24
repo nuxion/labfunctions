@@ -59,6 +59,7 @@ def db(sql, action):
 @click.argument("action", type=click.Choice(["create", "disable", "reset"]))
 def users(sql, superuser, username, action):
     """Manage users"""
+
     db = SQL(sql)
     if action == "create":
         _u = input("username: ")
@@ -110,6 +111,7 @@ def startproject(base_path, create_dirs):
     print(f" Starting project in {p.resolve()} ")
     print("="*60)
     print()
+
     p.mkdir(parents=True, exist_ok=True)
     root = pathlib.Path(base_path)
     render_to_file("settings.py.j2", str((p / "settings.py").resolve()))
@@ -117,6 +119,12 @@ def startproject(base_path, create_dirs):
         print(f" Dockerfile created")
         render_to_file("Dockerfile", str((root / "Dockerfile").resolve()),
                        data=settings.DOCKER_OPTIONS)
+
+    if settings.DOCKER_COMPOSE:
+        print(f" docker-compose created")
+        render_to_file("docker-compose.yml",
+                       str((root / "docker-compose.yml").resolve()),
+                       data=settings.DOCKER_COMPOSE)
 
     print(f" Makefile added")
     render_to_file("Makefile", str((root / "Makefile").resolve()))

@@ -12,7 +12,7 @@ RUN apt-get -y update \
     && pip install --user -r /tmp/requirements.txt
 
 FROM {{ data.image }} as app
-LABEL maintener={{ data.maintener }}
+LABEL maintener="{{ data.maintener }}"
 RUN groupadd app -g {{ data.user.gid }} \
     && useradd -m -d /home/app app -u {{ data.user.uid }} -g {{ data.user.gid }} \
     && apt-get update -y  \

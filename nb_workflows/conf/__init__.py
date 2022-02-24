@@ -1,17 +1,22 @@
 import importlib
-import logging
 import os
-from logging import NullHandler
 
 from .types import Settings
 
+# from logging import NullHandler
+
+
+GLOBAL_MODULE = "nb_workflows.conf.global_settings"
 ENVIRONMENT_VARIABLE = "NB_SETTINGS_MODULE"
 DEFAULT_MODULE = os.environ.get(
-    ENVIRONMENT_VARIABLE, "nb_workflows.conf.global_settings")
+    ENVIRONMENT_VARIABLE, "nb_app.settings")
 
 
 def load(settings_module=DEFAULT_MODULE) -> Settings:
-    mod = importlib.import_module(settings_module)
+    try:
+        mod = importlib.import_module(settings_module)
+    except ModuleNotFoundError:
+        mod = importlib.import_module(GLOBAL_MODULE)
     settings_dict = {}
     for m in dir(mod):
         if m.isupper():

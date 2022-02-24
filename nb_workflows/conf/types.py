@@ -29,6 +29,7 @@ class Settings:
     DISCORD_ERRORS: Optional[str] = None
     SETTINGS_MODULE: Optional[str] = None
     DOCKER_OPTIONS: Dict[str, Any] = None
+    DOCKER_COMPOSE: Dict[str, Any] = None
 
     def rq2dict(self):
         return dict(
