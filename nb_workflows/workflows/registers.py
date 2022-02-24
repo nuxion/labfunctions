@@ -1,67 +1,57 @@
 from dataclasses import asdict
 
-from discord_webhook import DiscordWebhook
-
 from nb_workflows.conf import settings
 from nb_workflows.db.sync import SQL
+from nb_workflows.notifications import (EMOJI_ERROR, EMOJI_OK, DiscordClient,
+                                        SlackCient)
 from nb_workflows.workflows.entities import ExecutionResult, NBTask
 from nb_workflows.workflows.models import HistoryModel
 
-_EMOJI_ERROR = "🤬"
-_EMOJI_OK = "👌"
 
+def send_discord_fail(msg):
+    txt = f"{EMOJI_ERROR} - {msg}"
 
-def send_discord_error(msg):
-    txt = f"{_EMOJI_ERROR} - {msg}"
-    webhook = DiscordWebhook(url=settings.DISCORD_EVENTS, content=txt)
-    webhook.execute()
+    dc = DiscordClient()
+
+    dc.send(settings.DISCORD_FAIL, txt)
 
 
 def send_discord_ok(msg):
-    txt = f"{_EMOJI_OK} - {msg}"
-    webhook = DiscordWebhook(url=settings.DISCORD_EVENTS, content=txt)
-    webhook.execute()
+    txt = f"{EMOJI_OK} - {msg}"
+
+    dc = DiscordClient()
+
+    dc.send(settings.DISCORD_OK, txt)
 
 
-def rq_job_ok(job, connection, result, *args, **kwargs):
-    """callback for RQ"""
-    db = SQL(settings.SQL)
-
-    result_data = asdict(result)
-
-    status = 0
-    if result.error:
-        send_discord_error(msg=f"{result.executionid} failed. {result.error}")
-        status = -1
-    row = HistoryModel(
-        executionid=job.id,
-        # jobid=result.alias,
-        name=result.name,
-        result=result_data,
-        status=status,
-    )
-    session = db.sessionmaker()()
-    session.add(row)
-    session.commit()
-    session.close()
+def send_slack_ok(msg):
+    txt = f"{EMOJI_OK} - {msg}"
+    sc = SlackCient(tkn=settings.SLACK_BOT_TOKEN)
+    sc.send(settings.SLACK_CHANNEL_OK, txt)
 
 
-def rq_job_error(job, connection, type, value, traceback):
-    """callback for RQ"""
-    db = SQL(settings.SQL)
+def send_slack_fail(msg):
+    txt = f"{EMOJI_OK} - {msg}"
+    sc = SlackCient(tkn=settings.SLACK_BOT_TOKEN)
+    sc.send(settings.SLACK_CHANNEL_FAIL, txt)
 
-    data = dict(value=str(value), type=str(type), traceback=str(traceback))
-    name = "error"
-    if job.params:
-        name = job.params[0].get("name", name)
 
-    row = HistoryModel(executionid=job.id, name=name, result=data, status=-2)
-    session = db.sessionmaker()()
-    session.add(row)
-    session.commit()
-    session.close()
+def send_ok(medium, msg):
+    if medium == "slack":
+        send_slack_ok(msg)
+    elif medium == "discord":
+        send_discord_ok(msg)
+    else:
+        print("Wrong medium for notifications")
 
-    send_discord_error(msg=f"{job.id} failed. {name}")
+
+def send_fail(medium, msg):
+    if medium == "slack":
+        send_slack_fail(msg)
+    elif medium == "discord":
+        send_discord_fail(msg)
+    else:
+        print("Wrong medium for notifications")
 
 
 def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
@@ -88,12 +78,15 @@ def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
     session.close()
 
     if status == 0 and nb_task.notifications_ok:
-        # send_notification
-        # send_discord_ok(msg=f"{execution_result.executionid} finished ok")
-        pass
+        for medium in nb_task.notifications_ok:
+            send_ok(medium, (f"{nb_task.jobid} Executed OK in "
+                             f"{execution_result.elapsed_secs} secs. "
+                             f"NB: {execution_result.name} "
+                             f"Alias: {nb_task.alias}."))
+
     if status != 0 and nb_task.notifications_fail:
-        # send_discord_error(
-        #    msg=f"{execution_result.executionid} failed. { execution_result.name }"
-        # )
-        # send notification
-        pass
+        for medium in nb_task.notifications_fail:
+            send_fail(medium, (f"{nb_task.jobid} FAILED in "
+                               f"{execution_result.elapsed_secs} secs. "
+                               f"NB: {execution_result.name} "
+                               f"Alias: {nb_task.alias}."))

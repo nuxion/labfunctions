@@ -26,8 +26,8 @@ class NBTask:
     :param jobid: jobid from ScheduleModel
     :param timeout: time in secs to wait from the start of the task
     to mark the task as failed.
-    :param notificate: by default if the job fails it will send a
-    notification though discord,
+    :param notifications_ok: If ok send a notification to discord or slack.
+    :param notifications_fail: If not ok, send notification to discord or slack.
     but internally the task also send a notification if the user wants.
     """
 
