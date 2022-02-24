@@ -7,7 +7,6 @@ from typing import Dict, List, Optional, Union
 import httpx
 import toml
 
-from nb_workflows.conf import Config
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
 

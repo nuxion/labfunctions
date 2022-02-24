@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 import papermill as pm
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import today_string
 from nb_workflows.workflows.entities import (
@@ -17,8 +17,8 @@ from nb_workflows.workflows.entities import (
 )
 from nb_workflows.workflows.registers import job_history_register
 
-_NB_OUTPUT = f"{Config.BASE_PATH}/{Config.NB_OUTPUT}"
-_NB_WORKFLOWS = f"{Config.BASE_PATH}/{Config.NB_WORKFLOWS}"
+_NB_OUTPUT = f"{settings.BASE_PATH}/{settings.NB_OUTPUT}"
+_NB_WORKFLOWS = f"{settings.BASE_PATH}/{settings.NB_WORKFLOWS}"
 
 
 def build_workflow_name_path(workflow_dir, workflow_name):

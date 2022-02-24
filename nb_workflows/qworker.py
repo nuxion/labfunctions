@@ -2,21 +2,22 @@ import os
 import sys
 import time
 
-# from multiprocessing import Pool from db.sync import SQL
-from multiprocessing import Pool
-
-from loky import get_reusable_executor, process_executor
+from loky import get_reusable_executor
 from redis import Redis
 from rq import Connection, Worker
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 
-sys.path.append(Config.BASE_PATH)
+# from multiprocessing import Pool from db.sync import SQL
+# from multiprocessing import Pool
+
+
+sys.path.append(settings.BASE_PATH)
 
 
 def worker(params):
 
-    cfg = Config.rq2dict()
+    cfg = settings.rq2dict()
     redis = Redis(**cfg)
     pid = os.getpid()
 
@@ -36,9 +37,13 @@ def error():
 
 def run_workers(qnames, workers):
 
-    _executor = get_reusable_executor(max_workers=workers, kill_workers=True)
-    _results = [_executor.submit(worker, qnames) for _ in range(workers)]
-    print(len(_results))
+    if workers > 1:
+        _executor = get_reusable_executor(
+            max_workers=workers, kill_workers=True)
+        _results = [_executor.submit(worker, qnames) for _ in range(workers)]
+        print(len(_results))
+    else:
+        worker(qnames)
 
 
 if __name__ == "__main__":
@@ -46,5 +51,6 @@ if __name__ == "__main__":
     # similar to rq worker
 
     qs = sys.argv[1:] or ["default"]
-    executor = get_reusable_executor(max_workers=3, timeout=2, kill_workers=True)
+    executor = get_reusable_executor(
+        max_workers=3, timeout=2, kill_workers=True)
     results = [executor.submit(worker, qs) for _ in range(3)]

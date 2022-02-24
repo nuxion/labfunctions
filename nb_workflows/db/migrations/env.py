@@ -2,9 +2,13 @@ from logging.config import fileConfig
 
 from alembic import context
 from nb_workflows.db.common import Base
-from nb_workflows.workflows.models import HistoryModel, ScheduleModel
+# from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 from sqlalchemy import engine_from_config, pool
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
+import importlib
+
+wf_mod = importlib.import_module("nb_workflows.workflows.models")
+auth_mod = importlib.import_module("nb_workflows.auth.models")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -59,7 +63,7 @@ def run_migrations_online():
 
     """
     cfg = config.get_section(config.config_ini_section)
-    cfg['sqlalchemy.url'] = Config.SQL
+    cfg['sqlalchemy.url'] = settings.SQL
 
     connectable = engine_from_config(
         cfg,

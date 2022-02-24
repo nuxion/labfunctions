@@ -4,7 +4,7 @@ import pytest
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
 from nb_workflows.workflows.models import HistoryModel, ScheduleModel

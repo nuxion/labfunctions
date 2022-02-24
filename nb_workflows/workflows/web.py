@@ -10,7 +10,7 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.utils import get_query_param, list_workflows, run_async
 from nb_workflows.workflows.core import nb_job_executor
 from nb_workflows.workflows.entities import NBTask
@@ -49,7 +49,7 @@ class JobDetail:
 
 @workflows_bp.listener("before_server_start")
 def startserver(current_app, loop):
-    _cfg = Config.rq2dict()
+    _cfg = settings.rq2dict()
     redis = Redis(**_cfg)
     current_app.ctx.rq_redis = redis
     current_app.ctx.scheduler = SchedulerExecutor(redis)

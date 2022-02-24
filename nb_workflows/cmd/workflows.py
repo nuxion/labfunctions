@@ -1,7 +1,7 @@
 import click
 import toml
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
 
@@ -31,7 +31,7 @@ def workflowscli():
     default="workflows.toml",
     help="toml file with the configuration",
 )
-@click.option("--web", default=Config.WORKFLOW_SERVICE, help="Web server")
+@click.option("--web", default=settings.WORKFLOW_SERVICE, help="Web server")
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
 @click.option(
     "--update",
@@ -52,7 +52,7 @@ def workflows(from_file, web, remote, update, action, jobid):
 
     if action == "init":
         if remote:
-            token = Config.CLIENT_TOKEN or client.login_cli(web)
+            token = settings.CLIENT_TOKEN or client.login_cli(web)
             c = client.from_remote(web, token)
             c.write()
         else:

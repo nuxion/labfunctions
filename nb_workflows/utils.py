@@ -12,7 +12,7 @@ from time import time
 import redis
 from rq import Queue
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.hashes import PasswordScript
 
 _formats = {"hours": "%Y%m%d.%H%M%S", "day": "%Y%m%d", "month": "%Y%m"}
@@ -20,7 +20,7 @@ _formats = {"hours": "%Y%m%d.%H%M%S", "day": "%Y%m%d", "month": "%Y%m"}
 
 def list_workflows():
     notebooks = []
-    files = glob(f"{Config.BASE_PATH}/{Config.NB_WORKFLOWS}*")
+    files = glob(f"{settings.BASE_PATH}/{settings.NB_WORKFLOWS}*")
     for x in files:
         if ".ipynb" or ".py" in x:
             notebooks.append(x.split("/")[-1].split(".")[0])
@@ -140,11 +140,11 @@ def flatten_list(list_):
     return [item for sublist in list_ for item in sublist]
 
 
-def set_logger(name: str, level=Config.LOGLEVEL):
-    l = logging.getLogger(name)
+def set_logger(name: str, level=settings.LOGLEVEL):
+    logger = logging.getLogger(name)
     _level = getattr(logging, level)
-    l.setLevel(_level)
-    return l
+    logger.setLevel(_level)
+    return logger
 
 
 def Timeit(f):
@@ -187,5 +187,5 @@ def create_redis_client(fullurl, decode_responses=True) -> redis.Redis:
 
 
 def password_manager() -> PasswordScript:
-    s = Config.SALT
+    s = settings.SALT
     return PasswordScript(salt=s.encode("utf-8"))
