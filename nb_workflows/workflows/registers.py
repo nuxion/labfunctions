@@ -2,7 +2,7 @@ from dataclasses import asdict
 
 from discord_webhook import DiscordWebhook
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.db.sync import SQL
 from nb_workflows.workflows.entities import ExecutionResult, NBTask
 from nb_workflows.workflows.models import HistoryModel
@@ -13,19 +13,19 @@ _EMOJI_OK = "👌"
 
 def send_discord_error(msg):
     txt = f"{_EMOJI_ERROR} - {msg}"
-    webhook = DiscordWebhook(url=Config.DISCORD_EVENTS, content=txt)
+    webhook = DiscordWebhook(url=settings.DISCORD_EVENTS, content=txt)
     webhook.execute()
 
 
 def send_discord_ok(msg):
     txt = f"{_EMOJI_OK} - {msg}"
-    webhook = DiscordWebhook(url=Config.DISCORD_EVENTS, content=txt)
+    webhook = DiscordWebhook(url=settings.DISCORD_EVENTS, content=txt)
     webhook.execute()
 
 
 def rq_job_ok(job, connection, result, *args, **kwargs):
     """callback for RQ"""
-    db = SQL(Config.SQL)
+    db = SQL(settings.SQL)
 
     result_data = asdict(result)
 
@@ -48,7 +48,7 @@ def rq_job_ok(job, connection, result, *args, **kwargs):
 
 def rq_job_error(job, connection, type, value, traceback):
     """callback for RQ"""
-    db = SQL(Config.SQL)
+    db = SQL(settings.SQL)
 
     data = dict(value=str(value), type=str(type), traceback=str(traceback))
     name = "error"
@@ -66,7 +66,7 @@ def rq_job_error(job, connection, type, value, traceback):
 
 def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
     """run inside of the nb_job_executor"""
-    db = SQL(Config.SQL)
+    db = SQL(settings.SQL)
 
     result_data = asdict(execution_result)
 

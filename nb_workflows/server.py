@@ -1,13 +1,12 @@
 from contextvars import ContextVar
 
-import aioredis
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
 from sanic_jwt import Initialize
 
 from nb_workflows.auth import users
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.db.nosync import AsyncSQL
 
 
@@ -19,7 +18,7 @@ app = Sanic("nb_workflows")
 Initialize(
     app,
     authenticate=users.authenticate_web,
-    secret=Config.SECRET_KEY,
+    secret=settings.SECRET_KEY,
 )
 
 
@@ -36,7 +35,7 @@ app.ext.openapi.add_security_scheme(
 app.ext.openapi.secured()
 app.ext.openapi.secured("token")
 
-db = AsyncSQL(Config.ASQL)
+db = AsyncSQL(settings.ASQL)
 _base_model_session_ctx = ContextVar("session")
 
 
@@ -52,10 +51,10 @@ def _parse_page_limit(request, def_pg="1", def_lt="100"):
 @app.listener("before_server_start")
 async def startserver(current_app, loop):
     """Initialization of the redis and sqldb clients"""
-    if Config.WEB_REDIS:
-        current_app.ctx.redis = aioredis.from_url(
-            Config.WEB_REDIS, decode_responses=True
-        )
+    # if settings.WEB_REDIS:
+    #    current_app.ctx.redis = aioredis.from_url(
+    #        settings.WEB_REDIS, decode_responses=True
+    #    )
     current_app.ctx.db = db
     await current_app.ctx.db.init()
 
@@ -63,7 +62,7 @@ async def startserver(current_app, loop):
 @app.listener("after_server_stop")
 async def shutdown(current_app, loop):
     await current_app.ctx.db.engine.dispose()
-    await current_app.ctx.redis.close()
+    # await current_app.ctx.redis.close()
 
 
 @app.middleware("request")

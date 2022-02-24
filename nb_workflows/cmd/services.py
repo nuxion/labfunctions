@@ -1,6 +1,6 @@
 import click
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.utils import init_blueprints
 
 
@@ -43,9 +43,9 @@ def web(host, port, workers, apps, auto_reload, debug):
 
 
 @servicescli.command()
-@click.option("--host", "-H", default=Config.RQ_REDIS_HOST, help="Redis host")
-@click.option("--port", "-p", default=Config.RQ_REDIS_PORT, help="Redis port")
-@click.option("--db", "-d", default=Config.RQ_REDIS_DB, help="Redis DB")
+@click.option("--host", "-H", default=settings.RQ_REDIS_HOST, help="Redis host")
+@click.option("--port", "-p", default=settings.RQ_REDIS_PORT, help="Redis port")
+@click.option("--db", "-d", default=settings.RQ_REDIS_DB, help="Redis DB")
 @click.option(
     "--interval", "-i", default=60, help="How often the scheduler checks for work"
 )

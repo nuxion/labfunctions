@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
 from nb_workflows.workflows.core import nb_job_executor
@@ -67,8 +67,8 @@ def scheduler_dispatcher(jobid):
     Also, this way of schedule allows dinamically changes to the workflow
     task because the params are got from the database.
     """
-    db = SQL(Config.SQL)
-    _cfg = Config.rq2dict()
+    db = SQL(settings.SQL)
+    _cfg = settings.rq2dict()
     redis = Redis(**_cfg)
     scheduler = SchedulerExecutor(redis=redis)
     Q = QueueExecutor(redis=redis)

@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 import cloudpickle
 import httpx
 
-from nb_workflows.conf import Config
+from nb_workflows.conf import settings
 from nb_workflows.utils import set_logger
 
 # from nb_workflows.workflows.core import build_context
@@ -78,9 +78,9 @@ def _restore_pickle(name, ctx: ExecContext):
 
 
 def _write_fileserver(name, data, ctx: ExecContext):
-    urlpath = f"{Config.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
+    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
     metapath = (
-        f"{Config.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
+        f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     )
     blob = cloudpickle.dumps(data)
     rsp = httpx.put(urlpath, content=blob)
@@ -92,9 +92,9 @@ def _write_fileserver(name, data, ctx: ExecContext):
 
 
 def _restore_fileserver(name, ctx: ExecContext):
-    urlpath = f"{Config.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
+    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
     metapath = (
-        f"{Config.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
+        f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     )
     data = None
     meta = None

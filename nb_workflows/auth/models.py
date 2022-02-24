@@ -1,33 +1,24 @@
 from datetime import datetime
 
-from sqlalchemy import (
-    BigInteger,
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-)
+from nb_workflows.db.common import Base
+from sqlalchemy import (BigInteger, Boolean, Column, DateTime, Float,
+                        ForeignKey, Integer, String)
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Table
 from sqlalchemy_serializer import SerializerMixin
 
-from nb_workflows.db.common import Base
-
 association_table = Table(
-    "auth_user_groups",
+    "nb_auth_user_groups",
     Base.metadata,
-    Column("user_id", ForeignKey("auth_user.id")),
-    Column("group_id", ForeignKey("auth_group.id")),
+    Column("user_id", ForeignKey("nb_auth_user.id")),
+    Column("group_id", ForeignKey("nb_auth_group.id")),
 )
 
 
 class UserModel(Base, SerializerMixin):
 
-    __tablename__ = "auth_user"
+    __tablename__ = "nb_auth_user"
     __mapper_args__ = {"eager_defaults": True}
     serialize_rules = ("-password",)
 
@@ -46,7 +37,7 @@ class UserModel(Base, SerializerMixin):
 
 class GroupModel(Base, SerializerMixin):
 
-    __tablename__ = "auth_group"
+    __tablename__ = "nb_auth_group"
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(BigInteger, primary_key=True)
