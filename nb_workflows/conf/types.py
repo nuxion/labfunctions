@@ -17,6 +17,7 @@ class Settings:
     RQ_REDIS_DB: str
 
     WORKFLOW_SERVICE: str
+
     # MISC
     LOGLEVEL: str
     DEBUG: bool
@@ -24,9 +25,13 @@ class Settings:
     NB_WORKFLOWS: str
     NB_OUTPUT: str
 
+    SLACK_BOT_TOKEN: Optional[str] = None
+    SLACK_CHANNEL_OK: Optional[str] = None
+    SLACK_CHANNEL_FAIL: Optional[str] = None
+    DISCORD_OK: Optional[str] = None
+    DISCORD_FAIL: Optional[str] = None
+
     FILESERVER: Optional[str] = None
-    DISCORD_EVENTS: Optional[str] = None
-    DISCORD_ERRORS: Optional[str] = None
     SETTINGS_MODULE: Optional[str] = None
     DOCKER_OPTIONS: Dict[str, Any] = None
     DOCKER_COMPOSE: Dict[str, Any] = None
@@ -37,3 +42,5 @@ class Settings:
             port=int(self.RQ_REDIS_PORT),
             db=int(self.RQ_REDIS_DB),
         )
+
+

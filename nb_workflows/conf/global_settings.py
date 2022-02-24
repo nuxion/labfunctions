@@ -11,8 +11,8 @@ SQL = os.getenv("NB_SQL")
 ASQL = os.getenv("NB_ASQL")
 FILESERVER = os.getenv("NB_FILESERVER")
 
-DISCORD_EVENTS = os.getenv("DISCORD_EVENTS")
-DISCORD_ERRORS = os.getenv("DISCORD_ERRORS")
+DISCORD_OK = os.getenv("DISCORD_OK")
+DISCORD_FAIL = os.getenv("DISCORD_FAIL")
 
 RQ_REDIS_HOST = os.getenv("NB_RQ_HOST", "redis")
 RQ_REDIS_PORT = os.getenv("NB_RQ_PORT", "6379")
@@ -23,6 +23,7 @@ WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE")
 LOGLEVEL = os.getenv("NB_LOG", "test")
 # None should be false, anything else true
 DEBUG = bool(os.getenv("NB_DEBUG", None))
+
 
 # Folders
 BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
