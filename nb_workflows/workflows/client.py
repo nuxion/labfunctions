@@ -151,6 +151,7 @@ class NBClient:
             self.write()
 
     def list_scheduled(self) -> List[ScheduleListRsp]:
+        self.verify_or_refresh()
         r = httpx.get(f"{self._addr}/workflows/schedule",
                       headers=self._headers)
         data = [
@@ -165,6 +166,7 @@ class NBClient:
         return data
 
     def get_workflow(self, jobid) -> Union[WorkflowRsp, None]:
+        self.verify_or_refresh()
         r = httpx.get(f"{self._addr}/workflows/schedule/{jobid}",
                       headers=self._headers)
         if r.status_code == 200:
@@ -190,6 +192,7 @@ class NBClient:
         return r.status_code
 
     def execute_remote(self, jobid) -> ScheduleExecRsp:
+        self.verify_or_refresh()
         r = httpx.post(
             f"{self._addr}/workflows/schedule/{jobid}/_run",
             headers=self._headers
