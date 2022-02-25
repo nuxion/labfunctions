@@ -4,21 +4,17 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
+from nb_workflows.conf import settings
+from nb_workflows.utils import get_query_param, list_workflows, run_async
+from nb_workflows.workflows.core import nb_job_executor
+from nb_workflows.workflows.entities import NBTask
+from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
+                                              scheduler_dispatcher)
 from redis import Redis
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
-
-from nb_workflows.conf import settings
-from nb_workflows.utils import get_query_param, list_workflows, run_async
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import NBTask
-from nb_workflows.workflows.scheduler import (
-    QueueExecutor,
-    SchedulerExecutor,
-    scheduler_dispatcher,
-)
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
 
@@ -179,6 +175,21 @@ async def list_schedule(request):
     return json(result)
 
 
+@workflows_bp.delete("/schedule/<jobid>")
+@openapi.parameter("jobid", str, "path")
+@protected()
+async def schedule_delete(request, jobid):
+    """Get a ScheduleJob"""
+    # pylint: disable=unused-argument
+    scheduler = _get_scheduler()
+    session = request.ctx.session
+    async with session.begin():
+        await scheduler.delete_job(session, jobid)
+        await session.commit()
+
+    return json(dict(msg="done"), 200)
+
+
 @workflows_bp.get("/schedule/rqjobs")
 @openapi.response(200, List[JobDetail], "Task Scheduled")
 @protected()
@@ -254,19 +265,22 @@ async def update_notebook_schedule(request):
     return json(dict(jobid=rsp), status=202)
 
 
-@workflows_bp.delete("/schedule/<jobid>")
+@workflows_bp.get("/schedule/<jobid>")
 @openapi.parameter("jobid", str, "path")
+@openapi.response(200)
+@openapi.response(404, {"msg": str}, description="Job not found")
 @protected()
-async def schedule_delete(request, jobid):
+async def schedule_one_job(request, jobid):
     """Delete a job from RQ and DB"""
     # pylint: disable=unused-argument
     scheduler = _get_scheduler()
     session = request.ctx.session
     async with session.begin():
-        await scheduler.delete_job(session, jobid)
-        await session.commit()
+        obj_dict = await scheduler.get_jobid_db(session, jobid)
 
-    return json(dict(msg="done"), 200)
+    if obj_dict:
+        return json(obj_dict, 200)
+    return json(dict(msg="Not found"), 404)
 
 
 @workflows_bp.post("/schedule/<jobid>/_run")

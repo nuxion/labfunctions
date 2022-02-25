@@ -474,3 +474,4 @@ confs/
 .secrets
 scripts/todeploy/*
 .env.dev.docker
+nb_app/

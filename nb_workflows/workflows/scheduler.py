@@ -3,6 +3,15 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
+import httpx
+from nb_workflows.conf import settings
+from nb_workflows.db.sync import SQL
+from nb_workflows.hashes import Hash96
+from nb_workflows.workflows import client
+from nb_workflows.workflows.core import nb_job_executor
+from nb_workflows.workflows.entities import (ExecutionResult, HistoryResult,
+                                             NBTask, ScheduleData)
+from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
@@ -11,13 +20,6 @@ from rq_scheduler import Scheduler
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
-
-from nb_workflows.conf import settings
-from nb_workflows.db.sync import SQL
-from nb_workflows.hashes import Hash96
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import HistoryResult, NBTask, ScheduleData
-from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
@@ -56,6 +58,31 @@ def get_job_from_db(session, jobid) -> Union[ScheduleModel, None]:
 
     if row:
         return row
+    return None
+
+
+def local_dispatcher(jobid) -> Union[ExecutionResult, None]:
+    """Because rq-scheduler has some limitations
+    and could be abandoned in the future, this abstraction was created
+    where the idea is to use the scheduler only to enqueue through rq.
+
+    Also, this way of schedule allows dinamically changes to the workflow
+    task because the params are got from the database.
+    """
+    nb_client = client.from_file("workflows.toml")
+    try:
+        rsp = nb_client.get_workflow(jobid)
+        if rsp and rsp.enabled:
+            exec_res = nb_job_executor(rsp.task)
+            return exec_res
+        elif not rsp.task:
+            nb_client.rq_cancel_job(jobid)
+        else:
+            print(f"{jobid} not enabled")
+    except KeyError:
+        print("Invalid credentials")
+    except TypeError:
+        print("Somenthing went wrong")
     return None
 
 
@@ -189,7 +216,8 @@ class SchedulerExecutor:
     async def get_by_alias(self, session, alias) -> Union[Dict[str, Any], None]:
         if alias:
             stmt = (
-                select(ScheduleModel).where(ScheduleModel.alias == alias).limit(1)
+                select(ScheduleModel).where(
+                    ScheduleModel.alias == alias).limit(1)
             )
             result = await session.execute(stmt)
             row = result.scalar()
@@ -241,7 +269,8 @@ class SchedulerExecutor:
         try:
             await session.commit()
         except IntegrityError:
-            raise KeyError("An integrity error when saving the workflow into db")
+            raise KeyError(
+                "An integrity error when saving the workflow into db")
 
         if task.schedule.cron:
             await self.run_async(self._cron2redis, jobid, task)

@@ -16,6 +16,8 @@ class Settings:
     RQ_REDIS_PORT: str
     RQ_REDIS_DB: str
 
+    WEB_REDIS: str
+
     WORKFLOW_SERVICE: str
 
     # MISC

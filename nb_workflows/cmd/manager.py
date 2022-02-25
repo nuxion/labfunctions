@@ -102,7 +102,8 @@ def users(sql, superuser, username, action):
 
 
 @managercli.command()
-@click.option("--create-dirs", "-C", is_flag=True, default=True, help="Create outpus and workflows dir")
+@click.option("--create-dirs", "-C", is_flag=True, default=True,
+              help="Create outpus and workflows dir")
 @click.argument("base_path")
 def startproject(base_path, create_dirs):
     """Start a new project """

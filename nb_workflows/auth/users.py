@@ -1,12 +1,11 @@
 from datetime import datetime
 from typing import Union
 
+from nb_workflows.auth.models import GroupModel, UserModel
+from nb_workflows.utils import password_manager
 from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
-from nb_workflows.auth.models import GroupModel, UserModel
-from nb_workflows.utils import password_manager
 
 
 def create_user(
@@ -36,6 +35,20 @@ async def get_user_async(session, username: str) -> Union[UserModel, None]:
     stmt = (
         select(UserModel)
         .where(UserModel.username == username)
+        .options(selectinload(UserModel.groups))
+        .limit(1)
+    )
+    rsp = await session.execute(stmt)
+    user_t = rsp.fetchone()
+    if user_t:
+        return user_t[0]
+    return None
+
+
+async def get_userid_async(session, id_: int) -> Union[UserModel, None]:
+    stmt = (
+        select(UserModel)
+        .where(UserModel.id == id_)
         .options(selectinload(UserModel.groups))
         .limit(1)
     )
@@ -93,5 +106,33 @@ async def authenticate_web(requests, *args, **kwargs):
         is_valid = verify_user_from_model(user, p)
         if not is_valid:
             raise exceptions.AuthenticationFailed("Auth error")
+        user_ = user.to_dict()
+        user_["user_id"] = user_["id"]
+        return user_
 
-        return user.to_dict()
+
+async def retrieve_user(request, payload, *args, **kwargs):
+    if payload:
+        user_id = payload.get('user_id', None)
+        session = request.ctx.session
+        async with session.begin():
+            user = await get_userid_async(session, user_id)
+            user_dict = user.to_dict()
+            user_dict["user_id"] = user_id
+            return user_dict
+    else:
+        return None
+
+
+async def store_refresh_token(user_id, refresh_token, *args, **kwargs):
+
+    redis = kwargs["request"].ctx.web_redis
+    key = f'nb.rtkn.{user_id}'
+    await redis.set(key, refresh_token)
+
+
+async def retrieve_refresh_token(request, user_id, *args, **kwargs):
+    # Check: https://github.com/ahopkins/sanic-jwt/issues/34
+    redis = request.ctx.web_redis
+    key = f'nb.rtkn.{user_id}'
+    return await redis.get(key)

@@ -1,19 +1,11 @@
+from dataclasses import asdict
+
 import click
 import toml
-
 from nb_workflows.conf import settings
 from nb_workflows.workflows import client
 from nb_workflows.workflows.entities import NBTask, ScheduleData
-
-
-def _get_token(filepath):
-    nbc = client.open_config(filepath)
-    token = client.get_credentials()
-    if token:
-        v = client.validate_credentials(nbc.url_service, token)
-        if v:
-            return token
-    return client.login_cli(nbc.url_service)
+from nb_workflows.workflows.scheduler import local_dispatcher
 
 
 @click.group()
@@ -31,6 +23,8 @@ def workflowscli():
     default="workflows.toml",
     help="toml file with the configuration",
 )
+@click.option("--example", "-E", default=True, is_flag=True,
+              help="Init with example")
 @click.option("--web", default=settings.WORKFLOW_SERVICE, help="Web server")
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
 @click.option(
@@ -47,55 +41,48 @@ def workflowscli():
     "action",
     type=click.Choice(["init", "push", "list", "exec", "delete", "login"]),
 )
-def workflows(from_file, web, remote, update, action, jobid):
+def workflows(from_file, web, remote, update, example, action, jobid):
     """Manage workflows"""
 
     if action == "init":
-        if remote:
-            token = settings.CLIENT_TOKEN or client.login_cli(web)
-            c = client.from_remote(web, token)
-            c.write()
-        else:
-            c = client.init(web)
-            c.write()
+        c = client.init(web, example=example, from_remote=remote)
+        c.write()
 
     elif action == "push":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
+        c = client.from_file(from_file)
         if update:
             c.push_all(update=True)
 
     elif action == "list":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
+        c = client.from_file(from_file)
         data = c.list_scheduled()
         print("\nnb_name | jobid | description | is_enabled\n")
         for d in data:
             print(f"{d.nb_name} | {d.jobid} | {d.description} | [{d.enabled}]")
 
     elif action == "exec":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
-        rsp = c.execute_remote(jobid)
-        if rsp.status_code == 202:
-            print(f"Jobid: {jobid}, scheduled.")
-            print(f"Executionid: {rsp.executionid}")
+        c = client.from_file(from_file)
+        if remote:
+            rsp = c.execute_remote(jobid)
+            if rsp.status_code == 202:
+                print(f"Jobid: {jobid}, scheduled.")
+                print(f"Executionid: {rsp.executionid}")
+        else:
+            rsp = local_dispatcher(jobid)
+            if rsp:
+                click.echo(f"Jobid: {rsp.jobid} locally executed")
+                click.echo(f"Executionid: {rsp.executionid}")
+                click.echo(f"Status: {rsp.error}")
 
     elif action == "delete":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
+        c = client.from_file(from_file)
         rsp = c.delete(jobid)
         print(f"Jobid: {jobid}, deleted. Code {rsp}")
 
     elif action == "login":
-        try:
-            nbc = client.open_config(from_file)
-            websrv = nbc.url_service
-        except:
-            websrv = web
         click.echo(f"\nLogin to NB Workflows services {web}\n")
-        token = client.login_cli(web)
-        if not token:
+        creds = client.login_cli(web)
+        if not creds:
             click.echo(f"Error auth, try again")
             # click.echo(f"ACCESS TOKEN: {token}")
 
@@ -113,8 +100,8 @@ def workflows(from_file, web, remote, update, action, jobid):
 @click.argument("jobid")
 def history(from_file, jobid):
     """Get the last exectuion of a workflow from the history"""
-    token = _get_token(from_file)
-    c = client.from_file(from_file, token)
+
+    c = client.from_file(from_file)
     r = c.history_last(jobid)
     print("Notebook: ", r["result"]["name"])
     print("Execution ID: ", r["executionid"])
