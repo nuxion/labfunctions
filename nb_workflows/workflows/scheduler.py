@@ -3,15 +3,14 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
-import httpx
+# from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf import settings
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
-from nb_workflows.workflows import client
 from nb_workflows.workflows.core import nb_job_executor
 from nb_workflows.workflows.entities import (ExecutionResult, HistoryResult,
                                              NBTask, ScheduleData)
-from nb_workflows.workflows.models import HistoryModel, ScheduleModel
+from nb_workflows.workflows.models import HistoryModel, WorkflowModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
@@ -27,7 +26,7 @@ _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 def _create_or_update_schedule(jobid: str, task: NBTask, update=False):
     task_dict = asdict(task)
 
-    stmt = insert(ScheduleModel.__table__).values(
+    stmt = insert(WorkflowModel.__table__).values(
         jobid=jobid,
         nb_name=task.nb_name,
         alias=task.alias,
@@ -51,38 +50,13 @@ def _create_or_update_schedule(jobid: str, task: NBTask, update=False):
     return stmt
 
 
-def get_job_from_db(session, jobid) -> Union[ScheduleModel, None]:
-    stmt = select(ScheduleModel).where(ScheduleModel.jobid == jobid)
+def get_job_from_db(session, jobid) -> Union[WorkflowModel, None]:
+    stmt = select(WorkflowModel).where(WorkflowModel.jobid == jobid)
     result = session.execute(stmt)
     row = result.scalar()
 
     if row:
         return row
-    return None
-
-
-def local_dispatcher(jobid) -> Union[ExecutionResult, None]:
-    """Because rq-scheduler has some limitations
-    and could be abandoned in the future, this abstraction was created
-    where the idea is to use the scheduler only to enqueue through rq.
-
-    Also, this way of schedule allows dinamically changes to the workflow
-    task because the params are got from the database.
-    """
-    nb_client = client.from_file("workflows.toml")
-    try:
-        rsp = nb_client.get_workflow(jobid)
-        if rsp and rsp.enabled:
-            exec_res = nb_job_executor(rsp.task)
-            return exec_res
-        elif not rsp.task:
-            nb_client.rq_cancel_job(jobid)
-        else:
-            print(f"{jobid} not enabled")
-    except KeyError:
-        print("Invalid credentials")
-    except TypeError:
-        print("Somenthing went wrong")
     return None
 
 
@@ -206,7 +180,7 @@ class SchedulerExecutor:
         return Hash96.time_random_string().id_hex
 
     async def get_jobid_db(self, session, jobid):
-        stmt = select(ScheduleModel).where(ScheduleModel.jobid == jobid)
+        stmt = select(WorkflowModel).where(WorkflowModel.jobid == jobid)
         result = await session.execute(stmt)
         row = result.scalar()
         if row:
@@ -216,8 +190,8 @@ class SchedulerExecutor:
     async def get_by_alias(self, session, alias) -> Union[Dict[str, Any], None]:
         if alias:
             stmt = (
-                select(ScheduleModel).where(
-                    ScheduleModel.alias == alias).limit(1)
+                select(WorkflowModel).where(
+                    WorkflowModel.alias == alias).limit(1)
             )
             result = await session.execute(stmt)
             row = result.scalar()
@@ -225,7 +199,7 @@ class SchedulerExecutor:
         return None
 
     async def get_schedule_db(self, session):
-        stmt = select(ScheduleModel)
+        stmt = select(WorkflowModel)
         result = await session.execute(stmt)
         rows = result.scalars()
         return [r.to_dict() for r in rows]
@@ -249,7 +223,7 @@ class SchedulerExecutor:
             await session.execute(stmt)
             await self.run_async(self.cancel, jobid)
         else:
-            sch = ScheduleModel(
+            sch = WorkflowModel(
                 jobid=jobid,
                 nb_name=task.nb_name,
                 alias=task.alias,
@@ -331,7 +305,7 @@ class SchedulerExecutor:
         """Delete job from redis and db"""
 
         await self.run_async(self.cancel, jobid)
-        table = ScheduleModel.__table__
+        table = WorkflowModel.__table__
         stmt = delete(table).where(table.c.jobid == jobid)
         await session.execute(stmt)
 
@@ -356,9 +330,3 @@ class SchedulerExecutor:
             result=result.result,
             created_at=result.created_at.isoformat(),
         )
-
-        # if not result:
-        #     j = self.Q.fetch_job(jobid)
-        #     if not j:
-        #         return None
-        #     status = j.get_status()

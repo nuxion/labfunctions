@@ -20,7 +20,7 @@ class HistoryModel(Base, SerializerMixin):
     :param status: -1 fail, 0 ok.
     """
 
-    __tablename__ = "workflows_history"
+    __tablename__ = "nb_workflows_history"
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(BigInteger, primary_key=True)
@@ -34,7 +34,7 @@ class HistoryModel(Base, SerializerMixin):
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
 
 
-class ScheduleModel(Base, SerializerMixin):
+class WorkflowModel(Base, SerializerMixin):
     """
     Configuration for each workflow.
 
@@ -50,7 +50,7 @@ class ScheduleModel(Base, SerializerMixin):
     """
 
     # pylint: disable=too-few-public-methods
-    __tablename__ = "workflows_schedule"
+    __tablename__ = "nb_workflows_workflow"
     # needed for async support
     __mapper_args__ = {"eager_defaults": True}
 

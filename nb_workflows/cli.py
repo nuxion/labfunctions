@@ -1,10 +1,18 @@
+import os
 import click
 
-from nb_workflows.cmd.manager import managercli
-from nb_workflows.cmd.services import servicescli
-from nb_workflows.cmd.workflows import workflowscli
 
-cli = click.CommandCollection(sources=[servicescli, managercli, workflowscli])
+def init_cli():
+    if os.environ.get("NB_SERVER", False):
+        from nb_workflows.cmd.manager import managercli
+        from nb_workflows.cmd.services import servicescli
+
+        return click.CommandCollection(sources=[servicescli, managercli])
+    else:
+        from nb_workflows.cmd.workflows import workflowscli
+        return click.CommandCollection(sources=[workflowscli])
+
+cli = init_cli()
 
 if __name__ == "__main__":
     cli()

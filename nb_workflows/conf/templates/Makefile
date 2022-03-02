@@ -56,11 +56,11 @@ test:
 
 .PHONY: docker
 docker:
-	docker build -t ${DOCKERID}/${PROJECTNAME} .
+	docker build -t ${DOCKERID}/${PROJECTNAME} -f Dockerfile.nbruntime .
 
 .PHONY: docker-local
 docker-local:
-	docker build -t ${DOCKERID}/${PROJECTNAME} .
+	docker build -t ${DOCKERID}/${PROJECTNAME} -f Dockerfile.nbruntime .
 	docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION)
 
 .PHONY: release

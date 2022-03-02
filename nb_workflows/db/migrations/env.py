@@ -1,11 +1,10 @@
+import importlib
 from logging.config import fileConfig
 
 from alembic import context
-from nb_workflows.db.common import Base
-# from nb_workflows.workflows.models import HistoryModel, ScheduleModel
-from sqlalchemy import engine_from_config, pool
 from nb_workflows.conf import settings
-import importlib
+from nb_workflows.db.common import Base
+from sqlalchemy import engine_from_config, pool
 
 wf_mod = importlib.import_module("nb_workflows.workflows.models")
 auth_mod = importlib.import_module("nb_workflows.auth.models")

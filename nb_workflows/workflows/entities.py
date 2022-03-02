@@ -23,7 +23,7 @@ class NBTask:
     :param nb_name: is the name of the notebook to run
     :param params: a dict with the params to run the specific notebook,
     wrapper around papermill.
-    :param jobid: jobid from ScheduleModel
+    :param jobid: jobid from WorkflowModel
     :param timeout: time in secs to wait from the start of the task
     to mark the task as failed.
     :param notifications_ok: If ok send a notification to discord or slack.
@@ -93,3 +93,11 @@ class HistoryResult:
     result: Optional[ExecutionResult] = None
     executionid: Optional[str] = None
     created_at: Optional[str] = None
+
+
+@dataclass
+class HistoryRequest:
+    task: NBTask
+    result: ExecutionResult
+
+

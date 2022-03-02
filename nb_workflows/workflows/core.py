@@ -15,7 +15,8 @@ from nb_workflows.workflows.entities import (
     ExecutionTask,
     NBTask,
 )
-from nb_workflows.workflows.registers import job_history_register
+# from nb_workflows import client
+# from nb_workflows.workflows.registers import job_history_register
 
 _NB_OUTPUT = f"{settings.BASE_PATH}/{settings.NB_OUTPUT}"
 _NB_WORKFLOWS = f"{settings.BASE_PATH}/{settings.NB_WORKFLOWS}"
@@ -129,6 +130,8 @@ def nb_job_executor(nb_task: NBTask) -> ExecutionResult:
 
     execution_result: ExecutionResult = task_handler(wt)
 
-    job_history_register(execution_result, nb_task)
+    # client = client.from_settings()
+
+    # job_history_register(execution_result, nb_task)
 
     return execution_result

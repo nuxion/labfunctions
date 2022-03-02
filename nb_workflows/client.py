@@ -1,29 +1,38 @@
 import getpass
 import json
-import os
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 import httpx
-import toml
-from nb_workflows.workflows.entities import NBTask, ScheduleData
+import jwt
+
+from nb_workflows.conf import settings_client as settings
+from nb_workflows.utils import get_parent_folder, open_toml, write_toml
+from nb_workflows.workflows.entities import (ExecutionResult, HistoryRequest,
+                                             NBTask, ScheduleData)
 
 
-def _open_toml(filepath: str):
-    with open(filepath, "r") as f:
-        tf = f.read()
-
-    tomconf = toml.loads(tf)
-    return tomconf
+def _example_task() -> NBTask:
+    t = NBTask(
+        nb_name="test_workflow",
+        alias="notebook.example",
+        description="An example of how to configure a specific workflow",
+        params=dict(TIMEOUT=5),
+        schedule=ScheduleData(
+            repeat=1,
+            interval=10,
+        ),
+    )
+    return t
 
 
 @dataclass
-class NBCliConfig:
-    url_service: str
-    version: str
+class WorkflowFile:
+    project: str
+    version: str = "0.1"
     workflows: Optional[List[NBTask]] = None
-    # workflows: Dict[str, NBTask]
 
 
 @dataclass
@@ -55,12 +64,13 @@ class WorkflowRsp:
 
 
 @dataclass
-class CredentialsRsp:
+class Credentials:
     access_token: str
     refresh_token: Optional[str] = None
 
 
-def validate_credentials(websrv, token) -> bool:
+def validate_credentials_remote(websrv, token) -> bool:
+    """ Validates against the REST API server """
     _headers = {"Authorization": f"Bearer {token}"}
 
     r = httpx.get(f"{websrv}/auth/verify", headers=_headers)
@@ -71,14 +81,34 @@ def validate_credentials(websrv, token) -> bool:
     raise TypeError("Wrong communitacion against {websrv}")
 
 
+def validate_credentials_local(token) -> bool:
+    """ Validates locally against the jwt signature
+    If exp is not bigger than now, then is valid.
+    """
+    n = datetime.utcnow()
+    ts_now = int(datetime.timestamp(n))
+    tkn_dict = jwt.decode(token,
+                          options={"verify_signature": False})
+
+    if ts_now < tkn_dict["exp"]:
+        return True
+    return False
+
+
 class NBClient:
     """NB Workflow client"""
 
-    def __init__(self, creds: CredentialsRsp, conf: NBCliConfig):
-        self._data = conf
-        self._workflows = conf.workflows
-        self._addr = conf.url_service
+    def __init__(self, url_service: str,
+                 project: str,
+                 creds: Credentials,
+                 workflow_file: Optional[WorkflowFile] = None):
+        self._addr = url_service
+        self._project = project
+        self._workflows: Optional[List[NBTask]] = None
+        if workflow_file:
+            self._workflows = workflow_file.workflows
         self.creds = creds
+        self.wf_file: Optional[WorkflowFile] = workflow_file
         self._headers = {"Authorization": f"Bearer {creds.access_token}"}
 
     def refresh(self):
@@ -91,17 +121,16 @@ class NBClient:
         store_credentials(self.creds)
 
     def verify_or_refresh(self) -> bool:
-        valid = validate_credentials(self._addr,
-                                     self.creds.access_token)
+        valid = validate_credentials_local(self.creds.access_token)
         if not valid:
             self.refresh()
             return True
         return False
 
     def write(self, output="workflows.toml"):
-        with open(output, "w", encoding="utf-8") as f:
-            _dump = toml.dumps(asdict(self._data))
-            f.write(_dump)
+
+        obj = WorkflowFile(project=self._project, workflows=self._workflows)
+        write_toml(output, asdict(obj))
 
     def create_workflow(self, t: NBTask) -> WFCreateRsp:
         r = httpx.post(
@@ -129,19 +158,21 @@ class NBClient:
             jobid=r.json().get("jobid"),
         )
 
-    def push_all(self, refresh_workflows=True, update=False):
+    def push_workflows(self, refresh_workflows=True, update=False):
+        self.verify_or_refresh()
         _workflows = []
         for task in self._workflows:
             if update:
                 r = self.update_workflow(task)
             else:
                 r = self.create_workflow(task)
-            if r.status_code == 200:
-                print(f"Workflow {task.alias} already exist")
-            elif r.status_code == 201:
-                print(f"Workflow {task.alias} created. Jobid: {r.jobid}")
-                if refresh_workflows:
-                    task.jobid = r.jobid
+                if r.status_code == 200:
+                    print(f"Workflow {task.alias} already exist")
+                elif r.status_code == 201:
+                    print(f"Workflow {task.alias} created. Jobid: {r.jobid}")
+
+            if refresh_workflows:
+                task.jobid = r.jobid
             elif r.status_code == 401:
                 print("Auth failed")
             _workflows.append(task)
@@ -200,86 +231,103 @@ class NBClient:
         return ScheduleExecRsp(r.status_code, executionid=r.json()["executionid"])
 
     def delete(self, jobid) -> int:
+        self.verify_or_refresh()
         r = httpx.delete(
             f"{self._addr}/workflows/schedule/{jobid}", headers=self._headers
         )
         return r.status_code
 
     def history_last(self, jobid):
+        self.verify_or_refresh()
         r = httpx.get(
             f"{self._addr}/workflows/history/{jobid}", headers=self._headers
         )
         return r.json()
 
     def rq_status(self, jobid):
+        self.verify_or_refresh()
         r = httpx.get(
             f"{self._addr}/workflows/rqjobs/{jobid}", headers=self._headers
         )
         return r.json()
 
-
-def _example() -> NBTask:
-    t = NBTask(
-        nb_name="test_workflow",
-        alias="notebook.example",
-        description="An example of how to configure a specific workflow",
-        params=dict(TIMEOUT=5),
-        schedule=ScheduleData(
-            repeat=1,
-            interval=10,
-        ),
-    )
-    return t
+    def register_history(self, execution_result: ExecutionResult, nb_task: NBTask):
+        self.verify_or_refresh()
+        req = HistoryRequest(task=nb_task, result=execution_result)
+        r = httpx.post(f"{self._addr}/workflows/history", json=asdict(req),
+                       headers=self._headers)
+        print(r.text)
+        return r.json()
 
 
-def init(url_service, example, from_remote=False, version="0.1.0") -> NBClient:
-    task = None
+def init(url_service,
+         example=True, project=None, version="0.1.0") -> NBClient:
+    name = project or get_parent_folder()
+    tasks = None
     if example:
-        task = [_example()]
+        tasks = [_example_task()]
 
-    nbc = NBCliConfig(
-        version=version, url_service=url_service, workflows=task)
     creds = login_cli(url_service)
 
-    return NBClient(creds=creds, conf=nbc)
+    wf_file = WorkflowFile(project=name, workflows=tasks)
+
+    nb_client = NBClient(creds=creds, url_service=url_service, project=name,
+                         workflow_file=wf_file)
+    nb_client.write()
+    return nb_client
 
 
-def open_config(filepath) -> NBCliConfig:
-    data_dict = _open_toml(filepath)
-    nbc = NBCliConfig(**data_dict)
-    return nbc
+def open_workflows_file(filepath) -> WorkflowFile:
+    data_dict = open_toml(filepath)
+    wf = WorkflowFile(**data_dict)
+    if wf.workflows:
+        wf.workflows = [NBTask(**w)
+                        for w in data_dict["workflows"]]
+    return wf
 
 
 def from_file(filepath) -> NBClient:
-    nbc = open_config(filepath)
-    if nbc.workflows:
-        nbc.workflows = [NBTask(**w) for w in nbc.workflows]
+    wf = open_workflows_file(filepath)
 
     creds = get_credentials()
 
-    obj = NBClient(creds, nbc)
-
-    return obj
-
-
-def from_remote(url_service, token, version="0.1.0") -> NBClient:
-    headers = {"Authorization": f"Bearer {token}"}
-    r = httpx.get(f"{url_service}/workflows/schedule", headers=headers)
-    workflows = []
-    for w_data in r.json():
-        obj = NBTask(**w_data["job_detail"])
-        obj.jobid = w_data["jobid"]
-        workflows.append(obj)
-    nbc = NBCliConfig(url_service, version, workflows=workflows)
-    return NBClient(token, nbc)
+    return NBClient(
+        url_service=settings.WORKFLOW_SERVICE,
+        project=wf.project,
+        creds=creds,
+        workflow_file=wf
+    )
 
 
-def login_cli(with_server: str) -> Union[CredentialsRsp, None]:
+def from_settings() -> NBClient:
+    creds = Credentials(access_token=settings.CLIENT_TOKEN,
+                        refresh_token=settings.CLIENT_REFRESH_TOKEN)
+    project = get_parent_folder()
+    return NBClient(
+        url_service=settings.WORKFLOW_SERVICE,
+        creds=creds,
+        project=project)
+
+
+# def from_remote(url_service, token, version="0.1.0") -> NBClient:
+#     headers = {"Authorization": f"Bearer {token}"}
+#     r = httpx.get(f"{url_service}/workflows/schedule", headers=headers)
+#     workflows = []
+#     for w_data in r.json():
+#         obj = NBTask(**w_data["job_detail"])
+#         obj.jobid = w_data["jobid"]
+#         workflows.append(obj)
+#     nbc = NBCliConfig(url_service, version, workflows=workflows)
+#     return NBClient(token, nbc)
+
+
+def login_cli(with_server: str) -> Union[Credentials, None]:
+    print(f"Your are connecting to {with_server}")
     u = input("User: ")
     p = getpass.getpass()
     rsp = httpx.post(f"{with_server}/auth", json=dict(username=u, password=p))
     try:
-        creds = CredentialsRsp(**rsp.json())
+        creds = Credentials(**rsp.json())
         store_credentials(creds)
         return creds
     except KeyError:
@@ -288,14 +336,14 @@ def login_cli(with_server: str) -> Union[CredentialsRsp, None]:
         return None
 
 
-def store_credentials(creds: CredentialsRsp, relative_path=".nb_workflows/"):
+def store_credentials(creds: Credentials, relative_path=".nb_workflows/"):
     home = str(Path.home())
     Path(f"{home}/{relative_path}").mkdir(parents=True, exist_ok=True)
     with open(f"{home}/{relative_path}/credentials.json", "w", encoding="utf-8") as f:
         f.write(json.dumps(asdict(creds)))
 
 
-def get_credentials(relative_path=".nb_workflows/") -> Union[CredentialsRsp, None]:
+def get_credentials(relative_path=".nb_workflows/") -> Union[Credentials, None]:
     home = str(Path.home())
     Path(f"{home}/{relative_path}").mkdir(parents=True, exist_ok=True)
     try:
@@ -305,16 +353,6 @@ def get_credentials(relative_path=".nb_workflows/") -> Union[CredentialsRsp, Non
             data = f.read()
             data_dict = json.loads(data)
 
-            return CredentialsRsp(**data_dict)
+            return Credentials(**data_dict)
     except FileNotFoundError:
         return None
-
-
-def get_token_from_local(filepath: str):
-    nbc = open_config(filepath)
-    creds = get_credentials()
-    if creds:
-        v = validate_credentials(nbc.url_service, creds)
-        if v:
-            return token
-    return login_cli(nbc.url_service)

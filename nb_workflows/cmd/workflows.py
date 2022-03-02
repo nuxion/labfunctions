@@ -1,11 +1,9 @@
-from dataclasses import asdict
+import os
 
 import click
-import toml
-from nb_workflows.conf import settings
-from nb_workflows.workflows import client
-from nb_workflows.workflows.entities import NBTask, ScheduleData
-from nb_workflows.workflows.scheduler import local_dispatcher
+from nb_workflows import client, init_script
+from nb_workflows.conf import settings_client as settings
+from nb_workflows.workflows.dispatchers import local_exec
 
 
 @click.group()
@@ -25,7 +23,8 @@ def workflowscli():
 )
 @click.option("--example", "-E", default=True, is_flag=True,
               help="Init with example")
-@click.option("--web", default=settings.WORKFLOW_SERVICE, help="Web server")
+@click.option("--url-service", "-u",
+              default=settings.WORKFLOW_SERVICE, help="URL of the NB Workflow Service")
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
 @click.option(
     "--update",
@@ -41,17 +40,17 @@ def workflowscli():
     "action",
     type=click.Choice(["init", "push", "list", "exec", "delete", "login"]),
 )
-def workflows(from_file, web, remote, update, example, action, jobid):
+def workflows(from_file, url_service, remote, update, example, action, jobid):
     """Manage workflows"""
 
     if action == "init":
-        c = client.init(web, example=example, from_remote=remote)
+        c = client.init(url_service)
         c.write()
 
     elif action == "push":
         c = client.from_file(from_file)
         if update:
-            c.push_all(update=True)
+            c.push_workflows(update=True)
 
     elif action == "list":
         c = client.from_file(from_file)
@@ -68,7 +67,11 @@ def workflows(from_file, web, remote, update, example, action, jobid):
                 print(f"Jobid: {jobid}, scheduled.")
                 print(f"Executionid: {rsp.executionid}")
         else:
-            rsp = local_dispatcher(jobid)
+            # creds = client.get_credentials()
+            # if not os.environ.get("NB_CLIENT_TOKEN"):
+            #    os.environ["NB_CLIENT_TOKEN"] = creds.access_token
+            #    os.environ["NB_CLIENT_REFRESH"] = creds.refresh_token
+            rsp = local_exec(jobid)
             if rsp:
                 click.echo(f"Jobid: {rsp.jobid} locally executed")
                 click.echo(f"Executionid: {rsp.executionid}")
@@ -80,8 +83,8 @@ def workflows(from_file, web, remote, update, example, action, jobid):
         print(f"Jobid: {jobid}, deleted. Code {rsp}")
 
     elif action == "login":
-        click.echo(f"\nLogin to NB Workflows services {web}\n")
-        creds = client.login_cli(web)
+        click.echo(f"\nLogin to NB Workflows services {url_service}\n")
+        creds = client.login_cli(url_service)
         if not creds:
             click.echo(f"Error auth, try again")
             # click.echo(f"ACCESS TOKEN: {token}")
@@ -110,24 +113,39 @@ def history(from_file, jobid):
     print("Last Run: ", r["created_at"])
 
 
-@click.command()
-@click.option(
-    "--from-file",
-    "-f",
-    default="workflows.toml",
-    help="toml file with the configuration",
-)
-@click.option("--jobid", "-J", help="Jobid to operate with")
-@click.argument("action", type=click.Choice(["status"]))
-def rq(from_file, jobid, action):
-    """Information of running jobs"""
-    token = _get_token(from_file)
-    c = client.from_file(from_file, token)
-    if action == "status":
-        s = c.rq_status(jobid)
-        click.echo(s)
+# @click.command()
+# @click.option(
+#    "--from-file",
+#    "-f",
+#    default="workflows.toml",
+#    help="toml file with the configuration",
+# )
+# @click.option("--jobid", "-J", help="Jobid to operate with")
+# @click.argument("action", type=click.Choice(["status"]))
+# def rq(from_file, jobid, action):
+#    """Information of running jobs"""
+#    token = _get_token(from_file)
+#    c = client.from_file(from_file, token)
+#    if action == "status":
+#        s = c.rq_status(jobid)
+#        click.echo(s)
+
+
+@workflowscli.command()
+@click.option("--create-dirs", "-C", is_flag=True, default=True,
+              help="Create outpus and workflows dir")
+@click.argument("base_path")
+def startproject(base_path, create_dirs):
+    """Start a new project """
+    init_script.init(base_path, create_dirs)
+    print("\n Next steps: ")
+    print("\n\t1. init a git repository")
+    print("\t2. create a workflow inside of the workflows folder")
+    print("\t3. publish your work")
+    print()
 
 
 workflowscli.add_command(workflows)
 workflowscli.add_command(history)
-workflowscli.add_command(rq)
+# workflowscli.add_command(rq)
+workflowscli.add_command(startproject)

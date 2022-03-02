@@ -1,13 +1,18 @@
 # pylint: disable=unused-argument
 import asyncio
+import pathlib
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
+import aiofiles
 from nb_workflows.conf import settings
-from nb_workflows.utils import get_query_param, list_workflows, run_async
+from nb_workflows.utils import (get_query_param, list_workflows, run_async,
+                                secure_filename)
 from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import NBTask
+from nb_workflows.workflows.entities import (ExecutionResult, HistoryRequest,
+                                             NBTask)
+from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
                                               scheduler_dispatcher)
 from redis import Redis
@@ -90,7 +95,7 @@ def list_nb_workflows(request):
     return json(nb_files)
 
 
-@workflows_bp.get("/notebooks/_upload")
+@workflows_bp.post("/notebooks/_upload")
 @protected()
 def upload_notebook(request):
     """
@@ -101,6 +106,25 @@ def upload_notebook(request):
     nb_files = list_workflows()
 
     return json(nb_files)
+
+
+@workflows_bp.post("/_upload")
+async def upload_project(request):
+    """
+    Upload a workflow project
+    """
+    # pylint: disable=unused-argument
+
+    root = pathlib.Path(settings.BASE_PATH)
+    (root / settings.UPLOADS).mkdir(parents=True, exist_ok=True)
+    file_body = request.files["file"][0].body
+    name = secure_filename(request.files["file"][0].name)
+
+    fp = str(root / settings.UPLOADS / name)
+    async with aiofiles.open(fp, "wb") as f:
+        await f.write(file_body)
+
+    return json(dict(msg="ok"), 201)
 
 
 @workflows_bp.get("/rqjobs/<jobid>")
@@ -329,7 +353,7 @@ async def schedule_cancel_all(request):
 @openapi.response(404, dict(msg=str), "Not Found")
 @protected()
 async def history_last_job(request, jobid):
-    """Delete a job from RQ and DB"""
+    """Get the status of the last job executed"""
     # pylint: disable=unused-argument
     scheduler = _get_scheduler()
     session = request.ctx.session
@@ -339,3 +363,22 @@ async def history_last_job(request, jobid):
             return json(asdict(h), 200)
 
         return json(dict(msg="not found"), 404)
+
+
+@workflows_bp.post("/history/")
+@openapi.body({"application/json": HistoryRequest})
+@openapi.response(201, "Created")
+@protected()
+async def history_create(request):
+    """Register a jobexecution"""
+    # pylint: disable=unused-argument
+
+    dict_ = request.json
+    task = NBTask(**dict_["task"])
+    result = ExecutionResult(**dict_["result"])
+    session = request.ctx.session
+    async with session.begin():
+        await register_history_db(session, result, task)
+        await session.commit()
+
+    return json(dict(msg="created"), 201)
