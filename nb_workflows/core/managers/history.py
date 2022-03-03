@@ -1,9 +1,9 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Union
 
-from nb_workflows.workflows.entities import (ExecutionResult, HistoryResult,
+from nb_workflows.core.entities import (ExecutionResult, HistoryResult,
                                              NBTask)
-from nb_workflows.workflows.models import HistoryModel
+from nb_workflows.core.models import HistoryModel
 from sqlalchemy import select
 
 

@@ -9,7 +9,7 @@ import papermill as pm
 from nb_workflows.conf import settings
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import today_string
-from nb_workflows.workflows.entities import (
+from nb_workflows.core.entities import (
     ExecContext,
     ExecutionResult,
     ExecutionTask,

@@ -5,7 +5,7 @@ from typing import Tuple
 from nb_workflows import client
 from nb_workflows.conf import load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
-from nb_workflows.workflows import projects
+from nb_workflows.core.managers import projects
 
 
 def init_client_dir_app(base_path, projectid, project_name):

@@ -9,12 +9,12 @@ import aiofiles
 from nb_workflows.conf import settings
 from nb_workflows.utils import (get_query_param, list_workflows,
                                 parse_page_limit, run_async, secure_filename)
-from nb_workflows.workflows.managers import history, projects
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import (ExecutionResult, HistoryRequest,
+from nb_workflows.core.managers import history, projects
+from nb_workflows.core.core import nb_job_executor
+from nb_workflows.core.entities import (ExecutionResult, HistoryRequest,
                                              NBTask, ProjectData)
-from nb_workflows.workflows.registers import register_history_db
-from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
+from nb_workflows.core.registers import register_history_db
+from nb_workflows.core.scheduler import (QueueExecutor, SchedulerExecutor,
                                               scheduler_dispatcher)
 from redis import Redis
 from sanic import Blueprint, Sanic, exceptions

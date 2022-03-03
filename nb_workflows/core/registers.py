@@ -4,9 +4,9 @@ from nb_workflows.conf import settings, settings_client
 from nb_workflows.db.sync import SQL
 from nb_workflows.notifications import (EMOJI_ERROR, EMOJI_OK, DiscordClient,
                                         SlackCient)
-from nb_workflows.workflows.entities import ExecutionResult, NBTask
-from nb_workflows.workflows.managers import history
-from nb_workflows.workflows.models import HistoryModel
+from nb_workflows.core.entities import ExecutionResult, NBTask
+from nb_workflows.core.managers import history
+from nb_workflows.core.models import HistoryModel
 
 
 def send_discord_fail(msg):

@@ -3,7 +3,7 @@ import os
 import click
 from nb_workflows import client, init_script
 from nb_workflows.conf import settings_client as settings
-from nb_workflows.workflows.dispatchers import local_exec
+from nb_workflows.core.dispatchers import local_exec
 
 
 @click.group()

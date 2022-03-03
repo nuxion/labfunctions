@@ -8,8 +8,8 @@ import aiofiles
 from nb_workflows.auth.types import UserData
 from nb_workflows.conf import settings
 from nb_workflows.utils import secure_filename
-from nb_workflows.workflows.entities import ProjectData, ProjectReq
-from nb_workflows.workflows.managers import projects
+from nb_workflows.core.entities import ProjectData, ProjectReq
+from nb_workflows.core.managers import projects
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
 from sanic_ext import openapi

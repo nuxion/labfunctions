@@ -10,8 +10,8 @@ import jwt
 
 from nb_workflows.conf import settings_client as settings
 from nb_workflows.utils import get_parent_folder, open_toml, write_toml
-from nb_workflows.workflows import projects
-from nb_workflows.workflows.entities import (ExecutionResult, HistoryRequest,
+from nb_workflows.core.managers import projects
+from nb_workflows.core.entities import (ExecutionResult, HistoryRequest,
                                              NBTask, ProjectData, ProjectReq,
                                              ScheduleData)
 

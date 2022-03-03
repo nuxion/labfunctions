@@ -5,8 +5,8 @@ from typing import List, Optional, Tuple, Union
 from nb_workflows.conf import settings
 from nb_workflows.hashes import generate_random
 from nb_workflows.utils import get_parent_folder, secure_filename
-from nb_workflows.workflows.entities import ProjectData, ProjectReq
-from nb_workflows.workflows.models import ProjectModel
+from nb_workflows.core.entities import ProjectData, ProjectReq
+from nb_workflows.core.models import ProjectModel
 from sqlalchemy import delete, exc, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload

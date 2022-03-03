@@ -7,8 +7,8 @@ from typing import List, Optional
 
 from nb_workflows.utils import (get_query_param, list_workflows,
                                 parse_page_limit, run_async, secure_filename)
-from nb_workflows.workflows.entities import NBTask
-from nb_workflows.workflows.scheduler import (QueueExecutor, SchedulerExecutor,
+from nb_workflows.core.entities import NBTask
+from nb_workflows.core.scheduler import (QueueExecutor, SchedulerExecutor,
                                               scheduler_dispatcher)
 from sanic import Blueprint, Sanic
 from sanic.response import json

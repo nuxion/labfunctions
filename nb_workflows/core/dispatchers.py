@@ -3,10 +3,10 @@ from typing import Union
 import docker
 from nb_workflows import client
 from nb_workflows.conf import settings
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import (ExecutionResult, HistoryResult,
+from nb_workflows.core.core import nb_job_executor
+from nb_workflows.core.entities import (ExecutionResult, HistoryResult,
                                              NBTask, ScheduleData)
-from nb_workflows.workflows.models import WorkflowModel
+from nb_workflows.core.models import WorkflowModel
 from sqlalchemy import select
 
 

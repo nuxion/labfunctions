@@ -7,10 +7,10 @@ from typing import Any, Dict, List, Union
 from nb_workflows.conf import settings
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
-from nb_workflows.workflows.managers import projects
-from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import NBTask, ScheduleData
-from nb_workflows.workflows.models import WorkflowModel
+from nb_workflows.core.managers import projects
+from nb_workflows.core.core import nb_job_executor
+from nb_workflows.core.entities import NBTask, ScheduleData
+from nb_workflows.core.models import WorkflowModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job

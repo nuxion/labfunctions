@@ -13,7 +13,7 @@ from nb_workflows.conf import settings
 from nb_workflows.utils import set_logger
 
 # from nb_workflows.workflows.core import build_context
-from nb_workflows.workflows.entities import ExecContext
+from nb_workflows.core.entities import ExecContext
 
 logger = set_logger(__name__)
 

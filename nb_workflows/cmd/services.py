@@ -19,7 +19,7 @@ def servicescli():
 @click.option(
     "--apps",
     "-a",
-    default="workflows",
+    default="core",
     help="List of apps to be mounted as blueprints",
 )
 @click.option(
