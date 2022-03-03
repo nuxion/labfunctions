@@ -1,16 +1,16 @@
 import asyncio
 from dataclasses import asdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf import settings
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
+from nb_workflows.workflows.managers import projects
 from nb_workflows.workflows.core import nb_job_executor
-from nb_workflows.workflows.entities import (ExecutionResult, HistoryResult,
-                                             NBTask, ScheduleData)
-from nb_workflows.workflows.models import HistoryModel, WorkflowModel
+from nb_workflows.workflows.entities import NBTask, ScheduleData
+from nb_workflows.workflows.models import WorkflowModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
@@ -19,11 +19,13 @@ from rq_scheduler import Scheduler
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
 
-def _create_or_update_schedule(jobid: str, task: NBTask, update=False):
+def _create_or_update_workflow(jobid: str, projectid: str,
+                               task: NBTask, update=False):
     task_dict = asdict(task)
 
     stmt = insert(WorkflowModel.__table__).values(
@@ -31,6 +33,7 @@ def _create_or_update_schedule(jobid: str, task: NBTask, update=False):
         nb_name=task.nb_name,
         alias=task.alias,
         job_detail=task_dict,
+        project_id=projectid,
         enabled=task.schedule.enabled,
     )
     if not update:
@@ -91,7 +94,7 @@ def scheduler_dispatcher(jobid):
             )
         else:
             if not obj_model:
-                scheduler.cancel(jobid)
+                scheduler.cancel_job(jobid)
                 print(f"job: {jobid} not found, deleted")
                 # raise IndexError(f"job: {jobid} not found")
 
@@ -198,11 +201,14 @@ class SchedulerExecutor:
             return row
         return None
 
-    async def get_schedule_db(self, session):
-        stmt = select(WorkflowModel)
+    async def get_schedule_db(self, session, projectid):
+        stmt = select(WorkflowModel).options(
+            selectinload(WorkflowModel.project)
+        )
+        stmt = stmt.where(WorkflowModel.project_id == projectid)
         result = await session.execute(stmt)
         rows = result.scalars()
-        return [r.to_dict() for r in rows]
+        return [r.to_dict(rules=("-project",)) for r in rows]
 
     @staticmethod
     async def run_async(func, *args, **kwargs):
@@ -210,18 +216,24 @@ class SchedulerExecutor:
         rsp = await loop.run_in_executor(None, func, *args, **kwargs)
         return rsp
 
-    async def register(self, session, task: NBTask, update=False):
+    async def register(self, session, projectid: str, task: NBTask,
+                       update=False):
         jobid = self.jobid()
         data_dict = asdict(task)
+
+        pm = projects.get_by_projectid_model(session, projectid)
+        if not pm:
+            raise AttributeError("Projectid not found %s", projectid)
 
         if update:
             j = await self.get_jobid_db(session, task.jobid)
             if j:
                 jobid = j["jobid"]
 
-            stmt = _create_or_update_schedule(jobid, task, update=True)
+            stmt = _create_or_update_workflow(
+                jobid, projectid, task, update=True)
             await session.execute(stmt)
-            await self.run_async(self.cancel, jobid)
+            await self.run_async(self.cancel_job, jobid)
         else:
             sch = WorkflowModel(
                 jobid=jobid,
@@ -229,16 +241,17 @@ class SchedulerExecutor:
                 alias=task.alias,
                 job_detail=data_dict,
                 enabled=task.schedule.enabled,
+                project_id=projectid,
             )
             session.add(sch)
         return jobid
 
-    async def schedule(self, session, data_dict, update=False) -> str:
+    async def schedule(self, session, project_id, data_dict, update=False) -> str:
         schedule_data = data_dict["schedule"]
         task = NBTask(**data_dict)
         task.schedule = ScheduleData(**schedule_data)
 
-        jobid = await self.register(session, task, update=update)
+        jobid = await self.register(session, project_id, task, update=update)
 
         try:
             await session.commit()
@@ -297,36 +310,14 @@ class SchedulerExecutor:
         for j in self.scheduler.get_jobs():
             self.scheduler.cancel(j)
 
-    def cancel(self, jobid):
+    def cancel_job(self, jobid):
         """Cancel job from redis"""
         self.scheduler.cancel(jobid)
 
-    async def delete_job(self, session, jobid: str):
+    async def delete_workflow(self, session, jobid: str):
         """Delete job from redis and db"""
 
-        await self.run_async(self.cancel, jobid)
+        await self.run_async(self.cancel_job, jobid)
         table = WorkflowModel.__table__
         stmt = delete(table).where(table.c.jobid == jobid)
         await session.execute(stmt)
-
-    async def get_last_history(
-        self, session, jobid: str
-    ) -> Union[HistoryResult, None]:
-        stmt = (
-            select(HistoryModel)
-            .where(HistoryModel.jobid == jobid)
-            .order_by(HistoryModel.created_at.desc())
-            .limit(1)
-        )
-        r = await session.execute(stmt)
-        result = r.scalar()
-        if not result:
-            return None
-
-        return HistoryResult(
-            jobid=jobid,
-            executionid=result.executionid,
-            status=result.status,
-            result=result.result,
-            created_at=result.created_at.isoformat(),
-        )

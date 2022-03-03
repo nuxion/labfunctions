@@ -1,4 +1,5 @@
 import os
+
 import click
 
 
@@ -11,6 +12,7 @@ def init_cli():
     else:
         from nb_workflows.cmd.workflows import workflowscli
         return click.CommandCollection(sources=[workflowscli])
+
 
 cli = init_cli()
 

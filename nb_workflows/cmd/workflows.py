@@ -40,7 +40,7 @@ def workflowscli():
     "action",
     type=click.Choice(["init", "push", "list", "exec", "delete", "login"]),
 )
-def workflows(from_file, url_service, remote, update, example, action, jobid):
+def wf(from_file, url_service, remote, update, example, action, jobid):
     """Manage workflows"""
 
     if action == "init":
@@ -49,8 +49,7 @@ def workflows(from_file, url_service, remote, update, example, action, jobid):
 
     elif action == "push":
         c = client.from_file(from_file)
-        if update:
-            c.push_workflows(update=True)
+        c.push_workflows(update=update)
 
     elif action == "list":
         c = client.from_file(from_file)
@@ -145,7 +144,7 @@ def startproject(base_path, create_dirs):
     print()
 
 
-workflowscli.add_command(workflows)
+workflowscli.add_command(wf)
 workflowscli.add_command(history)
 # workflowscli.add_command(rq)
 workflowscli.add_command(startproject)

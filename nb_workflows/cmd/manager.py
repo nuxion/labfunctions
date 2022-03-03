@@ -1,7 +1,7 @@
+import importlib
 from getpass import getpass
 
 import click
-import importlib
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from nb_workflows.auth import users as users_mgt

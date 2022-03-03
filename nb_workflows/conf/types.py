@@ -29,6 +29,7 @@ class ServerSettings:
 
     UPLOADS: str
 
+    PROJECTID_LEN: int = 10
     CLIENT_REFRESH_TOKEN: str = None
     SLACK_BOT_TOKEN: Optional[str] = None
     SLACK_CHANNEL_OK: Optional[str] = None
@@ -52,13 +53,15 @@ class ServerSettings:
 @dataclass
 class ClientSettings:
     WORKFLOW_SERVICE: str
+    PROJECTID: str
 
     LOGLEVEL: str
     DEBUG: bool
     BASE_PATH: str
-    NB_WORKFLOWS: str
-    NB_OUTPUT: str
-
+    # NB_WORKFLOWS: str
+    # NB_OUTPUT: str
+    PROJECT_NAME: Optional[str] = None
+    PROJECTID_LEN: int = 10
     CLIENT_TOKEN: Optional[str] = None
     CLIENT_REFRESH_TOKEN: Optional[str] = None
     VERSION: Optional[str] = "0.1.0"

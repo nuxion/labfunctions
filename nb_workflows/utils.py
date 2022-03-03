@@ -86,8 +86,10 @@ def init_blueprints(app, blueprints_allowed):
     mod = app.__module__
     for mod_name in blueprints_allowed:
         module = import_module(f"nb_workflows.{mod_name}.web", mod)
-        bp = getattr(module, f"{mod_name}_bp")
-        blueprints.add(bp)
+        for el in dir(module):
+            if el.endswith("_bp"):
+                bp = getattr(module, el)
+                blueprints.add(bp)
 
     for bp in blueprints:
         print("Adding blueprint: ", bp.name)

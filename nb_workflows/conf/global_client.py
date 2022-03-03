@@ -1,6 +1,8 @@
 import os
 
 WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
+PROJECTID = ""
+PROJECT_NAME = ""
 
 CLIENT_TOKEN = os.getenv("NB_CLIENT_TOKEN")
 CLIENT_REFRESH_TOKEN = os.getenv("NB_CLIENT_REFRESH")
@@ -14,8 +16,9 @@ DEBUG = bool(os.getenv("NB_DEBUG", None))
 # Folders
 BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
 
-NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
-NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")
+# NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
+# NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")
+
 
 DOCKER_OPTIONS = {
     "maintener": "NB Workflows <package@nbworkflows.com>",

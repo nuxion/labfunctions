@@ -1,6 +1,7 @@
 from contextvars import ContextVar
 
 import aioredis
+from redis import Redis
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
@@ -9,7 +10,6 @@ from sanic_jwt import Initialize
 from nb_workflows.auth import users
 from nb_workflows.conf import settings
 from nb_workflows.db.nosync import AsyncSQL
-
 
 app = Sanic("nb_workflows")
 Initialize(
@@ -55,6 +55,11 @@ async def startserver(current_app, loop):
     current_app.ctx.web_redis = aioredis.from_url(
         settings.WEB_REDIS, decode_responses=True
     )
+
+    _cfg = settings.rq2dict()
+    redis = Redis(**_cfg)
+    current_app.ctx.rq_redis = redis
+
     current_app.ctx.db = db
     await current_app.ctx.db.init()
 

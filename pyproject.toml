@@ -55,6 +55,7 @@ httpx = "^0.22.0"
 Jinja2 = "^3.0.3"
 docker = "^5.0.3"
 aiofiles = "^0.8.0"
+nanoid = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 jupyterlab = "^3.1.14"

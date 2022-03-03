@@ -33,10 +33,13 @@ class NBTask:
 
     nb_name: str
     params: Dict[str, Any]
+
+    machine: str = "default"
+    docker: Optional[str] = None
+
     alias: Optional[str] = None
     description: Optional[str] = None
     jobid: Optional[str] = None
-    qname: str = "default"
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
@@ -101,3 +104,26 @@ class HistoryRequest:
     result: ExecutionResult
 
 
+@dataclass
+class ProjectData:
+    name: str
+    projectid: str
+    description: Optional[str] = None
+    repository: Optional[str] = None
+
+
+@dataclass
+class ProjectReq:
+    name: str
+    projectid: Optional[str] = None
+    description: Optional[str] = None
+    repository: Optional[str] = None
+
+
+@dataclass
+class ProjectWebRsp:
+    name: str
+    created_at: str
+    updated_at: str
+    description: Optional[str] = None
+    repository: Optional[str] = None

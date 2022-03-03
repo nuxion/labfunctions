@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Union
 
 from nb_workflows.auth.models import GroupModel, UserModel
+from nb_workflows.auth.types import UserData
 from nb_workflows.utils import password_manager
 from sanic_jwt import exceptions
 from sqlalchemy import select
@@ -111,15 +112,16 @@ async def authenticate_web(requests, *args, **kwargs):
         return user_
 
 
-async def retrieve_user(request, payload, *args, **kwargs):
+async def retrieve_user(request, payload, *args, **kwargs) -> UserData:
     if payload:
         user_id = payload.get('user_id', None)
         session = request.ctx.session
-        async with session.begin():
-            user = await get_userid_async(session, user_id)
-            user_dict = user.to_dict()
-            user_dict["user_id"] = user_id
-            return user_dict
+        # async with session.begin():
+        user = await get_userid_async(session, user_id)
+        user_dict = user.to_dict(
+            rules=("-id", "-created_at", "-updated_at"))
+        user_dict["user_id"] = user_id
+        return UserData(**user_dict)
     else:
         return None
 

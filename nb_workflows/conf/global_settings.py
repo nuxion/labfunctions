@@ -32,4 +32,3 @@ NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
 NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")
 
 UPLOADS = ".uploads/"
-

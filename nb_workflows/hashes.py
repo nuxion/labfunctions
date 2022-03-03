@@ -4,6 +4,13 @@ import time
 from dataclasses import dataclass
 
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from nanoid import generate
+
+
+def generate_random(size=10, strategy="nanoid") -> str:
+    if strategy == "nanoid":
+        return generate(size=size)
+    raise NotImplementedError("Strategy %s not implemented", strategy)
 
 
 @dataclass
