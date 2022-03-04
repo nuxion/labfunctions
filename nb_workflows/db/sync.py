@@ -105,8 +105,6 @@ class SQL:
         https://docs.sqlalchemy.org/en/14/orm/session_basics.html#opening-and-closing-a-session
 
         """
-        SSession = scoped_session(
-            sessionmaker(autoflush=autoflush, bind=self.engine)
-        )
+        SSession = scoped_session(sessionmaker(autoflush=autoflush, bind=self.engine))
 
         return SSession

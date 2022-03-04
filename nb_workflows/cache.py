@@ -79,9 +79,7 @@ def _restore_pickle(name, ctx: ExecContext):
 
 def _write_fileserver(name, data, ctx: ExecContext):
     urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
-    metapath = (
-        f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
-    )
+    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     blob = cloudpickle.dumps(data)
     rsp = httpx.put(urlpath, content=blob)
     rsp2 = httpx.put(metapath, json=asdict(ctx))
@@ -93,9 +91,7 @@ def _write_fileserver(name, data, ctx: ExecContext):
 
 def _restore_fileserver(name, ctx: ExecContext):
     urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
-    metapath = (
-        f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
-    )
+    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     data = None
     meta = None
 

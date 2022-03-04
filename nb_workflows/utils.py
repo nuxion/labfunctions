@@ -178,9 +178,7 @@ def create_redis_client(fullurl, decode_responses=True) -> redis.Redis:
     url = fullurl.split("redis://")[1]
     h, port_db = url.split(":")
     p, db = port_db.split("/")
-    return redis.StrictRedis(
-        host=h, port=p, db=db, decode_responses=decode_responses
-    )
+    return redis.StrictRedis(host=h, port=p, db=db, decode_responses=decode_responses)
 
 
 def secure_filename(filename: str) -> str:
@@ -208,9 +206,9 @@ def secure_filename(filename: str) -> str:
     for sep in os.path.sep, os.path.altsep:
         if sep:
             filename = filename.replace(sep, " ")
-    filename = str(
-        _filename_ascii_strip_re.sub("", "_".join(filename.split()))
-    ).strip("._")
+    filename = str(_filename_ascii_strip_re.sub("", "_".join(filename.split()))).strip(
+        "._"
+    )
 
     # on nt a couple of special files are present in each folder.  We
     # have to ensure that the target file is not such a filename.  In

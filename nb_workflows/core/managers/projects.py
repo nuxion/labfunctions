@@ -60,9 +60,7 @@ def generate_projectid() -> str:
     return generate_random(settings.PROJECTID_LEN)
 
 
-async def create(
-    session, user_id: int, pq: ProjectReq
-) -> Union[ProjectModel, None]:
+async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectModel, None]:
     name = normalize_name(pq.name)
 
     projectid = pq.projectid or generate_projectid()
@@ -129,9 +127,7 @@ async def get_by_name_model(session, name) -> Union[ProjectModel, None]:
 async def get_by_name(session, name) -> Union[ProjectData, None]:
     obj = await get_by_name_model(session, name)
     if obj:
-        return ProjectData(
-            **obj.to_dict(rules=("-id", "-created_at", "-updated_at"))
-        )
+        return ProjectData(**obj.to_dict(rules=("-id", "-created_at", "-updated_at")))
     return None
 
 
@@ -169,8 +165,7 @@ def ask_project_name() -> str:
     parent = get_parent_folder()
     _default = normalize_name(parent)
     project_name = str(
-        input(f"Write a name for this project (default: {_default}): ")
-        or _default
+        input(f"Write a name for this project (default: {_default}): ") or _default
     )
     name = normalize_name(project_name)
     return name

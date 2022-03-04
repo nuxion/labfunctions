@@ -74,9 +74,7 @@ async def shutdown(current_app, loop):
 async def inject_session(request):
     current_app = Sanic.get_app("nb_workflows")
     request.ctx.session = app.ctx.db.sessionmaker()
-    request.ctx.session_ctx_token = _base_model_session_ctx.set(
-        request.ctx.session
-    )
+    request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
     request.ctx.web_redis = current_app.ctx.web_redis
 
     request.ctx.dbconn = db.engine

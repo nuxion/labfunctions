@@ -25,9 +25,7 @@ def servicescli():
 @click.option(
     "--auto-reload", "-A", default=False, is_flag=True, help="Enable Auto reload"
 )
-@click.option(
-    "--debug", "-D", default=False, is_flag=True, help="Enable Auto reload"
-)
+@click.option("--debug", "-D", default=False, is_flag=True, help="Enable Auto reload")
 def web(host, port, workers, apps, auto_reload, debug):
     """Run web server"""
     # pylint: disable=import-outside-toplevel
@@ -37,9 +35,7 @@ def web(host, port, workers, apps, auto_reload, debug):
     init_blueprints(app, list_bp)
     w = int(workers)
     print("Debug mode: ", debug)
-    app.run(
-        host=host, port=int(port), workers=w, auto_reload=auto_reload, debug=debug
-    )
+    app.run(host=host, port=int(port), workers=w, auto_reload=auto_reload, debug=debug)
 
 
 @servicescli.command()

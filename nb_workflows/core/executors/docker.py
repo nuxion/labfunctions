@@ -43,9 +43,7 @@ def docker_exec(projectid, jobid):
         if wd and wd.enabled and pd:
             docker_name = generate_docker_name(task, pd)
 
-            docker_client.containers.run(
-                docker_name, f"nb workflows exec -J {jobid}"
-            )
+            docker_client.containers.run(docker_name, f"nb workflows exec -J {jobid}")
         elif not wd:
             print(f"{jobid} deleted...")
         else:

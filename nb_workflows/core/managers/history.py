@@ -12,9 +12,7 @@ class HistoryLastResponse:
     rows: List[HistoryResult]
 
 
-async def get_last(
-    session, jobid: str, limit=1
-) -> Union[HistoryLastResponse, None]:
+async def get_last(session, jobid: str, limit=1) -> Union[HistoryLastResponse, None]:
     stmt = (
         select(HistoryModel)
         .where(HistoryModel.jobid == jobid)

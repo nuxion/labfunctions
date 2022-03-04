@@ -95,9 +95,7 @@ class WorkflowModel(Base, SerializerMixin):
     # pylint: disable=too-few-public-methods
     __tablename__ = "nb_core_workflow"
     __table_args__ = (
-        UniqueConstraint(
-            "alias", "project_id", name="_nb_workflow__project_alias"
-        ),
+        UniqueConstraint("alias", "project_id", name="_nb_workflow__project_alias"),
     )
     # needed for async support
     __mapper_args__ = {"eager_defaults": True}

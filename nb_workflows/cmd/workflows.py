@@ -22,9 +22,7 @@ def workflowscli():
     default="workflows.yaml",
     help="yaml file with the configuration",
 )
-@click.option(
-    "--example", "-E", default=True, is_flag=True, help="Init with example"
-)
+@click.option("--example", "-E", default=True, is_flag=True, help="Init with example")
 @click.option(
     "--url-service",
     "-u",
@@ -39,14 +37,10 @@ def workflowscli():
     default=False,
     help="Updates workflows when push",
 )
-@click.option(
-    "--remote", "-r", default=False, is_flag=True, help="execute remote"
-)
+@click.option("--remote", "-r", default=False, is_flag=True, help="execute remote")
 @click.argument(
     "action",
-    type=click.Choice(
-        ["init", "push", "sync", "list", "exec", "dev-exec", "delete"]
-    ),
+    type=click.Choice(["init", "push", "sync", "list", "exec", "dev-exec", "delete"]),
 )
 def wf(from_file, url_service, remote, update, example, action, jobid):
     """Manage workflows"""

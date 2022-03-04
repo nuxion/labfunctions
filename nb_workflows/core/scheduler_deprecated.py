@@ -25,9 +25,7 @@ from nb_workflows.hashes import Hash96
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
 
-def _create_or_update_workflow(
-    jobid: str, projectid: str, task: NBTask, update=False
-):
+def _create_or_update_workflow(jobid: str, projectid: str, task: NBTask, update=False):
     task_dict = asdict(task)
 
     stmt = insert(WorkflowModel.__table__).values(
@@ -194,9 +192,7 @@ class SchedulerExecutor:
 
     async def get_by_alias(self, session, alias) -> Union[Dict[str, Any], None]:
         if alias:
-            stmt = (
-                select(WorkflowModel).where(WorkflowModel.alias == alias).limit(1)
-            )
+            stmt = select(WorkflowModel).where(WorkflowModel.alias == alias).limit(1)
             result = await session.execute(stmt)
             row = result.scalar()
             return row

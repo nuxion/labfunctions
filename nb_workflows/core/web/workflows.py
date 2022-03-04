@@ -177,9 +177,7 @@ async def workflow_update(request, projectid):
 
     async with session.begin():
         try:
-            jobid = await workflows.register(
-                session, projectid, nb_task, update=True
-            )
+            jobid = await workflows.register(session, projectid, nb_task, update=True)
         except KeyError as e:
             print(e)
             return json(dict(msg="workflow already exist"), status=200)
