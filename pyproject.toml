@@ -85,6 +85,7 @@ Sphinx = "^4.4.0"
 sphinx-autobuild = "^2021.3.14"
 redislite = "^6.0.674960"
 factory-boy = "^3.2.1"
+pre-commit = "^2.17.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -92,3 +93,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.jupytext]
 formats = "ipynb,py"
+
+[tool.black]
+line-length = 88
+target-version = [ 'py37', 'py38']
+include = '\.pyi?$'
+
+[tool.isort]
+multi_line_output = 3
+line_length = 88
+include_trailing_comma = true

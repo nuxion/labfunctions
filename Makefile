@@ -74,7 +74,7 @@ run:
 
 .PHONY: web
 web:
-	poetry run nb web --apps workflows --workers 1
+	poetry run nb web --apps core --workers 1
 
 .PHONY: rqworker
 rqworker:
