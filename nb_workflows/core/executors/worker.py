@@ -5,14 +5,13 @@ from nb_workflows.core.managers import workflows
 def make_worker_dirs():
     pass
 
+
 def worker_exec(projectid, jobid):
     db = SQL(settings.SQL)
     Session = db.sessionmaker()
 
     with Session() as session:
         wd = workflows.get_by_jobid(session, jobid)
-        
-    
 
     nb_client = client.from_file("workflows.toml")
     try:

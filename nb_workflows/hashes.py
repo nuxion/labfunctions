@@ -34,7 +34,7 @@ class Hash96:
         # 41 bits timestamp with a custom epoch
         ts = int(time.time())
         # 55 bits a random number
-        num = int.from_bytes(os.urandom(90), "big") % 2**55
+        num = int.from_bytes(os.urandom(90), "big") % 2 ** 55
         _int_id = (ts << 55) | (num << 0)
         _bytes = _int_id.to_bytes(12, "big")
         _bytes_id = binascii.hexlify(_bytes).decode()
@@ -47,7 +47,7 @@ class PasswordScript:
     https://cryptography.io/en/latest/hazmat/primitives/key-derivation-functions/#cryptography.hazmat.primitives.kdf.scrypt.Scrypt
     """
 
-    def __init__(self, salt: bytes, n=2**14, r=8, p=1):
+    def __init__(self, salt: bytes, n=2 ** 14, r=8, p=1):
         self.n = n
         self.r = r
         self.p = p

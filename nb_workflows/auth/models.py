@@ -1,12 +1,21 @@
 from datetime import datetime
 
-from nb_workflows.db.common import Base
-from sqlalchemy import (BigInteger, Boolean, Column, DateTime, Float,
-                        ForeignKey, Integer, String)
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Table
 from sqlalchemy_serializer import SerializerMixin
+
+from nb_workflows.db.common import Base
 
 association_table = Table(
     "nb_auth_user_groups",

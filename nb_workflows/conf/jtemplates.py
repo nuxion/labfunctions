@@ -11,7 +11,7 @@ def get_package_dir(pkg):
 
 env = Environment(
     loader=FileSystemLoader(f"{get_package_dir('nb_workflows')}/conf/templates"),
-    autoescape=select_autoescape()
+    autoescape=select_autoescape(),
 )
 
 

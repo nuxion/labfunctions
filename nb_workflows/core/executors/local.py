@@ -20,7 +20,6 @@ def local_exec(jobid) -> Union[ExecutionResult, None]:
     nb_client = client.nb_from_file("workflows.yaml")
     try:
         rsp = nb_client.workflows_get(jobid)
-        breakpoint()
         if rsp and rsp.enabled:
             task = NBTask(**rsp.job_detail)
             if task.schedule:
@@ -42,7 +41,7 @@ def local_exec(jobid) -> Union[ExecutionResult, None]:
 
 
 def local_dev_exec(jobid) -> Union[ExecutionResult, None]:
-    """ Without server interaction
+    """Without server interaction
     jobid will be searched in the workflows file
     """
     logger = set_logger("local_exec", level=settings.LOGLEVEL)

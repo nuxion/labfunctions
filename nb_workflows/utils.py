@@ -121,11 +121,11 @@ def format_bytes(n: int) -> str:
     For all values < 2**60, the output is always <= 10 characters.
     """
     for prefix, k in (
-        ("Pi", 2**50),
-        ("Ti", 2**40),
-        ("Gi", 2**30),
-        ("Mi", 2**20),
-        ("ki", 2**10),
+        ("Pi", 2 ** 50),
+        ("Ti", 2 ** 40),
+        ("Gi", 2 ** 30),
+        ("Mi", 2 ** 20),
+        ("ki", 2 ** 10),
     ):
         if n >= k * 0.9:
             return f"{n / k:.2f} {prefix}B"
@@ -208,9 +208,9 @@ def secure_filename(filename: str) -> str:
     for sep in os.path.sep, os.path.altsep:
         if sep:
             filename = filename.replace(sep, " ")
-    filename = str(_filename_ascii_strip_re.sub("", "_".join(filename.split()))).strip(
-        "._"
-    )
+    filename = str(
+        _filename_ascii_strip_re.sub("", "_".join(filename.split()))
+    ).strip("._")
 
     # on nt a couple of special files are present in each folder.  We
     # have to ensure that the target file is not such a filename.  In
@@ -226,7 +226,7 @@ def secure_filename(filename: str) -> str:
 
 
 def get_parent_folder():
-    """ Get only the name of the parent folder
+    """Get only the name of the parent folder
     commonly used to define the project name
     """
     root = pathlib.Path(os.getcwd())

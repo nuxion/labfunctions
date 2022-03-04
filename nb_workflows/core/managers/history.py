@@ -1,10 +1,10 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Union
 
-from nb_workflows.core.entities import (ExecutionResult, HistoryResult,
-                                             NBTask)
-from nb_workflows.core.models import HistoryModel
 from sqlalchemy import select
+
+from nb_workflows.core.entities import ExecutionResult, HistoryResult, NBTask
+from nb_workflows.core.models import HistoryModel
 
 
 @dataclass
@@ -13,7 +13,7 @@ class HistoryLastResponse:
 
 
 async def get_last(
-        session, jobid: str, limit=1
+    session, jobid: str, limit=1
 ) -> Union[HistoryLastResponse, None]:
     stmt = (
         select(HistoryModel)
@@ -40,9 +40,9 @@ async def get_last(
     return HistoryLastResponse(rows=rsp)
 
 
-async def create(session,
-                 execution_result: ExecutionResult,
-                 nb_task: NBTask) -> HistoryModel:
+async def create(
+    session, execution_result: ExecutionResult, nb_task: NBTask
+) -> HistoryModel:
     result_data = asdict(execution_result)
 
     status = 0

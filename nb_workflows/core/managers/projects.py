@@ -1,20 +1,19 @@
 from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
+from sqlalchemy import delete, exc, select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import selectinload
+
 from nb_workflows.conf import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.models import ProjectModel
 from nb_workflows.hashes import generate_random
 from nb_workflows.utils import get_parent_folder, secure_filename
-from sqlalchemy import delete, exc, select
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import selectinload
 
 
 def select_project():
-    stmt = select(ProjectModel).options(
-        selectinload(ProjectModel.user)
-    )
+    stmt = select(ProjectModel).options(selectinload(ProjectModel.user))
     return stmt
 
 
@@ -29,8 +28,7 @@ def _model2projectdata(obj: ProjectModel) -> ProjectData:
     return pd
 
 
-def _create_or_update_stmt(name, user_id: int, projectid: str,
-                           pd: ProjectData):
+def _create_or_update_stmt(name, user_id: int, projectid: str, pd: ProjectData):
     stmt = insert(ProjectModel.__table__).values(
         name=name,
         projectid=projectid,
@@ -62,7 +60,9 @@ def generate_projectid() -> str:
     return generate_random(settings.PROJECTID_LEN)
 
 
-async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectModel, None]:
+async def create(
+    session, user_id: int, pq: ProjectReq
+) -> Union[ProjectModel, None]:
     name = normalize_name(pq.name)
 
     projectid = pq.projectid or generate_projectid()
@@ -92,8 +92,7 @@ async def create_or_update(session, user_id: int, pq: ProjectReq):
 
 
 async def get_by_projectid_model(session, projectid) -> Union[ProjectModel, None]:
-    stmt = select_project().where(
-        ProjectModel.projectid == projectid).limit(1)
+    stmt = select_project().where(ProjectModel.projectid == projectid).limit(1)
     r = await session.execute(stmt)
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
     if not obj:
@@ -101,11 +100,11 @@ async def get_by_projectid_model(session, projectid) -> Union[ProjectModel, None
     return obj
 
 
-async def get_by_projectid(session, projectid, user_id=None) \
-        -> Union[ProjectData, None]:
+async def get_by_projectid(
+    session, projectid, user_id=None
+) -> Union[ProjectData, None]:
 
-    stmt = select_project().where(
-        ProjectModel.projectid == projectid)
+    stmt = select_project().where(ProjectModel.projectid == projectid)
     if user_id:
         stmt = stmt.where(ProjectModel.user_id == user_id)
     stmt = stmt.limit(1)
@@ -119,8 +118,7 @@ async def get_by_projectid(session, projectid, user_id=None) \
 async def get_by_name_model(session, name) -> Union[ProjectModel, None]:
     _name = normalize_name(name)
     stmt = select_project()
-    stmt = stmt.where(
-        ProjectModel.name == _name).limit(1)
+    stmt = stmt.where(ProjectModel.name == _name).limit(1)
     r = await session.execute(stmt)
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
     if not obj:
@@ -131,8 +129,9 @@ async def get_by_name_model(session, name) -> Union[ProjectModel, None]:
 async def get_by_name(session, name) -> Union[ProjectData, None]:
     obj = await get_by_name_model(session, name)
     if obj:
-        return ProjectData(**obj.to_dict(
-            rules=("-id", "-created_at", "-updated_at")))
+        return ProjectData(
+            **obj.to_dict(rules=("-id", "-created_at", "-updated_at"))
+        )
     return None
 
 
@@ -158,12 +157,11 @@ async def list_by_user(session, user_id) -> Union[List[ProjectData], None]:
 
 
 async def delete_by_projectid(session, projectid):
-    """ TODO: In the future this could be a task 
+    """TODO: In the future this could be a task
     or a flag that a async task takes to clean project data
     such as docker images, files and so on.
     """
-    stmt = delete(ProjectModel).where(
-        ProjectModel.projectid == projectid)
+    stmt = delete(ProjectModel).where(ProjectModel.projectid == projectid)
     await session.execute(stmt)
 
 
@@ -172,6 +170,7 @@ def ask_project_name() -> str:
     _default = normalize_name(parent)
     project_name = str(
         input(f"Write a name for this project (default: {_default}): ")
-        or _default)
+        or _default
+    )
     name = normalize_name(project_name)
     return name

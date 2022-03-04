@@ -3,6 +3,16 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 
+from redis import Redis
+from rq import Queue
+from rq.job import Job
+from rq.registry import FailedJobRegistry, StartedJobRegistry
+from rq_scheduler import Scheduler
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
+
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf import settings
 from nb_workflows.core.entities import NBTask, ScheduleData
@@ -13,15 +23,6 @@ from nb_workflows.core.notebooks import nb_job_executor
 from nb_workflows.db.sync import SQL
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import run_async
-from redis import Redis
-from rq import Queue
-from rq.job import Job
-from rq.registry import FailedJobRegistry, StartedJobRegistry
-from rq_scheduler import Scheduler
-from sqlalchemy import delete, select
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
@@ -66,7 +67,9 @@ class SchedulerExecutor:
         # on_success=rq_job_ok, on_failure=rq_job_error)
         self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
 
-    def enqueue_notebook_in_docker(self, projectid, task: NBTask, executionid=None) -> Job:
+    def enqueue_notebook_in_docker(
+        self, projectid, task: NBTask, executionid=None
+    ) -> Job:
         """Enqueue in redis a notebook workflow
         :param task: NBTask object
         :param executionid: An optional executionid
@@ -92,8 +95,7 @@ class SchedulerExecutor:
         try:
             await session.commit()
         except IntegrityError:
-            raise KeyError(
-                "An integrity error when saving the workflow into db")
+            raise KeyError("An integrity error when saving the workflow into db")
 
         if task.schedule.cron:
             await run_async(self._cron2redis, project_id, jobid, task)

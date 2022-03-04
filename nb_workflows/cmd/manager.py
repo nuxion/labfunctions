@@ -4,6 +4,7 @@ from getpass import getpass
 import click
 from alembic import command
 from alembic.config import Config as AlembicConfig
+
 from nb_workflows.auth import users as users_mgt
 from nb_workflows.auth.utils import password_manager
 from nb_workflows.conf import load_server
@@ -21,8 +22,8 @@ def managercli():
 
 
 def alembic_ugprade(dburi, to="head"):
-    alembic_cfg = AlembicConfig('nb_workflows/db/alembic.ini')
-    alembic_cfg.set_main_option('sqlalchemy.url', dburi)
+    alembic_cfg = AlembicConfig("nb_workflows/db/alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", dburi)
     command.upgrade(alembic_cfg, to)
 
 
@@ -64,8 +65,7 @@ def users(sql, superuser, username, action):
 
         S = db.sessionmaker()
         with S() as session:
-            u = users_mgt.create_user(
-                session, _u, _p, superuser, is_active=True)
+            u = users_mgt.create_user(session, _u, _p, superuser, is_active=True)
             session.commit()
 
         click.echo(f"User {_u} created")

@@ -3,15 +3,16 @@ import pathlib
 from typing import List, Union
 
 import aiofiles
+from sanic import Blueprint, Sanic, exceptions
+from sanic.response import json
+from sanic_ext import openapi
+from sanic_jwt import inject_user, protected
+
 from nb_workflows.auth.types import UserData
 from nb_workflows.conf import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.managers import projects
 from nb_workflows.utils import secure_filename
-from sanic import Blueprint, Sanic, exceptions
-from sanic.response import json
-from sanic_ext import openapi
-from sanic_jwt import inject_user, protected
 
 projects_bp = Blueprint("projects", url_prefix="projects")
 
@@ -32,7 +33,7 @@ async def generate_id(session, retries=3) -> Union[str, None]:
 @openapi.response(200, "project")
 @openapi.response(500, "not found")
 async def project_generateid(request):
-    """Generates a random projectid """
+    """Generates a random projectid"""
     # pylint: disable=unused-argument
 
     session = request.ctx.session
@@ -59,7 +60,8 @@ async def project_create(request, user: UserData):
     r = await projects.create(session, user.user_id, pd)
     if r:
         d_ = r.to_dict(
-            rules=("-id", "-created_at", "-updated_at", "-user", "-user_id"))
+            rules=("-id", "-created_at", "-updated_at", "-user", "-user_id")
+        )
         return json(d_, 201)
     return json(dict(msg="already exist"), 200)
 
@@ -104,10 +106,12 @@ async def project_get_one(request, projectid, user: UserData):
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    r = await projects.get_by_projectid(session, projectid,
-                                            user_id=user.user_id)
-    if r:
-        return json(r.dict(), 200)
+    async with session.begin():
+        r = await projects.get_by_projectid(
+            session, projectid, user_id=user.user_id
+        )
+        if r:
+            return json(r.dict(), 200)
     return json(dict(msg="Not found"))
 
 

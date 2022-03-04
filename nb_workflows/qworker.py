@@ -38,8 +38,7 @@ def error():
 def run_workers(qnames, workers):
 
     if workers > 1:
-        _executor = get_reusable_executor(
-            max_workers=workers, kill_workers=True)
+        _executor = get_reusable_executor(max_workers=workers, kill_workers=True)
         _results = [_executor.submit(worker, qnames) for _ in range(workers)]
         print(len(_results))
     else:
@@ -51,6 +50,5 @@ if __name__ == "__main__":
     # similar to rq worker
 
     qs = sys.argv[1:] or ["default"]
-    executor = get_reusable_executor(
-        max_workers=3, timeout=2, kill_workers=True)
+    executor = get_reusable_executor(max_workers=3, timeout=2, kill_workers=True)
     results = [executor.submit(worker, qs) for _ in range(3)]

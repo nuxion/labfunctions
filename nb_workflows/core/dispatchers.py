@@ -1,13 +1,18 @@
 from typing import Union
 
 import docker
+from sqlalchemy import select
+
 from nb_workflows import client
 from nb_workflows.conf import settings
 from nb_workflows.core.core import nb_job_executor
-from nb_workflows.core.entities import (ExecutionResult, HistoryResult,
-                                             NBTask, ScheduleData)
+from nb_workflows.core.entities import (
+    ExecutionResult,
+    HistoryResult,
+    NBTask,
+    ScheduleData,
+)
 from nb_workflows.core.models import WorkflowModel
-from sqlalchemy import select
 
 
 def local_exec(jobid) -> Union[ExecutionResult, None]:
@@ -43,8 +48,9 @@ def docker_exec(jobid):
     try:
         rsp = nb_client.get_workflow(jobid)
         if rsp and rsp.enabled:
-            docker_client.containers.run("nuxion/nb_workflows",
-                                         f"nb workflows exec -J {jobid}")
+            docker_client.containers.run(
+                "nuxion/nb_workflows", f"nb workflows exec -J {jobid}"
+            )
         elif not rsp.task:
             nb_client.rq_cancel_job(jobid)
         else:

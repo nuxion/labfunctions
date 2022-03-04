@@ -8,9 +8,11 @@ SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
 CLIENT_TOKEN = os.getenv("NB_TOKEN", "changeme")
 # Services
 SQL = os.getenv(
-    "NB_SQL", "postgresql://postgres:secret@postgres:5432/nb_workflows")
+    "NB_SQL", "postgresql://postgres:secret@postgres:5432/nb_workflows"
+)
 ASQL = os.getenv(
-    "NB_ASQL", "postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows")
+    "NB_ASQL", "postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows"
+)
 FILESERVER = os.getenv("NB_FILESERVER")
 FILESERVER_BUCKET = "nb-workflows"
 

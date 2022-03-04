@@ -1,15 +1,15 @@
 # pylint: disable=unused-argument
 from dataclasses import asdict
 
-from nb_workflows.utils import get_query_param
-from nb_workflows.core.managers import history
-from nb_workflows.core.entities import (ExecutionResult, HistoryRequest,
-                                             NBTask)
-from nb_workflows.core.registers import register_history_db
 from sanic import Blueprint
 from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
+
+from nb_workflows.core.entities import ExecutionResult, HistoryRequest, NBTask
+from nb_workflows.core.managers import history
+from nb_workflows.core.registers import register_history_db
+from nb_workflows.utils import get_query_param
 
 stats_bp = Blueprint("history", url_prefix="history")
 

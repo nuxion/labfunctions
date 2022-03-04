@@ -1,12 +1,22 @@
 # pylint: disable=too-few-public-methods
 from datetime import datetime
 
-from nb_workflows.db.common import Base
-from sqlalchemy import (BigInteger, Boolean, Column, DateTime, Float,
-                        ForeignKey, Integer, String, UniqueConstraint)
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy_serializer import SerializerMixin
+
+from nb_workflows.db.common import Base
 
 
 class HistoryModel(Base, SerializerMixin):
@@ -55,8 +65,11 @@ class ProjectModel(Base, SerializerMixin):
     name = Column(String(128), nullable=False)
     description = Column(String())
     repository = Column(String(2048), nullable=True)
-    user_id = Column(BigInteger, ForeignKey(
-        'nb_auth_user.id', ondelete='SET NULL'), nullable=False)
+    user_id = Column(
+        BigInteger,
+        ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
+        nullable=False,
+    )
 
     user = relationship("UserModel")
     # folder = Column(String(24))  # should be execution id
@@ -82,8 +95,9 @@ class WorkflowModel(Base, SerializerMixin):
     # pylint: disable=too-few-public-methods
     __tablename__ = "nb_core_workflow"
     __table_args__ = (
-        UniqueConstraint('alias', 'project_id',
-                         name='_nb_workflow__project_alias'),
+        UniqueConstraint(
+            "alias", "project_id", name="_nb_workflow__project_alias"
+        ),
     )
     # needed for async support
     __mapper_args__ = {"eager_defaults": True}
@@ -97,8 +111,11 @@ class WorkflowModel(Base, SerializerMixin):
     # project_id = Column(BigInteger, ForeignKey(
     #    'nb_workflows_project.id', ondelete='SET NULL'), nullable=True)
     # project = relationship("ProjectModel")
-    project_id = Column(String(16), ForeignKey(
-        'nb_core_project.projectid', ondelete='SET NULL'), nullable=True)
+    project_id = Column(
+        String(16),
+        ForeignKey("nb_core_project.projectid", ondelete="SET NULL"),
+        nullable=True,
+    )
     project = relationship("ProjectModel")
 
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)

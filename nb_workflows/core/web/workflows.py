@@ -4,16 +4,20 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
-from nb_workflows.core.entities import (NBTask, ScheduleData, WorkflowData,
-                                        WorkflowsList)
-from nb_workflows.core.managers import workflows
-from nb_workflows.core.scheduler import SchedulerExecutor
-from nb_workflows.utils import (get_query_param, parse_page_limit, run_async,
-                                secure_filename)
 from sanic import Blueprint, Sanic
 from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
+
+from nb_workflows.core.entities import NBTask, ScheduleData, WorkflowData, WorkflowsList
+from nb_workflows.core.managers import workflows
+from nb_workflows.core.scheduler import SchedulerExecutor
+from nb_workflows.utils import (
+    get_query_param,
+    parse_page_limit,
+    run_async,
+    secure_filename,
+)
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
 
@@ -123,7 +127,6 @@ async def workflow_create(request, projectid):
     """
     Register a notebook workflow and schedule it
     """
-    breakpoint()
     try:
         nb_task = NBTask(**request.json)
         if nb_task.schedule:
@@ -174,8 +177,9 @@ async def workflow_update(request, projectid):
 
     async with session.begin():
         try:
-            jobid = await workflows.register(session, projectid, nb_task,
-                                             update=True)
+            jobid = await workflows.register(
+                session, projectid, nb_task, update=True
+            )
         except KeyError as e:
             print(e)
             return json(dict(msg="workflow already exist"), status=200)

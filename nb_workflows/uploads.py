@@ -4,9 +4,9 @@ import subprocess
 
 
 def execute(cmd):
-    p = subprocess.Popen(cmd.split(),
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    p = subprocess.Popen(
+        cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     out, err = p.communicate()
     if not err:
         return out.decode().strip()

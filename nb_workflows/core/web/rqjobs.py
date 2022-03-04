@@ -5,22 +5,33 @@ from datetime import datetime
 from typing import List, Optional
 
 import aiofiles
-from nb_workflows.conf import settings
-from nb_workflows.core.core import nb_job_executor
-from nb_workflows.core.entities import (ExecutionResult, HistoryRequest,
-                                        NBTask, ProjectData)
-from nb_workflows.core.managers import history, projects
-from nb_workflows.core.registers import register_history_db
-from nb_workflows.core.scheduler_deprecated import (QueueExecutor,
-                                                    SchedulerExecutor,
-                                                    scheduler_dispatcher)
-from nb_workflows.utils import (get_query_param, parse_page_limit, run_async,
-                                secure_filename)
 from redis import Redis
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
+
+from nb_workflows.conf import settings
+from nb_workflows.core.core import nb_job_executor
+from nb_workflows.core.entities import (
+    ExecutionResult,
+    HistoryRequest,
+    NBTask,
+    ProjectData,
+)
+from nb_workflows.core.managers import history, projects
+from nb_workflows.core.registers import register_history_db
+from nb_workflows.core.scheduler_deprecated import (
+    QueueExecutor,
+    SchedulerExecutor,
+    scheduler_dispatcher,
+)
+from nb_workflows.utils import (
+    get_query_param,
+    parse_page_limit,
+    run_async,
+    secure_filename,
+)
 
 rqjobs_bp = Blueprint("rqjobs", url_prefix="rqjobs")
 

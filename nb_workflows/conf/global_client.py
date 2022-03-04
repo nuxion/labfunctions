@@ -28,22 +28,12 @@ DOCKER_IMAGE = {
     # Would it have to be based on the id of the user?
     "user": {"uid": 1089, "gid": 1090},
     "build_packages": "build-essential libopenblas-dev git",
-    "final_packages": "vim-tiny"
+    "final_packages": "vim-tiny",
 }
 
 DOCKER_COMPOSE = {
-    "postgres": {
-        "image": "postgres:14-alpine",
-        "listen_addr": "5432"
-    },
-    "redis": {
-        "image": "redis:6-alpine",
-        "listen_addr": "6379"
-    },
-    "web": {
-        "listen_addr": "8000"
-    },
-    "jupyter": {
-        "listen_addr": "127.0.0.1:8888"
-    }
+    "postgres": {"image": "postgres:14-alpine", "listen_addr": "5432"},
+    "redis": {"image": "redis:6-alpine", "listen_addr": "6379"},
+    "web": {"listen_addr": "8000"},
+    "jupyter": {"listen_addr": "127.0.0.1:8888"},
 }

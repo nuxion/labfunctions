@@ -1,6 +1,7 @@
 import os
 
 import click
+
 from nb_workflows import client, init_script
 from nb_workflows.conf import settings_client as settings
 from nb_workflows.core.executors import local_dev_exec, local_exec
@@ -21,10 +22,15 @@ def workflowscli():
     default="workflows.yaml",
     help="yaml file with the configuration",
 )
-@click.option("--example", "-E", default=True, is_flag=True,
-              help="Init with example")
-@click.option("--url-service", "-u",
-              default=settings.WORKFLOW_SERVICE, help="URL of the NB Workflow Service")
+@click.option(
+    "--example", "-E", default=True, is_flag=True, help="Init with example"
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=settings.WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
 @click.option(
     "--update",
@@ -38,8 +44,9 @@ def workflowscli():
 )
 @click.argument(
     "action",
-    type=click.Choice(["init", "push", "sync", "list",
-                       "exec", "dev-exec", "delete"]),
+    type=click.Choice(
+        ["init", "push", "sync", "list", "exec", "dev-exec", "delete"]
+    ),
 )
 def wf(from_file, url_service, remote, update, example, action, jobid):
     """Manage workflows"""
@@ -96,8 +103,12 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
 
 
 @click.command()
-@click.option("--url-service", "-u",
-              default=settings.WORKFLOW_SERVICE, help="URL of the NB Workflow Service")
+@click.option(
+    "--url-service",
+    "-u",
+    default=settings.WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
 def login(url_service):
     """Login to NB Workflows service"""
     click.echo(f"\nLogin to NB Workflows services {url_service}\n")
@@ -107,11 +118,16 @@ def login(url_service):
 
 
 @workflowscli.command()
-@click.option("--create-dirs", "-C", is_flag=True, default=True,
-              help="Create outpus and workflows dir")
+@click.option(
+    "--create-dirs",
+    "-C",
+    is_flag=True,
+    default=True,
+    help="Create outpus and workflows dir",
+)
 @click.argument("base_path")
 def startproject(base_path, create_dirs):
-    """Start a new project """
+    """Start a new project"""
     init_script.init(base_path, create_dirs)
     print("\n Next steps: ")
     print("\n\t1. init a git repository")

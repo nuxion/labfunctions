@@ -12,8 +12,7 @@ GLOBAL_MODULE = "nb_workflows.conf.global_settings"
 GLOBAL_CLIENT = "nb_workflows.conf.global_client"
 ENVIRONMENT_VARIABLE = "NB_SETTINGS_MODULE"
 CLIENT_VARIABLE = "NB_CLIENT_MODULE"
-DEFAULT_MODULE = os.environ.get(
-    ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
+DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
 
 DEFAULT_CLIENT = os.environ.get(CLIENT_VARIABLE, "nb_app.settings")
 
@@ -54,8 +53,7 @@ def load_client(settings_module=DEFAULT_CLIENT) -> ClientSettings:
     return cfg
 
 
-def load() -> \
-        Union[ClientSettings, ServerSettings]:
+def load() -> Union[ClientSettings, ServerSettings]:
     if os.environ.get("NB_SERVER", False):
         return load_server()
     else:

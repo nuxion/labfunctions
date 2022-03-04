@@ -2,21 +2,20 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any, Dict, List, Union
 
-from nb_workflows.core.entities import NBTask, WorkflowData, WorkflowsList
-from nb_workflows.core.managers import projects
-from nb_workflows.core.models import WorkflowModel
-from nb_workflows.hashes import Hash96
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-WFDATA_RULES = ("-id", "-project", "-project_id",
-                "-created_at", "-updated_at")
+from nb_workflows.core.entities import NBTask, WorkflowData, WorkflowsList
+from nb_workflows.core.managers import projects
+from nb_workflows.core.models import WorkflowModel
+from nb_workflows.hashes import Hash96
+
+WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
 
 
-def _create_or_update_workflow(jobid: str, projectid: str,
-                               task: NBTask):
+def _create_or_update_workflow(jobid: str, projectid: str, task: NBTask):
     task_dict = asdict(task)
 
     stmt = insert(WorkflowModel.__table__).values(
@@ -42,9 +41,7 @@ def _create_or_update_workflow(jobid: str, projectid: str,
 
 
 def select_workflow():
-    stmt = select(WorkflowModel).options(
-        selectinload(WorkflowModel.project)
-    )
+    stmt = select(WorkflowModel).options(selectinload(WorkflowModel.project))
     return stmt
 
 
@@ -82,9 +79,11 @@ async def get_by_jobid(session, jobid) -> WorkflowData:
 
 
 async def get_by_jobid_prj(session, projectid, jobid) -> WorkflowData:
-    stmt = select_workflow()\
-        .where(WorkflowModel.jobid == jobid)\
+    stmt = (
+        select_workflow()
+        .where(WorkflowModel.jobid == jobid)
         .where(WorkflowModel.project_id == projectid)
+    )
     result = await session.execute(stmt)
     row = result.scalar()
     if row:
@@ -119,19 +118,15 @@ async def get_all(session, project_id=None) -> List[WorkflowData]:
 
 async def get_by_alias(session, alias) -> Union[Dict[str, Any], None]:
     if alias:
-        stmt = (
-            select_workflow().where(
-                WorkflowModel.alias == alias).limit(1)
-        )
+        stmt = select_workflow().where(WorkflowModel.alias == alias).limit(1)
         result = await session.execute(stmt)
         row = result.scalar()
         return row
     return None
 
 
-async def register(session, projectid: str, task: NBTask,
-                   update=False) -> str:
-    """ Register workflows """
+async def register(session, projectid: str, task: NBTask, update=False) -> str:
+    """Register workflows"""
     jobid = generate_jobid()
     data_dict = asdict(task)
 
@@ -144,8 +139,7 @@ async def register(session, projectid: str, task: NBTask,
         if wf:
             jobid = wf.jobid
 
-        stmt = _create_or_update_workflow(
-            jobid, projectid, task)
+        stmt = _create_or_update_workflow(jobid, projectid, task)
         await session.execute(stmt)
     else:
         data_dict["jobid"] = jobid
@@ -166,7 +160,9 @@ async def register(session, projectid: str, task: NBTask,
 
 
 async def delete_wf(session, project_id, jobid):
-    stmt = delete(WorkflowModel)\
-        .where(WorkflowModel.project_id == project_id)\
+    stmt = (
+        delete(WorkflowModel)
+        .where(WorkflowModel.project_id == project_id)
         .where(WorkflowModel.jobid == jobid)
+    )
     await session.execute(stmt)

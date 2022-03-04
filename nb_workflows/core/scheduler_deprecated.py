@@ -3,14 +3,6 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 
-# from nb_workflows.workflows.registers import register_history_db
-from nb_workflows.conf import settings
-from nb_workflows.db.sync import SQL
-from nb_workflows.hashes import Hash96
-from nb_workflows.core.managers import projects
-from nb_workflows.core.core import nb_job_executor
-from nb_workflows.core.entities import NBTask, ScheduleData
-from nb_workflows.core.models import WorkflowModel
 from redis import Redis
 from rq import Queue
 from rq.job import Job
@@ -21,11 +13,21 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+# from nb_workflows.workflows.registers import register_history_db
+from nb_workflows.conf import settings
+from nb_workflows.core.core import nb_job_executor
+from nb_workflows.core.entities import NBTask, ScheduleData
+from nb_workflows.core.managers import projects
+from nb_workflows.core.models import WorkflowModel
+from nb_workflows.db.sync import SQL
+from nb_workflows.hashes import Hash96
+
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
 
-def _create_or_update_workflow(jobid: str, projectid: str,
-                               task: NBTask, update=False):
+def _create_or_update_workflow(
+    jobid: str, projectid: str, task: NBTask, update=False
+):
     task_dict = asdict(task)
 
     stmt = insert(WorkflowModel.__table__).values(
@@ -193,8 +195,7 @@ class SchedulerExecutor:
     async def get_by_alias(self, session, alias) -> Union[Dict[str, Any], None]:
         if alias:
             stmt = (
-                select(WorkflowModel).where(
-                    WorkflowModel.alias == alias).limit(1)
+                select(WorkflowModel).where(WorkflowModel.alias == alias).limit(1)
             )
             result = await session.execute(stmt)
             row = result.scalar()
@@ -202,9 +203,7 @@ class SchedulerExecutor:
         return None
 
     async def get_schedule_db(self, session, projectid):
-        stmt = select(WorkflowModel).options(
-            selectinload(WorkflowModel.project)
-        )
+        stmt = select(WorkflowModel).options(selectinload(WorkflowModel.project))
         stmt = stmt.where(WorkflowModel.project_id == projectid)
         result = await session.execute(stmt)
         rows = result.scalars()
@@ -216,8 +215,7 @@ class SchedulerExecutor:
         rsp = await loop.run_in_executor(None, func, *args, **kwargs)
         return rsp
 
-    async def register(self, session, projectid: str, task: NBTask,
-                       update=False):
+    async def register(self, session, projectid: str, task: NBTask, update=False):
         jobid = self.jobid()
         data_dict = asdict(task)
 
@@ -230,8 +228,7 @@ class SchedulerExecutor:
             if j:
                 jobid = j["jobid"]
 
-            stmt = _create_or_update_workflow(
-                jobid, projectid, task, update=True)
+            stmt = _create_or_update_workflow(jobid, projectid, task, update=True)
             await session.execute(stmt)
             await self.run_async(self.cancel_job, jobid)
         else:
@@ -256,8 +253,7 @@ class SchedulerExecutor:
         try:
             await session.commit()
         except IntegrityError:
-            raise KeyError(
-                "An integrity error when saving the workflow into db")
+            raise KeyError("An integrity error when saving the workflow into db")
 
         if task.schedule.cron:
             await self.run_async(self._cron2redis, jobid, task)

@@ -11,6 +11,7 @@ def init_cli():
         return click.CommandCollection(sources=[servicescli, managercli])
     else:
         from nb_workflows.cmd.workflows import workflowscli
+
         return click.CommandCollection(sources=[workflowscli])
 
 

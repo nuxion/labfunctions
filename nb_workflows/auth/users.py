@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Union
 
-from nb_workflows.auth.models import GroupModel, UserModel
-from nb_workflows.auth.types import UserData
-from nb_workflows.auth.utils import password_manager
 from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+
+from nb_workflows.auth.models import GroupModel, UserModel
+from nb_workflows.auth.types import UserData
+from nb_workflows.auth.utils import password_manager
 
 
 def create_user(
@@ -114,12 +115,11 @@ async def authenticate_web(requests, *args, **kwargs):
 
 async def retrieve_user(request, payload, *args, **kwargs) -> UserData:
     if payload:
-        user_id = payload.get('user_id', None)
+        user_id = payload.get("user_id", None)
         session = request.ctx.session
         # async with session.begin():
         user = await get_userid_async(session, user_id)
-        user_dict = user.to_dict(
-            rules=("-id", "-created_at", "-updated_at"))
+        user_dict = user.to_dict(rules=("-id", "-created_at", "-updated_at"))
         user_dict["user_id"] = user_id
         return UserData(**user_dict)
     else:
@@ -129,12 +129,12 @@ async def retrieve_user(request, payload, *args, **kwargs) -> UserData:
 async def store_refresh_token(user_id, refresh_token, *args, **kwargs):
 
     redis = kwargs["request"].ctx.web_redis
-    key = f'nb.rtkn.{user_id}'
+    key = f"nb.rtkn.{user_id}"
     await redis.set(key, refresh_token)
 
 
 async def retrieve_refresh_token(request, user_id, *args, **kwargs):
     # Check: https://github.com/ahopkins/sanic-jwt/issues/34
     redis = request.ctx.web_redis
-    key = f'nb.rtkn.{user_id}'
+    key = f"nb.rtkn.{user_id}"
     return await redis.get(key)
