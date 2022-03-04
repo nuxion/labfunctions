@@ -130,7 +130,9 @@ async def store_refresh_token(user_id, refresh_token, *args, **kwargs):
 
     redis = kwargs["request"].ctx.web_redis
     key = f"nb.rtkn.{user_id}"
-    await redis.set(key, refresh_token)
+    _key = await redis.get(key)
+    if not _key:
+        await redis.set(key, refresh_token)
 
 
 async def retrieve_refresh_token(request, user_id, *args, **kwargs):

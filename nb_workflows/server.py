@@ -7,21 +7,29 @@ from sanic.response import json
 from sanic_ext import Extend
 from sanic_jwt import Initialize
 
-from nb_workflows.auth import users
+from nb_workflows.auth import authenticate, users
 from nb_workflows.conf import settings
 from nb_workflows.db.nosync import AsyncSQL
 
 app = Sanic("nb_workflows")
+# Initialize(
+#    app,
+#    authenticate=users.authenticate_web,
+#    secret=settings.SECRET_KEY,
+#    refresh_token_enabled=True,
+#    retrieve_refresh_token=users.retrieve_refresh_token,
+#    store_refresh_token=users.store_refresh_token,
+#    retrieve_user=users.retrieve_user,
+# )
 Initialize(
     app,
-    authenticate=users.authenticate_web,
+    authentication_class=authenticate.NBAuthentication,
     secret=settings.SECRET_KEY,
     refresh_token_enabled=True,
-    retrieve_refresh_token=users.retrieve_refresh_token,
-    store_refresh_token=users.store_refresh_token,
-    retrieve_user=users.retrieve_user,
+    # retrieve_refresh_token=users.retrieve_refresh_token,
+    # store_refresh_token=users.store_refresh_token,
+    # retrieve_user=users.retrieve_user,
 )
-
 
 # app.blueprint(workflows_bp)
 
