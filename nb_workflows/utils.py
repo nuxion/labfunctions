@@ -9,16 +9,12 @@ import socket
 import unicodedata
 from datetime import datetime
 from functools import wraps
-from glob import glob
 from importlib import import_module
 from time import time
 
 import redis
 import toml
-from rq import Queue
-
-from nb_workflows.conf import settings
-from nb_workflows.hashes import PasswordScript
+import yaml
 
 _formats = {"hours": "%Y%m%d.%H%M%S", "day": "%Y%m%d", "month": "%Y%m"}
 _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
@@ -37,15 +33,6 @@ _windows_device_files = (
 )
 
 
-def list_workflows():
-    notebooks = []
-    files = glob(f"{settings.BASE_PATH}/{settings.NB_WORKFLOWS}*")
-    for x in files:
-        if ".ipynb" or ".py" in x:
-            notebooks.append(x.split("/")[-1].split(".")[0])
-    return notebooks
-
-
 def today_string(utc=True, format_="hours"):
     if utc:
         _now = datetime.utcnow().strftime(_formats[format_])
@@ -61,10 +48,6 @@ def test_error():
     print("From pid: ", pid)
 
     raise TypeError("error from test_error")
-
-
-def queue_init(redis, name="default"):
-    return Queue(name, connection=redis.Redis(**redis))
 
 
 def check_port(ip: str, port: int) -> bool:
@@ -161,13 +144,6 @@ def flatten_list(list_):
     return [item for sublist in list_ for item in sublist]
 
 
-def set_logger(name: str, level=settings.LOGLEVEL):
-    logger = logging.getLogger(name)
-    _level = getattr(logging, level)
-    logger.setLevel(_level)
-    return logger
-
-
 def Timeit(f):
     @wraps(f)
     def wrap(*args, **kw):
@@ -205,11 +181,6 @@ def create_redis_client(fullurl, decode_responses=True) -> redis.Redis:
     return redis.StrictRedis(
         host=h, port=p, db=db, decode_responses=decode_responses
     )
-
-
-def password_manager() -> PasswordScript:
-    s = settings.SALT
-    return PasswordScript(salt=s.encode("utf-8"))
 
 
 def secure_filename(filename: str) -> str:
@@ -274,3 +245,24 @@ def write_toml(filepath, data):
     with open(filepath, "w", encoding="utf-8") as f:
         _dump = toml.dumps(data)
         f.write(_dump)
+
+
+def open_yaml(filepath: str):
+    with open(filepath, "r") as f:
+        data = f.read()
+        dict_ = yaml.safe_load(data)
+
+    return dict_
+
+
+def write_yaml(filepath: str, data):
+    with open(filepath, "w") as f:
+        dict_ = yaml.dump(data)
+        f.write(dict_)
+
+
+def set_logger(name: str, level: str):
+    logger = logging.getLogger(name)
+    _level = getattr(logging, level)
+    logger.setLevel(_level)
+    return logger

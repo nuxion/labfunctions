@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from pydantic import BaseModel
+
 
 @dataclass
 class ScheduleData:
@@ -10,7 +12,6 @@ class ScheduleData:
     repeat: Optional[int] = None
     cron: Optional[str] = None
     interval: Optional[str] = None
-    enabled: bool = True
 
 
 @dataclass
@@ -35,7 +36,7 @@ class NBTask:
     params: Dict[str, Any]
 
     machine: str = "default"
-    docker: Optional[str] = None
+    docker_version: Optional[str] = "latest"
 
     alias: Optional[str] = None
     description: Optional[str] = None
@@ -104,10 +105,10 @@ class HistoryRequest:
     result: ExecutionResult
 
 
-@dataclass
-class ProjectData:
+class ProjectData(BaseModel):
     name: str
     projectid: str
+    username: Optional[str] = None
     description: Optional[str] = None
     repository: Optional[str] = None
 
@@ -125,5 +126,20 @@ class ProjectWebRsp:
     name: str
     created_at: str
     updated_at: str
+    username: Optional[str] = None
     description: Optional[str] = None
     repository: Optional[str] = None
+
+
+@dataclass
+class WorkflowData:
+    jobid: str
+    nb_name: str
+    job_detail: Dict[str, Any]
+    enabled: bool
+    alias: Optional[str] = None
+
+
+@dataclass
+class WorkflowsList:
+    rows: List[WorkflowData]

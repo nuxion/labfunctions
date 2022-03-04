@@ -1,7 +1,5 @@
 import httpx
 
-from nb_workflows.conf import settings
-
 SLACK_API = "https://slack.com/api/"
 EMOJI_ERROR = "🤬"
 EMOJI_OK = "👌"
@@ -9,7 +7,7 @@ EMOJI_OK = "👌"
 
 class SlackCient:
 
-    def __init__(self, tkn=settings.SLACK_BOT_TOKEN):
+    def __init__(self, tkn):
         self._headers = {"Authorization": f"Bearer {tkn}"}
 
     def list_channels(self):

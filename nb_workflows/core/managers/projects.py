@@ -1,12 +1,11 @@
-# from dataclasses import asdict
 from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
 from nb_workflows.conf import settings
-from nb_workflows.hashes import generate_random
-from nb_workflows.utils import get_parent_folder, secure_filename
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.models import ProjectModel
+from nb_workflows.hashes import generate_random
+from nb_workflows.utils import get_parent_folder, secure_filename
 from sqlalchemy import delete, exc, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
@@ -17,6 +16,17 @@ def select_project():
         selectinload(ProjectModel.user)
     )
     return stmt
+
+
+def _model2projectdata(obj: ProjectModel) -> ProjectData:
+    pd = ProjectData(
+        name=obj.name,
+        projectid=obj.projectid,
+        username=obj.user.username,
+        description=obj.description,
+        respository=obj.repository,
+    )
+    return pd
 
 
 def _create_or_update_stmt(name, user_id: int, projectid: str,
@@ -103,8 +113,7 @@ async def get_by_projectid(session, projectid, user_id=None) \
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
     if not obj:
         return None
-    return ProjectData(**obj.to_dict(
-        rules=("-id", "-created_at", "-updated_at")))
+    return _model2projectdata(obj)
 
 
 async def get_by_name_model(session, name) -> Union[ProjectModel, None]:
@@ -132,10 +141,9 @@ async def list_all(session, user_id=None) -> Union[List[ProjectData], None]:
     if user_id:
         stmt = stmt.where(ProjectModel.user_id == user_id)
     rows = await session.execute(stmt)
+
     if rows:
-        results: List[ProjectData] = [ProjectData(**r[0].to_dict(
-            rules=("-id", "-created_at", "-updated_at")))
-            for r in rows]
+        results = [_model2projectdata(r[0]) for r in rows]
         return results
     return None
 
@@ -144,9 +152,7 @@ async def list_by_user(session, user_id) -> Union[List[ProjectData], None]:
     stmt = select_project().where(ProjectModel.user_id == user_id)
     rows = await session.execute(stmt)
     if rows:
-        results: List[ProjectData] = [ProjectData(**r[0].to_dict(
-            rules=("-id", "-created_at", "-updated_at", "-user", "-user_id")))
-            for r in rows]
+        results = [_model2projectdata(r[0]) for r in rows]
         return results
     return None
 

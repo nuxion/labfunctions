@@ -12,6 +12,7 @@ SQL = os.getenv(
 ASQL = os.getenv(
     "NB_ASQL", "postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows")
 FILESERVER = os.getenv("NB_FILESERVER")
+FILESERVER_BUCKET = "nb-workflows"
 
 RQ_REDIS_HOST = os.getenv("NB_RQ_HOST", "redis")
 RQ_REDIS_PORT = os.getenv("NB_RQ_PORT", "6379")
@@ -25,10 +26,14 @@ LOGLEVEL = os.getenv("NB_LOG", "INFO")
 DEBUG = bool(os.getenv("NB_DEBUG", None))
 
 
-# Folders
+# General Folders for the server
 BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
+SERVER_DATA_FOLDER = ".server_data/"
+WORKER_DATA_FOLDER = ".worker_data/"
 
 NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
 NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")
+NB_PROJECTS = "projects"
+DOCKER_RUNTIMES = "runtimes/"
 
-UPLOADS = ".uploads/"
+WF_UPLOADS = "uploads/"

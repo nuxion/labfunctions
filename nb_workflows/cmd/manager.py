@@ -5,9 +5,9 @@ import click
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from nb_workflows.auth import users as users_mgt
+from nb_workflows.auth.utils import password_manager
 from nb_workflows.conf import load_server
 from nb_workflows.db.sync import SQL
-from nb_workflows.utils import password_manager
 
 settings = load_server()
 
@@ -33,8 +33,8 @@ def db(sql, action):
     """Create or Drop tables from a database"""
     db = SQL(sql)
     settings.SQL = sql
-    wf_mod = importlib.import_module("nb_workflows.workflows.models")
     auth_mod = importlib.import_module("nb_workflows.auth.models")
+    wf_mod = importlib.import_module("nb_workflows.core.models")
 
     if action == "create":
         db.create_all()

@@ -1,21 +1,21 @@
 # pylint: disable=unused-argument
-import asyncio
-import pathlib
+import glob
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
 import aiofiles
 from nb_workflows.conf import settings
-from nb_workflows.utils import (get_query_param, list_workflows,
-                                parse_page_limit, run_async, secure_filename)
-from nb_workflows.core.managers import history, projects
 from nb_workflows.core.core import nb_job_executor
 from nb_workflows.core.entities import (ExecutionResult, HistoryRequest,
-                                             NBTask, ProjectData)
+                                        NBTask, ProjectData)
+from nb_workflows.core.managers import history, projects
 from nb_workflows.core.registers import register_history_db
-from nb_workflows.core.scheduler import (QueueExecutor, SchedulerExecutor,
-                                              scheduler_dispatcher)
+from nb_workflows.core.scheduler_deprecated import (QueueExecutor,
+                                                    SchedulerExecutor,
+                                                    scheduler_dispatcher)
+from nb_workflows.utils import (get_query_param, parse_page_limit, run_async,
+                                secure_filename)
 from redis import Redis
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
@@ -37,6 +37,15 @@ def _get_q_executor(qname="default") -> QueueExecutor:
     r = current_app.ctx.rq_redis
 
     return QueueExecutor(r, qname=qname)
+
+
+def list_workflows():
+    notebooks = []
+    files = glob(f"{settings.BASE_PATH}/{settings.NB_WORKFLOWS}*")
+    for x in files:
+        if ".ipynb" or ".py" in x:
+            notebooks.append(x.split("/")[-1].split(".")[0])
+    return notebooks
 
 
 @dataclass

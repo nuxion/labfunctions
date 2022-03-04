@@ -27,10 +27,10 @@ def init_client_dir_app(base_path, projectid, project_name):
 def generate_files(base_path):
     root = pathlib.Path(base_path)
     settings = load_client(settings_module="nb_app.settings")
-    if settings.DOCKER_OPTIONS:
+    if settings.DOCKER_IMAGE:
         render_to_file("Dockerfile", str((root / "Dockerfile.nbruntime")
                                          .resolve()),
-                       data=settings.DOCKER_OPTIONS)
+                       data=settings.DOCKER_IMAGE)
 
     render_to_file("Makefile", str((root / "Makefile").resolve()))
     render_to_file("dockerignore", str((root / ".dockerignore").resolve()))
@@ -66,7 +66,7 @@ def init(base_path, init_dirs=True):
     nb_client = workflow_init(base_path)
 
     init_client_dir_app(base_path, projectid=nb_client.projectid,
-                        project_name=nb_client.project_data.name
+                        project_name=nb_client.wf_file.project.name
                         )
 
     generate_files(base_path)

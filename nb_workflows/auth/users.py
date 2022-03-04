@@ -3,7 +3,7 @@ from typing import Union
 
 from nb_workflows.auth.models import GroupModel, UserModel
 from nb_workflows.auth.types import UserData
-from nb_workflows.utils import password_manager
+from nb_workflows.auth.utils import password_manager
 from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload

@@ -1,15 +1,13 @@
 # pylint: disable=unused-argument
 import pathlib
-from dataclasses import asdict, dataclass
-from datetime import datetime
-from typing import Union
+from typing import List, Union
 
 import aiofiles
 from nb_workflows.auth.types import UserData
 from nb_workflows.conf import settings
-from nb_workflows.utils import secure_filename
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.managers import projects
+from nb_workflows.utils import secure_filename
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
 from sanic_ext import openapi
@@ -78,13 +76,12 @@ async def project_create_or_update(request, user: UserData):
     dict_ = request.json
     pd = ProjectReq(**dict_)
     session = request.ctx.session
-    async with session.begin():
-        r = await projects.create_or_update(session, user.user_id, pd)
-        return json(dict(msg="created"), 202)
+    r = await projects.create_or_update(session, user.user_id, pd)
+    return json(dict(msg="created"), 202)
 
 
 @projects_bp.get("/")
-@openapi.response(200, "project-list")
+@openapi.response(200, List[ProjectData], "project-list")
 @protected()
 @inject_user()
 async def project_list(request, user: UserData):
@@ -92,9 +89,8 @@ async def project_list(request, user: UserData):
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    async with session.begin():
-        result = await projects.list_all(session, user.user_id)
-        return json([asdict(r) for r in result], 200)
+    result = await projects.list_all(session, user.user_id)
+    return json([r.dict() for r in result], 200)
 
 
 @projects_bp.get("/<projectid:str>")
@@ -108,11 +104,10 @@ async def project_get_one(request, projectid, user: UserData):
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    async with session.begin():
-        r = await projects.get_by_projectid(session, projectid,
+    r = await projects.get_by_projectid(session, projectid,
                                             user_id=user.user_id)
-        if r:
-            return json(asdict(r), 200)
+    if r:
+        return json(r.dict(), 200)
     return json(dict(msg="Not found"))
 
 
@@ -126,8 +121,7 @@ async def project_delete(request, projectid):
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    async with session.begin():
-        await projects.delete_by_projectid(session, projectid)
+    await projects.delete_by_projectid(session, projectid)
     return json(dict(msg="deleted"))
 
 
@@ -139,11 +133,11 @@ async def upload_project(request):
     # pylint: disable=unused-argument
 
     root = pathlib.Path(settings.BASE_PATH)
-    (root / settings.UPLOADS).mkdir(parents=True, exist_ok=True)
+    (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
     file_body = request.files["file"][0].body
     name = secure_filename(request.files["file"][0].name)
 
-    fp = str(root / settings.UPLOADS / name)
+    fp = str(root / settings.WF_UPLOADS / name)
     async with aiofiles.open(fp, "wb") as f:
         await f.write(file_body)
 
