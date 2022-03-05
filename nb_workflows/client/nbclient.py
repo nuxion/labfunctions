@@ -1,6 +1,7 @@
 from dataclasses import asdict
 from typing import Dict, List, Optional, Union
 
+from nb_workflows import secrets
 from nb_workflows.core.entities import (
     ExecutionResult,
     HistoryRequest,
@@ -14,6 +15,7 @@ from nb_workflows.core.entities import (
 
 from .base import AbstractClient
 from .types import Credentials, WFCreateRsp
+from .utils import store_private_key
 
 
 class NBClient(AbstractClient):
@@ -101,8 +103,11 @@ class NBClient(AbstractClient):
 
     def projects_create(self) -> Union[ProjectData, None]:
         self.auth_verify_or_refresh()
+
+        _key = secrets.generate_private_key()
         pq = ProjectReq(
             name=self.wf_file.project.name,
+            private_key=_key,
             projectid=self.wf_file.project.projectid,
             description=self.wf_file.project.description,
             repository=self.wf_file.project.repository,
@@ -115,7 +120,9 @@ class NBClient(AbstractClient):
             print("Project already exist")
         elif r.status_code == 201:
             print("Project created")
-            return ProjectData(**r.json())
+            pd = ProjectData(**r.json())
+            store_private_key(_key, pd.projectid)
+            return pd
         else:
             raise TypeError("Something went wrong creating the project %s", r.text)
         return None

@@ -27,23 +27,45 @@ def _example_task() -> NBTask:
 
 
 def store_credentials(creds: Credentials, relative_path=".nb_workflows/"):
-    home = str(Path.home())
-    Path(f"{home}/{relative_path}").mkdir(parents=True, exist_ok=True)
-    with open(f"{home}/{relative_path}/credentials.json", "w", encoding="utf-8") as f:
+    root = Path.home() / relative_path
+    root.mkdir(parents=True, exist_ok=True)
+    with open(root / "credentials.json", "w", encoding="utf-8") as f:
         f.write(json.dumps(creds.dict()))
+
+    root.chmod(0o700)
+    (root / "credentials.json").chmod(0o600)
 
 
 def get_credentials(relative_path=".nb_workflows/") -> Union[Credentials, None]:
-    home = str(Path.home())
-    Path(f"{home}/{relative_path}").mkdir(parents=True, exist_ok=True)
+    root = Path.home() / relative_path
+    root.mkdir(parents=True, exist_ok=True)
     try:
-        with open(
-            f"{home}/{relative_path}/credentials.json", "r", encoding="utf-8"
-        ) as f:
+        with open(root / "credentials.json", "r", encoding="utf-8") as f:
             data = f.read()
             data_dict = json.loads(data)
 
             return Credentials(**data_dict)
+    except FileNotFoundError:
+        return None
+
+
+def store_private_key(key, projectid, relative_path=".nb_workflows"):
+    root = Path.home() / relative_path / projectid
+    root.mkdir(parents=True, exist_ok=True)
+    with open(root / "private_key", "w", encoding="utf-8") as f:
+        f.write(key)
+
+    root.chmod(0o700)
+    (root / "private_key").chmod(0o600)
+
+
+def get_private_key(projectid, relative_path=".nb_workflows") -> str:
+    root = Path.home() / relative_path / projectid
+
+    try:
+        with open(root / "private_key", "r", encoding="utf-8") as f:
+            key = f.read().strip()
+            return key
     except FileNotFoundError:
         return None
 

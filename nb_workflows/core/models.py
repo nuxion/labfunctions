@@ -12,7 +12,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import BYTEA, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy_serializer import SerializerMixin
 
@@ -63,6 +63,7 @@ class ProjectModel(Base, SerializerMixin):
     id = Column(BigInteger, primary_key=True)
     projectid = Column(String(16), index=True, unique=True, nullable=False)
     name = Column(String(128), nullable=False)
+    private_key = Column(BYTEA(), nullable=False)
     description = Column(String())
     repository = Column(String(2048), nullable=True)
     user_id = Column(

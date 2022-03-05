@@ -59,7 +59,16 @@ async def project_create(request, user: UserData):
     session = request.ctx.session
     r = await projects.create(session, user.user_id, pd)
     if r:
-        d_ = r.to_dict(rules=("-id", "-created_at", "-updated_at", "-user", "-user_id"))
+        d_ = r.to_dict(
+            rules=(
+                "-id",
+                "-private_key",
+                "-created_at",
+                "-updated_at",
+                "-user",
+                "-user_id",
+            )
+        )
         return json(d_, 201)
     return json(dict(msg="already exist"), 200)
 

@@ -116,6 +116,7 @@ class ProjectData(BaseModel):
 @dataclass
 class ProjectReq:
     name: str
+    private_key: str
     projectid: Optional[str] = None
     description: Optional[str] = None
     repository: Optional[str] = None

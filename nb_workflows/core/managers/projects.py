@@ -5,6 +5,7 @@ from sqlalchemy import delete, exc, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
+from nb_workflows import secrets
 from nb_workflows.conf import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.models import ProjectModel
@@ -28,20 +29,23 @@ def _model2projectdata(obj: ProjectModel) -> ProjectData:
     return pd
 
 
-def _create_or_update_stmt(name, user_id: int, projectid: str, pd: ProjectData):
+def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
+    # _key = secrets.generate_private_key()
+
     stmt = insert(ProjectModel.__table__).values(
         name=name,
+        private_key=pq.private_key.encode("utf-8"),
         projectid=projectid,
-        description=pd.description,
-        repository=pd.repository,
+        description=pq.description,
+        repository=pq.repository,
         user_id=user_id,
     )
     stmt = stmt.on_conflict_do_update(
         # constraint="crawlers_page_bucket_id_fkey",
         index_elements=[projectid],
         set_=dict(
-            description=pd.description,
-            repository=pd.repository,
+            description=pq.description,
+            repository=pq.repository,
             updated_at=datetime.utcnow(),
         ),
     )
@@ -63,9 +67,11 @@ def generate_projectid() -> str:
 async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectModel, None]:
     name = normalize_name(pq.name)
 
+    # _key = secrets.generate_private_key()
     projectid = pq.projectid or generate_projectid()
     pm = ProjectModel(
         name=name,
+        private_key=pq.private_key.encode("utf-8"),
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
