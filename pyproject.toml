@@ -60,6 +60,7 @@ requests = "^2.27.1"
 aiohttp = "^3.8.1"
 PyYAML = "^6.0"
 pydantic = "^1.9.0"
+fsspec = "^2022.2.0"
 
 [tool.poetry.dev-dependencies]
 jupyterlab = "^3.1.14"
