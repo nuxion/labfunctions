@@ -2,7 +2,7 @@
 import pathlib
 from typing import List, Union
 
-import aiofiles
+# import aiofiles
 from sanic import Blueprint, Sanic, exceptions
 from sanic.response import json
 from sanic_ext import openapi
@@ -12,6 +12,7 @@ from nb_workflows.auth.types import UserData
 from nb_workflows.conf import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.managers import projects
+from nb_workflows.io import AsyncFileserver
 from nb_workflows.utils import secure_filename
 
 projects_bp = Blueprint("projects", url_prefix="projects")
@@ -134,20 +135,24 @@ async def project_delete(request, projectid):
     return json(dict(msg="deleted"))
 
 
-@projects_bp.post("/_upload")
-async def upload_project(request):
+@projects_bp.post("/<projectid:str>/_upload")
+async def upload_project(request, projectid):
     """
     Upload a workflow project
     """
     # pylint: disable=unused-argument
 
-    root = pathlib.Path(settings.BASE_PATH)
-    (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
+    # root = pathlib.Path(settings.BASE_PATH)
+    # (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
+    fsrv = AsyncFileserver(settings.FILESERVER)
+    root = pathlib.Path(settings.WF_UPLOADS)
     file_body = request.files["file"][0].body
     name = secure_filename(request.files["file"][0].name)
+    fp = str(root / projectid / name)
+    await fsrv.put(fp, file_body)
 
-    fp = str(root / settings.WF_UPLOADS / name)
-    async with aiofiles.open(fp, "wb") as f:
-        await f.write(file_body)
+    # fp = str(root / settings.WF_UPLOADS / name)
+    # async with aiofiles.open(fp, "wb") as f:
+    #    await f.write(file_body)
 
     return json(dict(msg="ok"), 201)

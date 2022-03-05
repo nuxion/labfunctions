@@ -12,11 +12,21 @@ SECRETS_FILENAME = ".secrets"
 
 
 def _open_vars_file(vars_file) -> Dict[str, Any]:
+    """TODO: check regex:
+    This regex works only if spaces are not used
+        ^(\w*)=?*(['|"].*?['|"|])$
+
+    Vars are cleaned from spaces, return characters and quotes
+    """
     try:
         with open(vars_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
-
-            vars_ = {l.split()[0]: l.split()[1] for l in lines}
+            vars_ = {
+                line.split("=", maxsplit=1)[0]: line.split("=")[1]
+                .replace('"', "")
+                .strip("\n")
+                for line in lines
+            }
             return vars_
     except FileNotFoundError:
         logger.warning(f"Not {vars_file} found")
@@ -50,7 +60,9 @@ def decrypt(key: bytes, text: str):
 def encrypt_nbvars(private_key: str, vars_file) -> Dict[str, Any]:
     _vars = _open_vars_file(vars_file)
     f = Fernet(private_key)
-    _nbvars = {k: f.encrypt(v.encode("utf-8")) for k, v in _vars.items()}
+    _nbvars = {
+        k: f.encrypt(v.encode("utf-8")).decode("utf-8") for k, v in _vars.items()
+    }
     return _nbvars
 
 
@@ -63,14 +75,6 @@ def write_secrets(fpath, private_key, vars_file) -> str:
         f.write(encoded_vars)
 
     return outfile
-
-
-def store_private_key(key):
-    pass
-
-
-def get_private_key():
-    pass
 
 
 nbvars = load()

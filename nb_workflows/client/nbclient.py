@@ -12,6 +12,7 @@ from nb_workflows.core.entities import (
     WorkflowData,
     WorkflowsList,
 )
+from nb_workflows.uploads import ProjectZipFile
 
 from .base import AbstractClient
 from .types import Credentials, WFCreateRsp
@@ -133,3 +134,11 @@ class NBClient(AbstractClient):
         if r.status_code == 200:
             return ProjectData(**r.json())
         return None
+
+    def projects_upload(self, zfile: ProjectZipFile):
+        self.auth_verify_or_refresh()
+        files = {"file": open(zfile.filepath, "rb")}
+        r = self._http.post(
+            f"{self._addr}/projects/{self.projectid}/_upload", files=files
+        )
+        print(r.status_code)

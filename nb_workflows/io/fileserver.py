@@ -22,7 +22,7 @@ class Fileserver:
 
         return r.content
 
-    def put(self, data: bytes, rpath: str):
+    def put(self, rpath: str, data: bytes):
         with httpx.Client() as client:
             r = client.put(self._set_fullurl(rpath), data=data)
 
@@ -52,7 +52,7 @@ class AsyncFileserver:
 
         return r.content
 
-    async def put(self, data: bytes, rpath: str):
+    async def put(self, rpath: str, data: bytes):
         async with httpx.AsyncClient() as client:
             r = await client.put(self._set_fullurl(rpath), data=data)
 

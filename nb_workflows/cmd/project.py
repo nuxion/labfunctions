@@ -47,6 +47,8 @@ def project(from_file, only_zip, env_file, current, action):
         pv = client.utils.get_private_key(c.projectid)
         zfile = zip_project(pv, env_file, current)
         click.echo(f"Zipfile generated in {zfile.filepath}")
+        if not only_zip:
+            c.projects_upload(zfile)
 
 
 projectcli.add_command(project)

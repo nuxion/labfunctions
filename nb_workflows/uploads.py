@@ -29,19 +29,40 @@ def execute(cmd) -> str:
         return out.decode().strip()
 
 
+def write_secrets(root, private_key, vars_file) -> str:
+    _vars = secrets.encrypt_nbvars(private_key, vars_file)
+    newline = "\n"
+    encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
+    outfile = root / TMP / secrets.SECRETS_FILENAME
+    with open(outfile, "w") as f:
+        f.write(encoded_vars)
+
+    return outfile
+
+
 def short_head_id():
     return execute("git rev-parse --short HEAD")
 
 
-def zip_git_current(root) -> Union[ProjectZipFile, None]:
+def zip_git_current(root, prefix_folder="code/") -> Union[ProjectZipFile, None]:
     """Zip the actual folder state
     using git stash, this should be used only when testing or developing
     """
-    project = str(root).rsplit("/", maxsplit=1)[-1]
-    (root / TMP).mkdir(parents=True, exist_ok=True)
-    output_file = f"{str(root)}/{TMP}/{project}.CURRENT.zip"
+    # project = str(root).rsplit("/", maxsplit=1)[-1]
+
+    secrets_file = root / TMP / secrets.SECRETS_FILENAME
+
+    output_file = f"{str(root)}/{TMP}/CURRENT.zip"
     stash_id = execute("git stash create")
-    execute(f"git archive -o {output_file} {stash_id}")
+
+    cmd = (
+        f"git archive --prefix={prefix_folder} "
+        f"--add-file {secrets_file} "
+        f"-o {output_file} {stash_id} "
+    )
+
+    execute(cmd)
+
     return ProjectZipFile(filepath=output_file, current=True)
 
 
@@ -49,10 +70,9 @@ def zip_git_head(root) -> ProjectZipFile:
     """Zip the head of the repository.
     Not commited files wouldn't included in this zip file
     """
-    project = str(root).rsplit("/", maxsplit=1)[-1]
+    # project = str(root).rsplit("/", maxsplit=1)[-1]
     id_ = short_head_id()
-    (root / TMP).mkdir(parents=True, exist_ok=True)
-    output_file = f"{str(root)}/{TMP}/{project}.HEAD-{id_}.zip"
+    output_file = f"{str(root)}/{TMP}/HEAD-{id_}.zip"
     execute(f"git archive -o {output_file} HEAD")
     return ProjectZipFile(filepath=output_file, commit=id_)
 
@@ -67,16 +87,17 @@ def zip_project(private_key, vars_file, current=False) -> ProjectZipFile:
     of the current files. If False, then will zip the last commited changes.
     """
     root = pathlib.Path(os.getcwd())
+    (root / TMP).mkdir(parents=True, exist_ok=True)
+
+    secrets_file = write_secrets(root, private_key, vars_file)
+
     zfile = None
+
     if current:
         zfile = zip_git_current(root)
     if not zfile:
         zfile = zip_git_head(root)
 
-    secrets_file = secrets.write_secrets(root / TMP, private_key, vars_file)
-
-    with ZipFile(zfile.filepath, "w") as zo:
-        zo.write(secrets_file)
-
     pathlib.Path(secrets_file).unlink(missing_ok=True)
+
     return zfile
