@@ -5,7 +5,7 @@ from typing import Union
 
 import httpx
 
-from nb_workflows.conf import settings_client as settings
+from nb_workflows.conf import load_client
 from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData
 from nb_workflows.core.managers import projects
 
@@ -16,6 +16,7 @@ from .utils import _example_task, get_credentials, login_cli
 
 def init(url_service, example=True, version="0.1.0") -> NBClient:
 
+    settings = load_client()
     tasks = None
     if example:
         tasks = [_example_task()]
@@ -48,6 +49,8 @@ def init(url_service, example=True, version="0.1.0") -> NBClient:
 
 
 def nb_from_settings() -> NBClient:
+    settings = load_client()
+    tasks = None
     creds = Credentials(
         access_token=settings.CLIENT_TOKEN,
         refresh_token=settings.CLIENT_REFRESH_TOKEN,
@@ -62,6 +65,8 @@ def nb_from_settings() -> NBClient:
 
 
 def nb_from_file(filepath) -> NBClient:
+    settings = load_client()
+    tasks = None
     wf = NBClient.read(filepath)
     # tasks = [wf.workflows[k] for k in wf.workflows.keys()]
     creds = get_credentials()

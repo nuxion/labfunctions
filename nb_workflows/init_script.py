@@ -8,14 +8,18 @@ from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 from nb_workflows.core.managers import projects
 
 
+def _empty_file(filename):
+    with open(filename, "w", encoding="utf-8") as f:
+        pass
+
+
 def init_client_dir_app(base_path, projectid, project_name):
     _pkg_dir = get_package_dir("nb_workflows")
     # files = pathlib.Path(f"{_pkg_dir}/conf/files")
     p = pathlib.Path(f"{base_path}/nb_app")
 
     p.mkdir(parents=True, exist_ok=True)
-    with open(p / "__init__.py", "w", encoding="utf-8") as f:
-        pass
+    _empty_file(p / "__init__.py")
     render_to_file(
         "client_settings.py.j2",
         str((p / "settings.py").resolve()),
@@ -65,7 +69,7 @@ def init(base_path, init_dirs=True):
     print(f" Starting project in {root.resolve()} ")
     print("=" * 60)
     print()
-
+    _empty_file(root / "local.nbvars")
     nb_client = workflow_init(base_path)
 
     init_client_dir_app(

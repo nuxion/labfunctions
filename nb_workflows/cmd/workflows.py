@@ -3,7 +3,7 @@ import os
 import click
 
 from nb_workflows import client, init_script
-from nb_workflows.conf import settings_client as settings
+from nb_workflows.conf import load_client
 from nb_workflows.core.executors import local_dev_exec, local_exec
 
 
@@ -26,7 +26,7 @@ def workflowscli():
 @click.option(
     "--url-service",
     "-u",
-    default=settings.WORKFLOW_SERVICE,
+    default=load_client().WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
@@ -100,7 +100,7 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
 @click.option(
     "--url-service",
     "-u",
-    default=settings.WORKFLOW_SERVICE,
+    default=load_client().WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
 def login(url_service):

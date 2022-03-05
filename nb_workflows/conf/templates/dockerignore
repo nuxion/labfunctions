@@ -347,3 +347,4 @@ experiments/
 scripts/
 outputs/
 .env.docker
+*.nbvars
