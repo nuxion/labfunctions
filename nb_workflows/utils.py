@@ -121,11 +121,11 @@ def format_bytes(n: int) -> str:
     For all values < 2**60, the output is always <= 10 characters.
     """
     for prefix, k in (
-        ("Pi", 2 ** 50),
-        ("Ti", 2 ** 40),
-        ("Gi", 2 ** 30),
-        ("Mi", 2 ** 20),
-        ("ki", 2 ** 10),
+        ("Pi", 2**50),
+        ("Ti", 2**40),
+        ("Gi", 2**30),
+        ("Mi", 2**20),
+        ("ki", 2**10),
     ):
         if n >= k * 0.9:
             return f"{n / k:.2f} {prefix}B"
@@ -264,3 +264,12 @@ def set_logger(name: str, level: str):
     _level = getattr(logging, level)
     logger.setLevel(_level)
     return logger
+
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

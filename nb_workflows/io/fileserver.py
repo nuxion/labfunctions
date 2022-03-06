@@ -2,12 +2,11 @@ from typing import List
 
 import httpx
 
-from nb_workflows.conf import settings
 from nb_workflows.io.types import FileFileserver
 
 
 class Fileserver:
-    def __init__(self, addr=settings.FILESERVER, bucket=None):
+    def __init__(self, addr: str, bucket=None):
         self._addr = addr
         self.bucket = bucket
 
@@ -37,7 +36,7 @@ class Fileserver:
 
 
 class AsyncFileserver:
-    def __init__(self, addr=settings.FILESERVER, bucket=None):
+    def __init__(self, addr: str, bucket=None):
         self._addr = addr
         self.bucket = bucket
 
