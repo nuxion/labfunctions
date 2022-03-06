@@ -3,7 +3,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
-extension-pkg-whitelist=
+extension-pkg-whitelist=pydantic
 
 # Specify a score threshold to be exceeded before program exits with error.
 fail-under=10.0
@@ -146,7 +146,9 @@ disable=print-statement,
     	to-many-instance-attributes,
 	missing-function-docstring,
 	missing-class-docstring,
-	too-few-public-methods
+	too-few-public-methods,
+	C0330,
+	C0326
 
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -449,7 +451,6 @@ redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
 
 
 [FORMAT]
-
 # Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
 expected-line-ending-format=
 
@@ -464,8 +465,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
-
+max-line-length=88
 # Maximum number of lines in a module.
 max-module-lines=1000
 
@@ -595,3 +595,9 @@ preferred-modules=
 # "BaseException, Exception".
 overgeneral-exceptions=BaseException,
                        Exception
+
+
+
+[pre-commit-hook]
+command=custom_pylint
+disable=E0401, C0301, R, C, W
