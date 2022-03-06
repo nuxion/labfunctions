@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 import subprocess
@@ -7,8 +8,11 @@ from zipfile import ZipFile
 from pydantic import BaseModel
 
 from nb_workflows import secrets
+from nb_workflows.conf import defaults
 
 TMP = ".nb_tmp"
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectZipFile(BaseModel):
@@ -33,7 +37,7 @@ def write_secrets(root, private_key, vars_file) -> str:
     _vars = secrets.encrypt_nbvars(private_key, vars_file)
     newline = "\n"
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
-    outfile = root / TMP / secrets.SECRETS_FILENAME
+    outfile = root / TMP / defaults.SECRETS_FILENAME
     with open(outfile, "w") as f:
         f.write(encoded_vars)
 
@@ -44,17 +48,20 @@ def short_head_id():
     return execute("git rev-parse --short HEAD")
 
 
-def zip_git_current(root, prefix_folder="code/") -> Union[ProjectZipFile, None]:
+def zip_git_current(
+    root, prefix_folder=defaults.ZIP_GIT_PREFIX
+) -> Union[ProjectZipFile, None]:
     """Zip the actual folder state
     using git stash, this should be used only when testing or developing
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
 
-    secrets_file = root / TMP / secrets.SECRETS_FILENAME
+    secrets_file = root / TMP / defaults.SECRETS_FILENAME
 
     output_file = f"{str(root)}/{TMP}/CURRENT.zip"
     stash_id = execute("git stash create")
-
+    if not stash_id:
+        return None
     cmd = (
         f"git archive --prefix={prefix_folder} "
         f"--add-file {secrets_file} "
@@ -95,6 +102,12 @@ def zip_project(private_key, vars_file, current=False) -> ProjectZipFile:
 
     if current:
         zfile = zip_git_current(root)
+        if not zfile:
+            logger.error(
+                "There isn't changes in the git repository to perform a CURRENT zip file. For untracked files you should add to the stash the changes, perform: git add ."
+            )
+            raise TypeError("Any CURRENT change")
+
     if not zfile:
         zfile = zip_git_head(root)
 

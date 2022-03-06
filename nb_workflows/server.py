@@ -8,7 +8,7 @@ from sanic_ext import Extend
 from sanic_jwt import Initialize
 
 from nb_workflows.auth import authenticate, users
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 
 app = Sanic("nb_workflows")

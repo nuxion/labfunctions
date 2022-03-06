@@ -4,11 +4,9 @@ from typing import Any, Dict
 
 from cryptography.fernet import Fernet
 
-logger = logging.getLogger(__name__)
+from nb_workflows.conf import defaults
 
-NBVARS_VAR_NAME = "NBVARS"
-PRIVKEY_VAR_NAME = "PRIVATE_KEY"
-SECRETS_FILENAME = ".secrets"
+logger = logging.getLogger(__name__)
 
 
 def _open_vars_file(vars_file) -> Dict[str, Any]:
@@ -35,14 +33,14 @@ def _open_vars_file(vars_file) -> Dict[str, Any]:
 
 def load() -> Dict[str, Any]:
 
-    priv_key = os.getenv(PRIVKEY_VAR_NAME)
+    priv_key = os.getenv(defaults.PRIVKEY_VAR_NAME)
 
     if not priv_key:
-        _file = os.getenv(NBVARS_VAR_NAME, "local.nbvars")
+        _file = os.getenv(defaults.NBVARS_VAR_NAME, "local.nbvars")
         _nbvars = _open_vars_file(vars_file=_file)
     else:
         f = Fernet(priv_key)
-        _vars = _open_vars_file(vars_file=SECRETS_FILENAME)
+        _vars = _open_vars_file(vars_file=defaults.SECRETS_FILENAME)
         _nbvars = {k: f.decrypt(v.encode("utf-8")) for k, v in _vars.items()}
     return _nbvars
 
@@ -52,9 +50,9 @@ def generate_private_key() -> str:
     return key.decode("utf-8")
 
 
-def decrypt(key: bytes, text: str):
+def decrypt(key: bytes, text: str) -> str:
     f = Fernet(key)
-    f.decrypt(text.encode("utf-8"))
+    return f.decrypt(text.encode("utf-8")).decode("utf-8")
 
 
 def encrypt_nbvars(private_key: str, vars_file) -> Dict[str, Any]:
@@ -70,7 +68,7 @@ def write_secrets(fpath, private_key, vars_file) -> str:
     _vars = encrypt_nbvars(private_key, vars_file)
     newline = "\n"
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
-    outfile = f"{fpath}/{SECRETS_FILENAME}"
+    outfile = f"{fpath}/{defaults.SECRETS_FILENAME}"
     with open(outfile, "w") as f:
         f.write(encoded_vars)
 

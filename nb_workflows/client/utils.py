@@ -26,7 +26,7 @@ def _example_task() -> NBTask:
     return t
 
 
-def store_credentials(creds: Credentials, relative_path=".nb_workflows/"):
+def store_credentials_disk(creds: Credentials, relative_path=".nb_workflows/"):
     root = Path.home() / relative_path
     root.mkdir(parents=True, exist_ok=True)
     with open(root / "credentials.json", "w", encoding="utf-8") as f:
@@ -36,7 +36,7 @@ def store_credentials(creds: Credentials, relative_path=".nb_workflows/"):
     (root / "credentials.json").chmod(0o600)
 
 
-def get_credentials(relative_path=".nb_workflows/") -> Union[Credentials, None]:
+def get_credentials_disk(relative_path=".nb_workflows/") -> Union[Credentials, None]:
     root = Path.home() / relative_path
     root.mkdir(parents=True, exist_ok=True)
     try:
@@ -77,7 +77,7 @@ def login_cli(with_server: str) -> Union[Credentials, None]:
     rsp = httpx.post(f"{with_server}/auth", json=dict(username=u, password=p))
     try:
         creds = Credentials(**rsp.json())
-        store_credentials(creds)
+        store_credentials_disk(creds)
         return creds
     except KeyError:
         return None

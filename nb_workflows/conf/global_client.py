@@ -8,8 +8,11 @@ WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
 PROJECTID = ""
 PROJECT_NAME = ""
 
-CLIENT_TOKEN = nbvars.get("NB_CLIENT_TOKEN")
-CLIENT_REFRESH_TOKEN = nbvars.get("NB_CLIENT_REFRESH")
+AGENT_TOKEN = nbvars.get("AGENT_TOKEN", "")
+AGENT_REFRESH_TOKEN = nbvars.get("AGENT_REFRESH", "")
+
+CLIENT_TOKEN = nbvars.get("NB_CLIENT_TOKEN", "")
+CLIENT_REFRESH_TOKEN = nbvars.get("NB_CLIENT_REFRESH", "")
 
 # Log
 LOGLEVEL = nbvars.get("NB_LOG", "INFO")

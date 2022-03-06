@@ -1,6 +1,7 @@
 from dataclasses import asdict
 
-from nb_workflows.conf import settings, settings_client
+from nb_workflows.conf.client_settings import settings as settings_client
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import ExecutionResult, NBTask
 from nb_workflows.core.managers import history
 from nb_workflows.core.models import HistoryModel

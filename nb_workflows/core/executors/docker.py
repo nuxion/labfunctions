@@ -2,8 +2,8 @@ from pathlib import Path, PosixPath
 
 import docker
 
-from nb_workflows import client
-from nb_workflows.conf import settings
+from nb_workflows import client, secrets
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData
 
 
@@ -24,13 +24,14 @@ def generate_docker_name(task: NBTask, pd: ProjectData):
     return f"{pd.username}/{pd.name}:{task.docker_version}"
 
 
-def docker_exec(projectid, jobid):
-    before_exec(projectid)
+def docker_exec(projectid, priv_key, jobid):
+    # before_exec(projectid)
+
     docker_client = docker.from_env()
     nb_client = client.minimal_client(
         url_service=settings.WORKFLOW_SERVICE,
-        token=settings.CLIENT_TOKEN,
-        refresh=settings.CLIENT_REFRESH_TOKEN,
+        token=settings.AGENT_TOKEN,
+        refresh=settings.AGENT_REFRESH_TOKEN,
         projectid=projectid,
     )
 
@@ -43,7 +44,11 @@ def docker_exec(projectid, jobid):
         if wd and wd.enabled and pd:
             docker_name = generate_docker_name(task, pd)
 
-            docker_client.containers.run(docker_name, f"nb workflows exec -J {jobid}")
+            docker_client.containers.run(
+                docker_name,
+                f"nb wf exec -J {jobid}",
+                environment={secrets.PRIVKEY_VAR_NAME: priv_key},
+            )
         elif not wd:
             print(f"{jobid} deleted...")
         else:

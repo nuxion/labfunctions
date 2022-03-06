@@ -11,7 +11,7 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.core import nb_job_executor
 from nb_workflows.core.entities import (
     ExecutionResult,

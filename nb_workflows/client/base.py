@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import httpx
 
@@ -7,18 +7,39 @@ from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData, Workfl
 from nb_workflows.utils import open_yaml, write_yaml
 
 from .types import Credentials, WorkflowsFile
-from .utils import store_credentials, validate_credentials_local
+from .utils import store_credentials_disk, validate_credentials_local
 
 
-def get_http_client(**kwargs):
+def get_http_client(**kwargs) -> httpx.Client:
     return httpx.Client(**kwargs)
 
 
-class AbstractClient:
-    """Generic client to implement for different API endpoints
-    Some conventions:
-    - Methods that call to an API should use the name of the endpoint as the first
-    parth of the method name.
+class BaseClient:
+    """
+    A Generic client for API Server communication.
+
+
+    By default, each client is associated to a specific project,
+    this could be decoupled in the future because some actions
+    like **startproject** are independent of the project.
+
+    **Some conventions:**
+
+    If a method calls to an API's endpoint, it should use the name
+    of the endpoint at first. For instance:
+
+        GET /workflows/<projectid>/<jobid>
+    The method name for that endpoint could be: `workflows_get_one()`
+
+
+    :param url_service: base url of the WORKFLOWS_SERVICE
+    :param projectid: projectid realted to ProjectsModel
+    :param creds: Credentials type, it includes access_token and refresh_token
+    :param store_creds: Optional, if true the credentials will be stored on disk
+    :param project: Optional[Project] type
+    :param version: version api, not implemented yet
+    :param http_init_func: Callable, a function which initializes
+    a HTTPX client.
     """
 
     def __init__(
@@ -26,20 +47,30 @@ class AbstractClient:
         url_service: str,
         projectid: str,
         creds: Credentials,
+        store_creds=False,
         project: Optional[ProjectData] = None,
         workflows: Optional[List[NBTask]] = None,
         version="0.1.0",
+        http_init_func=get_http_client,
     ):
 
         self.projectid = projectid
-        self.creds = creds
+        self.creds: Credentials = creds
+        self._store_creds = store_creds
 
         self._addr = url_service
-        self._workflows = workflows
+        self._workflows: Optional[List[NBTask]] = workflows
         self._project = project
         self._version = version
-        _headers = {"Authorization": f"Bearer {creds.access_token}"}
-        self._http = get_http_client(headers=_headers)
+        self._http_creator = http_init_func
+        self._http: httpx.Client = self._http_client_creator()
+        self.auth_verify_or_refresh()
+
+    def _http_client_creator(self) -> httpx.Client:
+        """When token is updated the client MUST BE updated too."""
+
+        _headers = {"Authorization": f"Bearer {self.creds.access_token}"}
+        return self._http_creator(headers=_headers)
 
     @property
     def wf_file(self) -> WorkflowsFile:
@@ -63,14 +94,24 @@ class AbstractClient:
         self._workflows = tasks
         self.write()
 
+    def store_credentials(self):
+        store_credentials_disk(self.creds)
+
     def auth_refresh(self):
+        """If the access_token is expired, it should be updated using
+        the refres_token. After that http client must be re-initialized
+        and new credentials are stored.
+
+        """
         r = self._http.post(
             f"{self._addr}/auth/refresh",
             json={"refresh_token": self.creds.refresh_token},
         )
         data = r.json()
         self.creds.access_token = data["access_token"]
-        store_credentials(self.creds)
+        self._http_client_creator()
+        if self._store_creds:
+            self.store_credentials()
 
     def auth_verify_or_refresh(self) -> bool:
         valid = validate_credentials_local(self.creds.access_token)

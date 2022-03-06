@@ -1,7 +1,7 @@
 from sanic import Sanic
 from sanic_jwt import initialize as sanic_initialize
 
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 
 from .authenticate import NBAuthentication
 

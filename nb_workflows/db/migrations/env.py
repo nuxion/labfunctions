@@ -4,7 +4,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.common import Base
 
 wf_mod = importlib.import_module("nb_workflows.workflows.models")

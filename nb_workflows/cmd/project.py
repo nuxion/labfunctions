@@ -1,6 +1,7 @@
 import click
 
 from nb_workflows import client
+from nb_workflows.conf import load_client
 from nb_workflows.uploads import zip_project
 
 
@@ -39,10 +40,16 @@ def projectcli():
     default=False,
     help="Only generates the zip file",
 )
+@click.option(
+    "--url-service",
+    "-u",
+    default=load_client().WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
 @click.argument("action", type=click.Choice(["upload"]))
-def project(from_file, only_zip, env_file, current, action):
+def project(from_file, only_zip, env_file, current, url_service, action):
     """Manage project settings"""
-    c = client.nb_from_file(from_file)
+    c = client.nb_from_file(from_file, url_service)
     if action == "upload":
         pv = client.utils.get_private_key(c.projectid)
         zfile = zip_project(pv, env_file, current)

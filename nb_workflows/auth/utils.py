@@ -1,4 +1,4 @@
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import PasswordScript
 
 

@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 # from nb_workflows.workflows.registers import register_history_db
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import NBTask, ScheduleData
 from nb_workflows.core.executors import docker_exec
 from nb_workflows.core.managers import projects, workflows
@@ -27,29 +27,62 @@ from nb_workflows.utils import run_async
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
 
-def scheduler_dispatcher(projectid, jobid):
-    """Because rq-scheduler has some limitations
+def generate_execid():
+    """
+    executionid refers to an unique id randomly generated for each execution
+    of a workflow. It can be thought of as the id of an instance
+    of the NB Workflow definition.
+    """
+    return Hash96.time_random_string().id_hex
+
+
+def scheduler_dispatcher(projectid: str, jobid: str) -> Union[Job, None]:
+    """
+    This is the entrypoint of any workflow or job to be executed by RQ and it
+    will be executed by :class:`nb_workflows.core.scheduler.SchedulerExecutor`
+    in the RQWorker of the control plane.
+
+
+    This function receive the projectid and jobid as reference of the task to
+    be completed. Then it will prepare the context for it.
+
+
+    Because rq-scheduler has some limitations
     and could be abandoned in the future, this abstraction was created
-    where the idea is to use the scheduler only to enqueue through rq.
+    where the idea is to use the scheduler only to enqueue works through rq.
 
     Also, adopting this strategy, allows to react dinamically to changes
-    in the workflow task because if params are modified
+    in the workflow. Usually rq caches the params of each job.
+
+    :param projectid: is the id of project, from ProjectModel
+    :type str:
+    :param jobid: jobid from WorkflowModel
+    :type str:
+
+
+    :return: a Job instance from RQ a or None if the Job or the project is not found
+    :rtype: an Union between Job or None.
     """
     db = SQL(settings.SQL)
     _cfg = settings.rq2dict()
     redis = Redis(**_cfg)
-    scheduler = SchedulerExecutor(redis=redis, qname="control")
+    scheduler = SchedulerExecutor(redis=redis, qname=settings.RQ_CONTROL_QUEUE)
 
     Session = db.sessionmaker()
 
     with Session() as session:
         obj_model = workflows.get_by_jobid_model_sync(session, jobid)
         if obj_model and obj_model.enabled:
+
+            priv_key = projects.get_private_key_sync(session, projectid)
+
             task = NBTask(**obj_model.job_detail)
             _job = scheduler.enqueue_notebook_in_docker(
                 projectid,
+                priv_key,
                 task,
             )
+            return _job
         else:
             if not obj_model:
                 scheduler.cancel_job(jobid)
@@ -57,9 +90,22 @@ def scheduler_dispatcher(projectid, jobid):
                 # raise IndexError(f"job: {jobid} not found")
 
             print(f"Job: {jobid} disabled")
+    return None
 
 
 class SchedulerExecutor:
+    """
+    It manages the logic to enqueue and dispatch jobs.
+    The SchedulerExecutor belongs to the server side, it connects the webserver with
+    the workers in the control plane.
+
+    Because their main function wraps RQ and RQ-Scheduler some variables names could be
+    confusing. When we talk about jobs we talk about the task executed by RQ or RQ-Scheduler.
+
+    :param redis: A Redis instance
+    :param qname: configured by default from settings, it MUST BE consistent between the different control plane components.
+    """
+
     def __init__(self, redis: Redis, qname=settings.RQ_CONTROL_QUEUE):
         self.redis = redis
         self.Q = Queue(qname, connection=self.redis)
@@ -68,17 +114,21 @@ class SchedulerExecutor:
         self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
 
     def enqueue_notebook_in_docker(
-        self, projectid, task: NBTask, executionid=None
+        self, projectid, priv_key, task: NBTask, executionid=None
     ) -> Job:
-        """Enqueue in redis a notebook workflow
+        """It executes the task in the remote machine with runtime configuration of
+        the project for this task
+
+        :param projectid: id of the project
         :param task: NBTask object
         :param executionid: An optional executionid
         """
-        _id = executionid or workflows.generate_execid()
+        _id = executionid or generate_execid()
         Q = Queue(task.machine, connection=self.redis)
         job = Q.enqueue(
             docker_exec,
             projectid,
+            priv_key,
             task.jobid,
             job_id=_id,
             job_timeout=task.timeout,

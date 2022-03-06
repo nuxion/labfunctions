@@ -51,14 +51,6 @@ def generate_jobid():
     return Hash96.time_random_string().id_hex
 
 
-def generate_execid():
-    """executionid refers to unique id randomly generated for each execution
-    of a workflow. It can be thought of as the id of an instance.
-    of the NB Workflow definition.
-    """
-    return Hash96.time_random_string().id_hex
-
-
 def get_job_from_db(session, jobid) -> Union[WorkflowModel, None]:
     stmt = select(WorkflowModel).where(WorkflowModel.jobid == jobid)
     result = session.execute(stmt)

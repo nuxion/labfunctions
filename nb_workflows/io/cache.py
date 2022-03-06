@@ -1,5 +1,6 @@
 # import tempfile
 import json
+import logging
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -9,13 +10,11 @@ from typing import Any, Dict, Optional
 import cloudpickle
 import httpx
 
-from nb_workflows.conf import settings
-
+from nb_workflows.conf.client_settings import settings
 # from nb_workflows.workflows.core import build_context
 from nb_workflows.core.entities import ExecContext
-from nb_workflows.utils import set_logger
 
-logger = set_logger(__name__)
+logger = logging.getLogger(__name__)
 
 VALID_STRATEGIES = ["local", "fileserver"]
 

@@ -50,18 +50,18 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
         c.write()
 
     elif action == "push":
-        c = client.nb_from_file(from_file)
+        c = client.nb_from_file(from_file, url_service=url_service)
         c.workflows_push(update=update)
 
     elif action == "list":
-        c = client.nb_from_file(from_file)
+        c = client.nb_from_file(from_file, url_service=url_service)
         data = c.workflows_list()
         print("\nnb_name | jobid | alias | is_enabled\n")
         for d in data:
             print(f"{d.nb_name} | {d.jobid} | {d.alias} | [{d.enabled}]")
 
     elif action == "exec":
-        c = client.nb_from_file(from_file)
+        c = client.nb_from_file(from_file, url_service=url_service)
         rsp = local_exec(jobid)
         if rsp:
             click.echo(f"Jobid: {rsp.jobid} locally executed")
@@ -72,7 +72,7 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
             click.echo(f"Status: {status}")
 
     elif action == "dev-exec":
-        c = client.nb_from_file(from_file)
+        c = client.nb_from_file(from_file, url_service=url_service)
         rsp = local_dev_exec(jobid)
         if rsp:
             click.echo(f"Jobid: {rsp.jobid} locally executed")
@@ -83,12 +83,12 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
             click.echo(f"Status: {status}")
 
     elif action == "delete":
-        c = client.nb_from_file(from_file)
+        c = client.nb_from_file(from_file, url_service=url_service)
         rsp = c.workflows_delete(jobid)
         print(f"Jobid: {jobid}, deleted. Code {rsp}")
 
     elif action == "sync":
-        c = client.nb_from_file(from_file)
+        c = client.nb_from_file(from_file, url_service=url_service)
         c.sync_file()
         click.echo(f"{from_file} sync")
 

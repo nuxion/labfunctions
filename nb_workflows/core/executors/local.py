@@ -1,7 +1,7 @@
 from typing import Union
 
 from nb_workflows import client
-from nb_workflows.conf import settings_client as settings
+from nb_workflows.conf.client_settings import settings
 from nb_workflows.core.entities import ExecutionResult, NBTask, ScheduleData
 from nb_workflows.core.notebooks import nb_job_executor
 from nb_workflows.utils import set_logger
@@ -30,13 +30,11 @@ def local_exec(jobid) -> Union[ExecutionResult, None]:
         # elif not rsp:
         #    nb_client.rq_cancel_job(jobid)
         else:
-            print(f"{jobid} not enabled")
+            logger.warning(f"{jobid} not enabled")
     except KeyError:
         logger.error("Invalid credentials")
-        print("Invalid credentials")
     except TypeError:
         logger.error("Something went wrong")
-        print("Somenthing went wrong")
     return None
 
 

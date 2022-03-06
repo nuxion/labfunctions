@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 # from nb_workflows.workflows.registers import register_history_db
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.core import nb_job_executor
 from nb_workflows.core.entities import NBTask, ScheduleData
 from nb_workflows.core.managers import projects

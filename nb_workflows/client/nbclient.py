@@ -14,25 +14,14 @@ from nb_workflows.core.entities import (
 )
 from nb_workflows.uploads import ProjectZipFile
 
-from .base import AbstractClient
+from .base import BaseClient
 from .types import Credentials, WFCreateRsp
-from .utils import store_private_key
+from .utils import store_credentials_disk, store_private_key
 
 
-class NBClient(AbstractClient):
-    def __init__(
-        self,
-        url_service: str,
-        projectid: str,
-        creds: Credentials,
-        project: Optional[ProjectData] = None,
-        workflows: Optional[List[NBTask]] = None,
-        version="0.1.0",
-    ):
-
-        super().__init__(url_service, projectid, creds, project, workflows, version)
-
+class NBClient(BaseClient):
     def workflows_create(self, t: NBTask) -> WFCreateRsp:
+        self.auth_verify_or_refresh()
         r = self._http.post(
             f"{self._addr}/workflows/{self.projectid}",
             json=asdict(t),

@@ -1,6 +1,6 @@
 import click
 
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.utils import init_blueprints
 
 

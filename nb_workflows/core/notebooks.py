@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 import papermill as pm
 
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import ExecutionResult, ExecutionTask, NBTask
 from nb_workflows.hashes import Hash96
 from nb_workflows.utils import today_string

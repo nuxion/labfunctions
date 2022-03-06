@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from nb_workflows import secrets
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.models import ProjectModel
 from nb_workflows.hashes import generate_random
@@ -175,3 +175,12 @@ def ask_project_name() -> str:
     )
     name = normalize_name(project_name)
     return name
+
+
+def get_private_key_sync(session, project_id) -> Union[str, None]:
+    stmt = select(ProjectModel).where(ProjectModel.project_id == project_id).limit(1)
+    r = session.execute(stmt)
+    obj: Optional[ProjectModel] = r.scalar_one_or_none()
+    if obj:
+        return obj.private_key.decode("utf-8")
+    return None

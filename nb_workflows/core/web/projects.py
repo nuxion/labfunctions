@@ -9,7 +9,7 @@ from sanic_ext import openapi
 from sanic_jwt import inject_user, protected
 
 from nb_workflows.auth.types import UserData
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.managers import projects
 from nb_workflows.io import AsyncFileserver
@@ -114,10 +114,10 @@ async def project_get_one(request, projectid, user: UserData):
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    async with session.begin():
-        r = await projects.get_by_projectid(session, projectid, user_id=user.user_id)
-        if r:
-            return json(r.dict(), 200)
+    # async with session.begin():
+    r = await projects.get_by_projectid(session, projectid, user_id=user.user_id)
+    if r:
+        return json(r.dict(), 200)
     return json(dict(msg="Not found"))
 
 

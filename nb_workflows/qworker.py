@@ -6,7 +6,7 @@ from loky import get_reusable_executor
 from redis import Redis
 from rq import Connection, Worker
 
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
 
 # from multiprocessing import Pool from db.sync import SQL
 # from multiprocessing import Pool

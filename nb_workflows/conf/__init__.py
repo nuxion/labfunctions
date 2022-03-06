@@ -1,20 +1,21 @@
 import importlib
 import os
 import sys
-from typing import Union
 
 from .types import ClientSettings, ServerSettings
 
 # from logging import NullHandler
 
 
-GLOBAL_MODULE = "nb_workflows.conf.global_settings"
+# Client defaults
 GLOBAL_CLIENT = "nb_workflows.conf.global_client"
-ENVIRONMENT_VARIABLE = "NB_SETTINGS_MODULE"
 CLIENT_VARIABLE = "NB_CLIENT_MODULE"
-DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
-
 DEFAULT_CLIENT = os.environ.get(CLIENT_VARIABLE, "nb_app.settings")
+
+# Server defaults
+GLOBAL_MODULE = "nb_workflows.conf.global_settings"
+ENVIRONMENT_VARIABLE = "NB_SETTINGS_MODULE"
+DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
 
 
 def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
@@ -51,15 +52,3 @@ def load_client(settings_module=DEFAULT_CLIENT) -> ClientSettings:
     cfg = ClientSettings(**settings_dict)
     cfg.SETTINGS_MODULE = settings_module
     return cfg
-
-
-def load() -> Union[ClientSettings, ServerSettings]:
-    if os.environ.get("NB_SERVER", False):
-        return load_server()
-    else:
-        return load_client()
-
-
-settings = load_server()
-
-settings_client = load_client()

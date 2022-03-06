@@ -5,7 +5,8 @@ SALT = os.getenv("SALT", "changeme")
 # Signing data
 SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
 
-CLIENT_TOKEN = os.getenv("NB_TOKEN", "changeme")
+AGENT_TOKEN = os.getenv("NB_AGENT_TOKEN", "changeme")
+AGENT_REFRESH_TOKEN = os.getenv("NB_AGENT_REFRESH_TOKEN", "changeme")
 # Services
 SQL = os.getenv("NB_SQL", "postgresql://postgres:secret@postgres:5432/nb_workflows")
 ASQL = os.getenv(
