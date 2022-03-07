@@ -10,10 +10,11 @@ def init_cli():
 
         return click.CommandCollection(sources=[servicescli, managercli])
     else:
+        from nb_workflows.cmd.executors import executorscli
         from nb_workflows.cmd.project import projectcli
         from nb_workflows.cmd.workflows import workflowscli
 
-        return click.CommandCollection(sources=[workflowscli, projectcli])
+        return click.CommandCollection(sources=[workflowscli, projectcli, executorscli])
         # return click.CommandCollection(sources=[workflowscli])
 
 

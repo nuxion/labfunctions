@@ -1,5 +1,6 @@
 # pylint: disable=unused-argument
 import pathlib
+from dataclasses import asdict
 from typing import List, Union
 
 # import aiofiles
@@ -8,7 +9,9 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import inject_user, protected
 
+from nb_workflows.auth.shortcuts import get_auth
 from nb_workflows.auth.types import UserData
+from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.managers import projects
@@ -135,8 +138,29 @@ async def project_delete(request, projectid):
     return json(dict(msg="deleted"))
 
 
+@projects_bp.post("/<projectid:str>/_agent_token")
+@openapi.parameter("projectid", str, "path")
+@openapi.response(200, Credentials, "agent credentials")
+@protected()
+@inject_user()
+async def project_create_agent_token(request, projectid, user: UserData):
+    """
+    Create an agent token
+    TODO: create an special user to be used as agent
+    """
+    # pylint: disable=unused-argument
+    _auth = get_auth()
+    # default is 30 min
+    with _auth.override(expiration_delta=(60 * 60) * 12):
+        token = await _auth.generate_access_token(user)
+        refresh = await _auth.generate_refresh_token(request, asdict(user))
+
+    return json(dict(access_token=token, refresh_token=refresh), 200)
+
+
 @projects_bp.post("/<projectid:str>/_upload")
-async def upload_project(request, projectid):
+@protected()
+async def project_upload(request, projectid):
     """
     Upload a workflow project
     """

@@ -12,10 +12,9 @@ from nb_workflows.core.entities import (
     WorkflowData,
     WorkflowsList,
 )
-from nb_workflows.uploads import ProjectZipFile
 
 from .base import BaseClient
-from .types import Credentials, WFCreateRsp
+from .types import Credentials, ProjectZipFile, WFCreateRsp
 from .utils import store_credentials_disk, store_private_key
 
 
@@ -131,3 +130,12 @@ class NBClient(BaseClient):
             f"{self._addr}/projects/{self.projectid}/_upload", files=files
         )
         print(r.status_code)
+
+    def projects_agent_token(self) -> Union[Credentials, None]:
+        self.auth_verify_or_refresh()
+        r = self._http.post(f"{self._addr}/projects/{self.projectid}/_agent_token")
+
+        if r.status_code == 200:
+            return Credentials(**r.json())
+
+        return None

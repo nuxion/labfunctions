@@ -167,16 +167,6 @@ async def delete_by_projectid(session, projectid):
     await session.execute(stmt)
 
 
-def ask_project_name() -> str:
-    parent = get_parent_folder()
-    _default = normalize_name(parent)
-    project_name = str(
-        input(f"Write a name for this project (default: {_default}): ") or _default
-    )
-    name = normalize_name(project_name)
-    return name
-
-
 def get_private_key_sync(session, project_id) -> Union[str, None]:
     stmt = select(ProjectModel).where(ProjectModel.project_id == project_id).limit(1)
     r = session.execute(stmt)

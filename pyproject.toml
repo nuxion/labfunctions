@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nb_workflows"
-version = "0.3.0"
+version = "0.4.0"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [
@@ -28,39 +28,56 @@ nb = "nb_workflows.cli:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
-sanic = "^21.6.2"
-sanic-openapi = "^21.6.1"
-SQLAlchemy = {extras = ["asyncio"], version = "^1.4.26"}
-psycopg2-binary = "^2.9.1"
-SQLAlchemy-serializer = "^1.4.1"
-alembic = "^1.6.5"
+# server
+uvloop = { version="^0.16.0", optional=true}
+sanic = {version="^21.6.2", optional=true}
+sanic-openapi = {version="^21.6.1", optional=true}
+sanic-ext = { version="^21.9.0", optional= true}
+sanic-jwt = { version="^1.7.0", optional=true}
+SQLAlchemy = {extras = ["asyncio"], version = "^1.4.26", optional=true}
+SQLAlchemy-serializer = { version="^1.4.1", optional=true}
+psycopg2-binary = {version="^2.9.1", optional=true}
+asyncpg = { version="^0.24.0", optional=true}
+alembic = { version="^1.6.5", optional=true}
+rq-scheduler = { version="^0.11.0", optional=true }
+# both
 pytz = "^2021.1"
-asyncpg = "^0.24.0"
 click = "^8.0.1"
 cloudpickle = "^2.0.0"
 dateparser = "^1.1.0"
 nbconvert = "^6.2.0"
 papermill = "^2.3.3"
 jupytext = "^1.13.0"
-sanic-ext = "^21.9.0"
 rq = "^1.10.0"
 loky = "^3.0.0"
-uvloop = "^0.16.0"
 aioredis = {extras = ["hiredis"], version = "^2.0.1"}
-rq-scheduler = "^0.11.0"
 tqdm = "^4.62.3"
 cryptography = "^36.0.1"
-sanic-jwt = "^1.7.0"
 httpx = "^0.22.0"
 Jinja2 = "^3.0.3"
 docker = "^5.0.3"
 aiofiles = "^0.8.0"
 nanoid = "^2.0.0"
-requests = "^2.27.1"
-aiohttp = "^3.8.1"
 PyYAML = "^6.0"
 pydantic = "^1.9.0"
-fsspec = "^2022.2.0"
+fsspec = {version="^2022.2.0", optional=true }
+PyJWT = ">=2.1.0,<2.2.0"
+
+[tool.poetry.extras]
+fsspec = ["fsspec"]
+server = [
+	"uvloop",
+	"sanic",
+	"sanic-openapi",
+	"sanic-ext", 
+	"sanic-jwt", 
+	"SQLAlchemy",
+	"SQLAlchemy-serializer",
+	"psycopg2-binary",
+	"asyncpg", 
+	"alembic",
+	"rq-scheduler",
+]
 
 [tool.poetry.dev-dependencies]
 jupyterlab = "^3.1.14"
@@ -101,6 +118,7 @@ target-version = [ 'py37', 'py38']
 include = '\.pyi?$'
 
 [tool.isort]
-multi_line_output = 3
-line_length = 88
-include_trailing_comma = true
+profile= "black"
+# multi_line_output = 3
+# line_length = 88
+# include_trailing_comma = true

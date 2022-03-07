@@ -9,22 +9,28 @@ from nb_workflows.conf import defaults
 logger = logging.getLogger(__name__)
 
 
+def _parse_var_line(line):
+    """
+    This regex works only if spaces are not used
+     ^(\w*)=?*(['|"].*?['|"|])$
+    """
+    k = line.split("=", maxsplit=1)[0]
+    v = line.split("=", maxsplit=1)[1].replace('"', "").strip("\n")
+    return k, v
+
+
 def _open_vars_file(vars_file) -> Dict[str, Any]:
     """TODO: check regex:
-    This regex works only if spaces are not used
-        ^(\w*)=?*(['|"].*?['|"|])$
-
     Vars are cleaned from spaces, return characters and quotes
     """
     try:
         with open(vars_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
-            vars_ = {
-                line.split("=", maxsplit=1)[0]: line.split("=")[1]
-                .replace('"', "")
-                .strip("\n")
-                for line in lines
-            }
+            vars_ = {}
+            for line in lines:
+                k, v = _parse_var_line(line)
+                vars_.update({k: v})
+
             return vars_
     except FileNotFoundError:
         logger.warning(f"Not {vars_file} found")

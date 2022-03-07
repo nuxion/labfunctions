@@ -6,14 +6,33 @@ from typing import Union
 import httpx
 
 from nb_workflows.conf import load_client
+from nb_workflows.conf.types import ClientSettings
 from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData
-from nb_workflows.core.managers import projects
 from nb_workflows.io import MemoryStore
+from nb_workflows.utils import get_parent_folder, secure_filename
 
 from .agent import AgentClient
 from .nbclient import NBClient
 from .types import Credentials
 from .utils import _example_task, get_credentials_disk, login_cli
+
+
+def normalize_name(name: str) -> str:
+    evaluate = name.lower()
+    evaluate = evaluate.replace(" ", "_")
+    evaluate = secure_filename(name)
+    return evaluate
+
+
+def ask_project_name() -> str:
+    parent = get_parent_folder()
+    _default = normalize_name(parent)
+    project_name = str(
+        input(f"Write a name for this project (default: {_default}): ") or _default
+    )
+    name = normalize_name(project_name)
+    print("The final name for the project will be: ", name)
+    return name
 
 
 def init(url_service, example=True, version="0.1.0") -> NBClient:
@@ -27,7 +46,7 @@ def init(url_service, example=True, version="0.1.0") -> NBClient:
     projectid = settings.PROJECTID
     name = settings.PROJECT_NAME
     if not projectid:
-        name = projects.ask_project_name()
+        name = ask_project_name()
         rsp = httpx.get(f"{settings.WORKFLOW_SERVICE}/projects/_generateid")
         projectid = rsp.json()["projectid"]
 
@@ -57,6 +76,22 @@ def nb_from_settings() -> NBClient:
     creds = Credentials(
         access_token=settings.CLIENT_TOKEN,
         refresh_token=settings.CLIENT_REFRESH_TOKEN,
+    )
+
+    return NBClient(
+        url_service=settings.WORKFLOW_SERVICE,
+        creds=creds,
+        projectid=settings.PROJECTID,
+        project=ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID),
+    )
+
+
+def nb_from_settings_agent() -> NBClient:
+    tasks = None
+    settings = load_client()
+    creds = Credentials(
+        access_token=settings.AGENT_TOKEN,
+        refresh_token=settings.AGENT_REFRESH_TOKEN,
     )
 
     return NBClient(

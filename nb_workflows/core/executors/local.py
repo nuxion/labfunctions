@@ -17,7 +17,7 @@ def local_exec(jobid) -> Union[ExecutionResult, None]:
     """
     logger = set_logger("local_exec", level=settings.LOGLEVEL)
     logger.info(f"Runing {jobid}")
-    nb_client = client.nb_from_file("workflows.yaml")
+    nb_client = client.nb_from_file("workflows.yaml", settings.WORKFLOW_SERVICE)
     try:
         rsp = nb_client.workflows_get(jobid)
         if rsp and rsp.enabled:

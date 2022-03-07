@@ -3,6 +3,7 @@ from pathlib import Path, PosixPath
 import docker
 
 from nb_workflows import client, secrets
+from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData
 
@@ -47,7 +48,7 @@ def docker_exec(projectid, priv_key, jobid):
             docker_client.containers.run(
                 docker_name,
                 f"nb wf exec -J {jobid}",
-                environment={secrets.PRIVKEY_VAR_NAME: priv_key},
+                environment={defaults.PRIVKEY_VAR_NAME: priv_key},
             )
         elif not wd:
             print(f"{jobid} deleted...")

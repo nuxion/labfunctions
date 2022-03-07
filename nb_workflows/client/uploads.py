@@ -5,20 +5,12 @@ import subprocess
 from typing import Optional, Union
 from zipfile import ZipFile
 
-from pydantic import BaseModel
-
 from nb_workflows import secrets
 from nb_workflows.conf import defaults
 
-TMP = ".nb_tmp"
+from .types import Credentials, ProjectZipFile
 
 logger = logging.getLogger(__name__)
-
-
-class ProjectZipFile(BaseModel):
-    filepath: str
-    commit: Optional[str]
-    current: Optional[bool] = False
 
 
 def execute(cmd) -> str:
@@ -37,7 +29,7 @@ def write_secrets(root, private_key, vars_file) -> str:
     _vars = secrets.encrypt_nbvars(private_key, vars_file)
     newline = "\n"
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
-    outfile = root / TMP / defaults.SECRETS_FILENAME
+    outfile = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
     with open(outfile, "w") as f:
         f.write(encoded_vars)
 
@@ -56,9 +48,9 @@ def zip_git_current(
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
 
-    secrets_file = root / TMP / defaults.SECRETS_FILENAME
+    secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
 
-    output_file = f"{str(root)}/{TMP}/CURRENT.zip"
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/CURRENT.zip"
     stash_id = execute("git stash create")
     if not stash_id:
         return None
@@ -79,12 +71,12 @@ def zip_git_head(root) -> ProjectZipFile:
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
     id_ = short_head_id()
-    output_file = f"{str(root)}/{TMP}/HEAD-{id_}.zip"
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/HEAD-{id_}.zip"
     execute(f"git archive -o {output_file} HEAD")
     return ProjectZipFile(filepath=output_file, commit=id_)
 
 
-def zip_project(private_key, vars_file, current=False) -> ProjectZipFile:
+def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
     """Make a zip of this project.
     It uses git to skip files in the .gitignore file.
     After making the zip file with git,  it will add a secret file
@@ -93,23 +85,34 @@ def zip_project(private_key, vars_file, current=False) -> ProjectZipFile:
     :param dev: default False, if True it will make a git stash
     of the current files. If False, then will zip the last commited changes.
     """
-    root = pathlib.Path(os.getcwd())
-    (root / TMP).mkdir(parents=True, exist_ok=True)
 
-    secrets_file = write_secrets(root, private_key, vars_file)
+    # secrets_file = write_secrets(root, private_key, vars_file)
 
     zfile = None
 
     if current:
         zfile = zip_git_current(root)
         if not zfile:
-            logger.error(
+            raise TypeError(
                 "There isn't changes in the git repository to perform a CURRENT zip file. For untracked files you should add to the stash the changes, perform: git add ."
             )
-            raise TypeError("Any CURRENT change")
 
-    if not zfile:
-        zfile = zip_git_head(root)
+    return zfile
+
+
+def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipFile:
+    """
+    it manages how to upload project files to the server.
+    """
+
+    secrets.nbvars["AGENT_TOKEN"] = creds.access_token
+    secrets.nbvars["AGENT_REFRESH_TOKEN"] = creds.refresh_token
+
+    root = pathlib.Path(os.getcwd())
+    (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
+
+    secrets_file = write_secrets(root, privkey, env_file)
+    zfile = zip_project(root, secrets_file, current)
 
     pathlib.Path(secrets_file).unlink(missing_ok=True)
 

@@ -4,10 +4,10 @@ import pytest
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.conf import settings
+from nb_workflows.conf.server_settings import settings
+from nb_workflows.core.models import HistoryModel, WorkflowModel
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
-from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 
 SQL_URI = os.getenv("SQLTEST")
 ASQL_URI = os.getenv("ASQLTEST")

@@ -53,3 +53,9 @@ class ScheduleListRsp:
 class WorkflowRsp:
     enabled: bool
     task: NBTask
+
+
+class ProjectZipFile(BaseModel):
+    filepath: str
+    commit: Optional[str]
+    current: Optional[bool] = False

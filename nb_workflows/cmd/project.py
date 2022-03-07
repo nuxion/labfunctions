@@ -1,8 +1,9 @@
 import click
 
-from nb_workflows import client
+from nb_workflows import client, secrets
 from nb_workflows.conf import load_client
-from nb_workflows.uploads import zip_project
+
+# from nb_workflows.uploads import manage_upload
 
 
 @click.group()
@@ -51,8 +52,13 @@ def project(from_file, only_zip, env_file, current, url_service, action):
     """Manage project settings"""
     c = client.nb_from_file(from_file, url_service)
     if action == "upload":
+
+        # prepare secrets
         pv = client.utils.get_private_key(c.projectid)
-        zfile = zip_project(pv, env_file, current)
+        _agent_token = c.projects_agent_token()
+
+        zfile = client.manage_upload(pv, env_file, current, _agent_token)
+
         click.echo(f"Zipfile generated in {zfile.filepath}")
         if not only_zip:
             c.projects_upload(zfile)
