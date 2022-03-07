@@ -61,11 +61,21 @@ def decrypt(key: bytes, text: str) -> str:
     return f.decrypt(text.encode("utf-8")).decode("utf-8")
 
 
-def encrypt_nbvars(private_key: str, vars_file) -> Dict[str, Any]:
+def encrypt_nbvars_file(private_key: str, vars_file) -> Dict[str, Any]:
+    """Open the file and encrypt it"""
     _vars = _open_vars_file(vars_file)
     f = Fernet(private_key)
     _nbvars = {
         k: f.encrypt(v.encode("utf-8")).decode("utf-8") for k, v in _vars.items()
+    }
+    return _nbvars
+
+
+def encrypt_nbvars(private_key: str, nbvars_dict) -> Dict[str, Any]:
+    """Expect the variables loaded from nbvars file"""
+    f = Fernet(private_key)
+    _nbvars = {
+        k: f.encrypt(v.encode("utf-8")).decode("utf-8") for k, v in nbvars_dict.items()
     }
     return _nbvars
 

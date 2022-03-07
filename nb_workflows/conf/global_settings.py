@@ -15,10 +15,11 @@ ASQL = os.getenv(
 FILESERVER = os.getenv("NB_FILESERVER")
 FILESERVER_BUCKET = "nb-workflows"
 
-RQ_REDIS_HOST = os.getenv("NB_RQ_HOST", "redis")
-RQ_REDIS_PORT = os.getenv("NB_RQ_PORT", "6379")
-RQ_REDIS_DB = os.getenv("NB_RQ_DB", "2")
-WEB_REDIS = os.getenv("NB_WEB_REDIS", "redis://redis:6379/2")
+# RQ_REDIS_HOST = os.getenv("NB_RQ_HOST", "redis")
+# RQ_REDIS_PORT = os.getenv("NB_RQ_PORT", "6379")
+# RQ_REDIS_DB = os.getenv("NB_RQ_DB", "2")
+# WEB_REDIS = os.getenv("NB_WEB_REDIS", "redis://redis:6379/2")
+
 
 WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
 # MISC

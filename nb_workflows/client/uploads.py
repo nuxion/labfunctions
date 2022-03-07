@@ -2,15 +2,24 @@ import logging
 import os
 import pathlib
 import subprocess
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 from zipfile import ZipFile
 
 from nb_workflows import secrets
 from nb_workflows.conf import defaults
+from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 
 from .types import Credentials, ProjectZipFile
 
 logger = logging.getLogger(__name__)
+
+
+def generate_dockerfile(root, docker_options: Dict[str, Any]):
+    render_to_file(
+        "Dockerfile",
+        str((root / defaults.DOCKERFILE_RUNTIME_NAME).resolve()),
+        data=docker_options,
+    )
 
 
 def execute(cmd) -> str:
@@ -25,8 +34,8 @@ def execute(cmd) -> str:
         return out.decode().strip()
 
 
-def write_secrets(root, private_key, vars_file) -> str:
-    _vars = secrets.encrypt_nbvars(private_key, vars_file)
+def write_secrets(root, private_key, nbvars_dict) -> str:
+    _vars = secrets.encrypt_nbvars(private_key, nbvars_dict)
     newline = "\n"
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
     outfile = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
@@ -102,7 +111,18 @@ def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
 
 def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipFile:
     """
-    it manages how to upload project files to the server.
+    It manages how to upload project files to the server.
+
+    Right now AGENT_TOKEN and AGENT_REFRESH_TOKEN are injected dinamically
+    generating the keys on the server and puting it encrypted in the .secrets's file
+
+    This is a little magical from the point of view of the user, but the intention is the
+    simplification of the overall process, and we try to avoid that the user handle
+    sensible information manually
+
+    Same approach is taken with the private key to sign secrets. In the future this could
+    change or at least we will provide to the user with the right mechanisms
+    and documentation so that they can handle it manually if they want.
     """
 
     secrets.nbvars["AGENT_TOKEN"] = creds.access_token
@@ -111,7 +131,7 @@ def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipF
     root = pathlib.Path(os.getcwd())
     (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
 
-    secrets_file = write_secrets(root, privkey, env_file)
+    secrets_file = write_secrets(root, privkey, secrets.nbvars)
     zfile = zip_project(root, secrets_file, current)
 
     pathlib.Path(secrets_file).unlink(missing_ok=True)

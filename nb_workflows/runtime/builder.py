@@ -23,13 +23,18 @@ def docker_build(path, dockerfile, tag, rm=False, push=False) -> DockerBuildLog:
     """
 
     error = False
+    error_build = False
+    error_push = False
 
     build_log = docker_low_build(path, dockerfile, tag, rm)
+    error_build = build_log.error
+
     push_log = None
     if push:
         push_log = docker_push_image(tag)
+        error_push = push_log.error
 
-    if build_log.error or push_log.error:
+    if error_build or error_push:
         error = True
 
     return DockerBuildLog(build_log=build_log, push_log=push_log, error=error)

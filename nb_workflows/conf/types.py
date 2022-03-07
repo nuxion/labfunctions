@@ -43,6 +43,7 @@ class ServerSettings(BaseSettings):
     SETTINGS_MODULE: Optional[str] = None
 
     def rq2dict(self):
+        breakpoint()
         return dict(
             host=self.RQ_REDIS_HOST,
             port=int(self.RQ_REDIS_PORT),

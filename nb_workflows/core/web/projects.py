@@ -12,11 +12,13 @@ from sanic_jwt import inject_user, protected
 from nb_workflows.auth.shortcuts import get_auth
 from nb_workflows.auth.types import UserData
 from nb_workflows.client.types import Credentials
+from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import ProjectData, ProjectReq
 from nb_workflows.core.managers import projects
+from nb_workflows.core.scheduler import SchedulerExecutor
 from nb_workflows.io import AsyncFileserver
-from nb_workflows.utils import secure_filename
+from nb_workflows.utils import run_async, secure_filename
 
 projects_bp = Blueprint("projects", url_prefix="projects")
 
@@ -31,6 +33,13 @@ async def generate_id(session, retries=3) -> Union[str, None]:
         ix += 1
 
     return None
+
+
+def _get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
+
+    current_app = Sanic.get_app(defaults.SANIC_APP_NAME)
+    r = current_app.ctx.rq_redis
+    return SchedulerExecutor(r, qname=qname)
 
 
 @projects_bp.get("/_generateid")
@@ -175,8 +184,12 @@ async def project_upload(request, projectid):
     fp = str(root / projectid / name)
     await fsrv.put(fp, file_body)
 
+    sche = _get_scheduler()
+
+    job = await run_async(sche.enqueue_build, projectid, fp)
+
     # fp = str(root / settings.WF_UPLOADS / name)
     # async with aiofiles.open(fp, "wb") as f:
     #    await f.write(file_body)
 
-    return json(dict(msg="ok"), 201)
+    return json(dict(msg="ok", jobid=job.id), 201)

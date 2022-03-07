@@ -15,5 +15,5 @@ class DockerPushLog(BaseModel):
 
 class DockerBuildLog(BaseModel):
     build_log: DockerBuildLowLog
-    push_log: DockerPushLog
+    push_log: Optional[DockerPushLog] = None
     error: bool

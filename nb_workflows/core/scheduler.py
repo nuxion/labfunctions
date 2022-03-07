@@ -16,7 +16,7 @@ from sqlalchemy.orm import selectinload
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.entities import NBTask, ScheduleData
-from nb_workflows.core.executors import docker_exec
+from nb_workflows.core.executors.docker import build_dockerimage, docker_exec
 from nb_workflows.core.managers import projects, workflows
 from nb_workflows.core.models import WorkflowModel
 from nb_workflows.core.notebooks import nb_job_executor
@@ -133,6 +133,37 @@ class SchedulerExecutor:
             job_id=_id,
             job_timeout=task.timeout,
         )
+        return job
+
+    def enqueue_build(
+        self, projectid, project_zip_route, qname=settings.RQ_CONTROL_QUEUE
+    ) -> Job:
+        """
+        TODO: in the future a special queue should exists.
+        TODO: set default timeout for build tasks,
+              or better add a type like BuildTaskOptions
+        TODO: design internal, onpremise or external docker registries.
+        """
+
+        _id = generate_execid()
+        if qname == settings.RQ_CONTROL_QUEUE:
+            job = self.Q.enqueue(
+                build_dockerimage,
+                projectid,
+                project_zip_route,
+                job_id=_id,
+                job_timeout=(60 * 60) * 24,
+            )
+        else:
+            Q = Queue(qname, connection=self.redis)
+            job = Q.enqueue(
+                build_dockerimage,
+                projectid,
+                project_zip_route,
+                job_id=_id,
+                job_timeout=(60 * 60) * 24,
+            )
+
         return job
 
     async def schedule(self, session, project_id, data_dict, update=False) -> str:

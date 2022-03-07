@@ -4,7 +4,6 @@ import click
 
 from nb_workflows import client
 from nb_workflows.conf import load_client
-from nb_workflows.core.executors import local_dev_exec, local_exec
 
 settings = load_client()
 
@@ -40,8 +39,12 @@ def executorscli():
 def exec(from_file, url_service, dev, jobid):
     """Execute workflows by jobid"""
 
+    from nb_workflows.core.executors import local_dev_exec, local_exec
+
     if not dev:
-        c = client.nb_from_settings_agent()
+        # TODO: Should be inject or validate url_service param
+        # when running from the data plane machine?
+        # c = client.nb_from_settings_agent()
         rsp = local_exec(jobid)
         if rsp:
             click.echo(f"Jobid: {rsp.jobid} locally executed")
