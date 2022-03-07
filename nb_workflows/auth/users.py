@@ -7,7 +7,13 @@ from sqlalchemy.orm import selectinload
 
 from nb_workflows.auth.models import GroupModel, UserModel
 from nb_workflows.auth.types import UserData
-from nb_workflows.auth.utils import password_manager
+from nb_workflows.conf.server_settings import settings
+from nb_workflows.hashes import PasswordScript
+
+
+def password_manager() -> PasswordScript:
+    s = settings.SALT
+    return PasswordScript(salt=s.encode("utf-8"))
 
 
 def create_user(

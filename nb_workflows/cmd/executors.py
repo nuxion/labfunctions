@@ -39,7 +39,8 @@ def executorscli():
 def exec(from_file, url_service, dev, jobid):
     """Execute workflows by jobid"""
 
-    from nb_workflows.core.executors import local_dev_exec, local_exec
+    from nb_workflows.executors.development import local_dev_exec
+    from nb_workflows.executors.local import local_exec
 
     if not dev:
         # TODO: Should be inject or validate url_service param

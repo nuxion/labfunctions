@@ -3,7 +3,7 @@ from typing import Callable, List, Optional
 
 import httpx
 
-from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData, WorkflowData
+from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
 from nb_workflows.utils import open_yaml, write_yaml
 
 from .types import Credentials, WorkflowsFile

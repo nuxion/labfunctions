@@ -7,7 +7,7 @@ from typing import Union
 import httpx
 import jwt
 
-from nb_workflows.core.entities import NBTask, ScheduleData
+from nb_workflows.types import NBTask, ScheduleData
 
 from .types import Credentials
 

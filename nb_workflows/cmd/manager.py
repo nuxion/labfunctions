@@ -5,8 +5,8 @@ import click
 from alembic import command
 from alembic.config import Config as AlembicConfig
 
+from nb_workflows.auth import password_manager
 from nb_workflows.auth import users as users_mgt
-from nb_workflows.auth.utils import password_manager
 from nb_workflows.conf import load_server
 from nb_workflows.db.sync import SQL
 
@@ -35,7 +35,7 @@ def db(sql, action):
     db = SQL(sql)
     settings.SQL = sql
     auth_mod = importlib.import_module("nb_workflows.auth.models")
-    wf_mod = importlib.import_module("nb_workflows.core.models")
+    wf_mod = importlib.import_module("nb_workflows.models")
 
     if action == "create":
         db.create_all()

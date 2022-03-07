@@ -5,10 +5,10 @@ import docker
 from nb_workflows import client, secrets
 from nb_workflows.build import build
 from nb_workflows.conf import defaults
+from nb_workflows.io import Fileserver
 
 # from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData
-from nb_workflows.io import Fileserver
+from nb_workflows.types import NBTask, ProjectData, ScheduleData
 
 
 def before_exec(projectid) -> PosixPath:

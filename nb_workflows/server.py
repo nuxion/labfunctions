@@ -8,19 +8,12 @@ from sanic_ext import Extend
 from sanic_jwt import Initialize
 
 from nb_workflows.auth import authenticate, users
+from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 
-app = Sanic("nb_workflows")
-# Initialize(
-#    app,
-#    authenticate=users.authenticate_web,
-#    secret=settings.SECRET_KEY,
-#    refresh_token_enabled=True,
-#    retrieve_refresh_token=users.retrieve_refresh_token,
-#    store_refresh_token=users.store_refresh_token,
-#    retrieve_user=users.retrieve_user,
-# )
+app = Sanic(defaults.SANIC_APP_NAME)
+
 Initialize(
     app,
     authentication_class=authenticate.NBAuthentication,
@@ -31,7 +24,6 @@ Initialize(
     # retrieve_user=users.retrieve_user,
 )
 
-# app.blueprint(workflows_bp)
 
 app.config.CORS_ORIGINS = "*"
 Extend(app)
@@ -46,15 +38,6 @@ app.ext.openapi.secured("token")
 
 db = AsyncSQL(settings.ASQL)
 _base_model_session_ctx = ContextVar("session")
-
-
-def _parse_page_limit(request, def_pg="1", def_lt="100"):
-    strpage = request.args.get("page", [def_pg])
-    strlimit = request.args.get("limit", [def_lt])
-    page = int(strpage[0])
-    limit = int(strlimit[0])
-
-    return page, limit
 
 
 @app.listener("before_server_start")
@@ -80,7 +63,7 @@ async def shutdown(current_app, loop):
 
 @app.middleware("request")
 async def inject_session(request):
-    current_app = Sanic.get_app("nb_workflows")
+    current_app = Sanic.get_app(defaults.SANIC_APP_NAME)
     request.ctx.session = app.ctx.db.sessionmaker()
     request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
     request.ctx.web_redis = current_app.ctx.web_redis

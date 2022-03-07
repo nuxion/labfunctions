@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import select
 
-from nb_workflows.core.entities import ExecutionResult, HistoryResult, NBTask
-from nb_workflows.core.models import HistoryModel
+from nb_workflows.models import HistoryModel
+from nb_workflows.types import ExecutionResult, HistoryResult, NBTask
 
 
 @dataclass

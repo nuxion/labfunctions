@@ -15,13 +15,13 @@ from sqlalchemy.orm import selectinload
 
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.entities import NBTask, ScheduleData
-from nb_workflows.core.executors.docker import build_dockerimage, docker_exec
-from nb_workflows.core.managers import projects, workflows
-from nb_workflows.core.models import WorkflowModel
-from nb_workflows.core.notebooks import nb_job_executor
 from nb_workflows.db.sync import SQL
+from nb_workflows.executors.docker import build_dockerimage, docker_exec
 from nb_workflows.hashes import Hash96
+from nb_workflows.managers import projects_mg, workflows_mg
+from nb_workflows.models import WorkflowModel
+from nb_workflows.notebooks import nb_job_executor
+from nb_workflows.types import NBTask, ScheduleData
 from nb_workflows.utils import run_async
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
@@ -71,10 +71,10 @@ def scheduler_dispatcher(projectid: str, jobid: str) -> Union[Job, None]:
     Session = db.sessionmaker()
 
     with Session() as session:
-        obj_model = workflows.get_by_jobid_model_sync(session, jobid)
+        obj_model = workflows_mg.get_by_jobid_model_sync(session, jobid)
         if obj_model and obj_model.enabled:
 
-            priv_key = projects.get_private_key_sync(session, projectid)
+            priv_key = projects_mg.get_private_key_sync(session, projectid)
 
             task = NBTask(**obj_model.job_detail)
             _job = scheduler.enqueue_notebook_in_docker(
@@ -171,7 +171,7 @@ class SchedulerExecutor:
         task = NBTask(**data_dict)
         task.schedule = ScheduleData(**schedule_data)
 
-        jobid = await workflows.register(session, project_id, task, update=update)
+        jobid = await workflows_mg.register(session, project_id, task, update=update)
 
         try:
             await session.commit()
@@ -237,4 +237,4 @@ class SchedulerExecutor:
         """Delete job from redis and db"""
 
         await run_async(self.cancel_job, jobid)
-        await workflows.delete_wf(session, projectid, jobid)
+        await workflows_mg.delete_wf(session, projectid, jobid)

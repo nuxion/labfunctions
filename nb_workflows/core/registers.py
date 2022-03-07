@@ -2,11 +2,11 @@ from dataclasses import asdict
 
 from nb_workflows.conf.client_settings import settings as settings_client
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.entities import ExecutionResult, NBTask
-from nb_workflows.core.managers import history
-from nb_workflows.core.models import HistoryModel
 from nb_workflows.db.sync import SQL
+from nb_workflows.managers import history_mg
+from nb_workflows.models import HistoryModel
 from nb_workflows.notifications import EMOJI_ERROR, EMOJI_OK, DiscordClient, SlackCient
+from nb_workflows.types import ExecutionResult, NBTask
 
 
 def send_discord_fail(msg):
@@ -107,7 +107,7 @@ async def register_history_db(
     session, execution_result: ExecutionResult, nb_task: NBTask
 ):
     """TODO: notifications calls are sync, they should be async"""
-    hm = await history.create(session, execution_result, nb_task)
+    hm = await history_mg.create(session, execution_result, nb_task)
 
     if hm.status == 0 and nb_task.notifications_ok:
         for medium in nb_task.notifications_ok:

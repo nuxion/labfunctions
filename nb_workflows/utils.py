@@ -65,10 +65,14 @@ async def run_async(func, *args, **kwargs):
 
 
 def init_blueprints(app, blueprints_allowed):
+    """It import and mount each module inside `nb_workflows.web`
+    which ends with _bp.
+
+    """
     blueprints = set()
     mod = app.__module__
     for mod_name in blueprints_allowed:
-        module = import_module(f"nb_workflows.{mod_name}.web", mod)
+        module = import_module(f"nb_workflows.web.{mod_name}_bp", mod)
         for el in dir(module):
             if el.endswith("_bp"):
                 bp = getattr(module, el)

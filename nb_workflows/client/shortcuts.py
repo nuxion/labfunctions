@@ -7,8 +7,8 @@ import httpx
 
 from nb_workflows.conf import load_client
 from nb_workflows.conf.types import ClientSettings
-from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData
 from nb_workflows.io import MemoryStore
+from nb_workflows.types import NBTask, ProjectData, ScheduleData
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 from .agent import AgentClient

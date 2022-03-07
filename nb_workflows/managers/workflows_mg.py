@@ -7,10 +7,10 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-from nb_workflows.core.entities import NBTask, WorkflowData, WorkflowsList
-from nb_workflows.core.managers import projects
-from nb_workflows.core.models import WorkflowModel
 from nb_workflows.hashes import Hash96
+from nb_workflows.managers import projects_mg
+from nb_workflows.models import WorkflowModel
+from nb_workflows.types import NBTask, WorkflowData, WorkflowsList
 
 WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
 
@@ -122,7 +122,7 @@ async def register(session, projectid: str, task: NBTask, update=False) -> str:
     jobid = generate_jobid()
     data_dict = asdict(task)
 
-    pm = await projects.get_by_projectid_model(session, projectid)
+    pm = await projects_mg.get_by_projectid_model(session, projectid)
     if not pm:
         raise AttributeError("Projectid not found %s", projectid)
 

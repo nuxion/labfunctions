@@ -1,7 +1,9 @@
 import click
 
-from nb_workflows.conf.server_settings import settings
+from nb_workflows.conf import load_server
 from nb_workflows.utils import init_blueprints
+
+settings = load_server()
 
 
 @click.group()
@@ -19,7 +21,7 @@ def servicescli():
 @click.option(
     "--apps",
     "-a",
-    default="core",
+    default="workflows,projects,history",
     help="List of apps to be mounted as blueprints",
 )
 @click.option(

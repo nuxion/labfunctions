@@ -6,9 +6,9 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-from nb_workflows.core.entities import ExecutionResult, HistoryRequest, NBTask
-from nb_workflows.core.managers import history
 from nb_workflows.core.registers import register_history_db
+from nb_workflows.managers import history_mg
+from nb_workflows.types import ExecutionResult, HistoryRequest, NBTask
 from nb_workflows.utils import get_query_param
 
 stats_bp = Blueprint("history", url_prefix="history")
@@ -26,7 +26,7 @@ async def history_last_job(request, jobid):
     lt = get_query_param(request, "lt", 1)
     session = request.ctx.session
     async with session.begin():
-        h = await history.get_last(session, jobid, limit=lt)
+        h = await history_mg.get_last(session, jobid, limit=lt)
         if h:
             return json(asdict(h), 200)
 

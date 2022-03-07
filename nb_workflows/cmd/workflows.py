@@ -2,9 +2,11 @@ import os
 
 import click
 
-from nb_workflows import client, init_script
+from nb_workflows import client
+from nb_workflows.client import init_script
 from nb_workflows.conf import load_client
-from nb_workflows.core.executors.local import local_dev_exec, local_exec
+from nb_workflows.executors.development import local_dev_exec
+from nb_workflows.executors.local import local_exec
 
 
 @click.group()

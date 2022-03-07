@@ -7,9 +7,9 @@ from sqlalchemy.orm import selectinload
 
 from nb_workflows import secrets
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.entities import ProjectData, ProjectReq
-from nb_workflows.core.models import ProjectModel
 from nb_workflows.hashes import generate_random
+from nb_workflows.models import ProjectModel
+from nb_workflows.types import ProjectData, ProjectReq
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 

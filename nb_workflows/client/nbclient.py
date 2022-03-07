@@ -2,7 +2,7 @@ from dataclasses import asdict
 from typing import Dict, List, Optional, Union
 
 from nb_workflows import secrets
-from nb_workflows.core.entities import (
+from nb_workflows.types import (
     ExecutionResult,
     HistoryRequest,
     NBTask,

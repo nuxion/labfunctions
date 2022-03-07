@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from nb_workflows.core.entities import (
+from nb_workflows.types import (
     ExecutionResult,
     HistoryRequest,
     NBTask,
