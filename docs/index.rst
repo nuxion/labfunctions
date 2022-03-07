@@ -3,14 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to NB Workflows's documentation!
+API Documentation
 ========================================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+   nb_workflows/api_reference
 
 
+User Guide
+==========
+
+To preprare. 
 
 Indices and tables
 ==================
