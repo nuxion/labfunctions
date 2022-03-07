@@ -14,10 +14,14 @@ def local_exec(jobid) -> Union[ExecutionResult, None]:
 
     Also, this way of schedule allows dinamically changes to the workflow
     task because the params are got from the database.
+
+    TODO: Should be inject or validate url_service param
+          when running from the data plane machine?
     """
     logger = set_logger("local_exec", level=settings.LOGLEVEL)
     logger.info(f"Runing {jobid}")
-    nb_client = client.nb_from_file("workflows.yaml", settings.WORKFLOW_SERVICE)
+    # nb_client = client.nb_from_file("workflows.yaml", settings.WORKFLOW_SERVICE)
+    nb_client = client.nb_from_settings_agent()
     try:
         rsp = nb_client.workflows_get(jobid)
         if rsp and rsp.enabled:
