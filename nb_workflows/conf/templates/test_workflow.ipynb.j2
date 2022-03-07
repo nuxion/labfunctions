@@ -1,0 +1,137 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "25627a88",
+   "metadata": {
+    "tags": [
+     "parameters"
+    ]
+   },
+   "outputs": [],
+   "source": [
+    "SLEEP=5\n",
+    "ERROR=False\n",
+    "\n",
+    "NOW=None\n",
+    "JOBID=\"test_job\"\n",
+    "EXECUTIONID=\"test_exec\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "4a363be6",
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "==========\n",
+      "JOBID: test_job starting\n",
+      "EXECUTIONID: test_exec starting\n",
+      "==========\n",
+      "SLEEP: 5\n",
+      "ERROR: False\n"
+     ]
+    }
+   ],
+   "source": [
+    "from datetime import datetime\n",
+    "import time\n",
+    "print(\"=\"*10)\n",
+    "print(f\"JOBID: {JOBID} starting\")\n",
+    "print(f\"EXECUTIONID: {EXECUTIONID} starting\")\n",
+    "print(\"=\"*10)\n",
+    "print(f\"SLEEP: {SLEEP}\")\n",
+    "print(f\"ERROR: {ERROR}\")\n",
+    "\n",
+    "NOW = datetime.utcnow().isoformat()\n",
+    "\n",
+    "time.sleep(SLEEP)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "1c558780-e206-4064-a4cb-f64da0888d18",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "2022-02-22 10:53:55,300 CACHE: wrote to fileserver http://127.0.0.1:4444/cache/test_job.test_exec.return_data\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "'GoodbyeGoodbyeGoodbyeGoodbyeGoodbye'"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from nb_workflows.cache import frozen_result\n",
+    "\n",
+    "@frozen_result(valid_for_min=1, strategy=\"fileserver\", from_global=globals())\n",
+    "def return_data():\n",
+    "    return \"Goodbye\"*5\n",
+    "\n",
+    "return_data()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "04875638",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "if ERROR:\n",
+    "    raise IndexError(\"Error was requested for this task\")\n",
+    "    # 10 / 0\n",
+    "print(\"Error?\", ERROR)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "de34eb63",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(f\"Task {JOBID} finished\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.10"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

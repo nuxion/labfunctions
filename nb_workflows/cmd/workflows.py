@@ -1,19 +1,10 @@
+import os
+
 import click
-import toml
 
-from nb_workflows.conf import settings
-from nb_workflows.workflows import client
-from nb_workflows.workflows.entities import NBTask, ScheduleData
-
-
-def _get_token(filepath):
-    nbc = client.open_config(filepath)
-    token = client.get_credentials()
-    if token:
-        v = client.validate_credentials(nbc.url_service, token)
-        if v:
-            return token
-    return client.login_cli(nbc.url_service)
+from nb_workflows import client, init_script
+from nb_workflows.conf import load_client
+from nb_workflows.core.executors import local_dev_exec, local_exec
 
 
 @click.group()
@@ -28,10 +19,16 @@ def workflowscli():
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.toml",
-    help="toml file with the configuration",
+    default="workflows.yaml",
+    help="yaml file with the configuration",
 )
-@click.option("--web", default=settings.WORKFLOW_SERVICE, help="Web server")
+@click.option("--example", "-E", default=True, is_flag=True, help="Init with example")
+@click.option(
+    "--url-service",
+    "-u",
+    default=load_client().WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
 @click.option(
     "--update",
@@ -40,64 +37,60 @@ def workflowscli():
     default=False,
     help="Updates workflows when push",
 )
-@click.option(
-    "--remote", "-r", default=False, is_flag=True, help="execute remote"
-)
+@click.option("--remote", "-r", default=False, is_flag=True, help="execute remote")
 @click.argument(
     "action",
-    type=click.Choice(["init", "push", "list", "exec", "delete", "login"]),
+    type=click.Choice(["init", "push", "sync", "list", "exec", "dev-exec", "delete"]),
 )
-def workflows(from_file, web, remote, update, action, jobid):
+def wf(from_file, url_service, remote, update, example, action, jobid):
     """Manage workflows"""
 
     if action == "init":
-        if remote:
-            token = settings.CLIENT_TOKEN or client.login_cli(web)
-            c = client.from_remote(web, token)
-            c.write()
-        else:
-            c = client.init(web)
-            c.write()
+        c = client.init(url_service)
+        c.write()
 
     elif action == "push":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
-        if update:
-            c.push_all(update=True)
+        c = client.nb_from_file(from_file, url_service=url_service)
+        c.workflows_push(update=update)
 
     elif action == "list":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
-        data = c.list_scheduled()
-        print("\nnb_name | jobid | description | is_enabled\n")
+        c = client.nb_from_file(from_file, url_service=url_service)
+        data = c.workflows_list()
+        print("\nnb_name | jobid | alias | is_enabled\n")
         for d in data:
-            print(f"{d.nb_name} | {d.jobid} | {d.description} | [{d.enabled}]")
+            print(f"{d.nb_name} | {d.jobid} | {d.alias} | [{d.enabled}]")
 
     elif action == "exec":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
-        rsp = c.execute_remote(jobid)
-        if rsp.status_code == 202:
-            print(f"Jobid: {jobid}, scheduled.")
-            print(f"Executionid: {rsp.executionid}")
+        c = client.nb_from_file(from_file, url_service=url_service)
+        rsp = local_exec(jobid)
+        if rsp:
+            click.echo(f"Jobid: {rsp.jobid} locally executed")
+            click.echo(f"Executionid: {rsp.executionid}")
+            status = "OK"
+            if rsp.error:
+                status = "ERROR"
+            click.echo(f"Status: {status}")
+
+    elif action == "dev-exec":
+        c = client.nb_from_file(from_file, url_service=url_service)
+        rsp = local_dev_exec(jobid)
+        if rsp:
+            click.echo(f"Jobid: {rsp.jobid} locally executed")
+            click.echo(f"Executionid: {rsp.executionid}")
+            status = "OK"
+            if rsp.error:
+                status = "ERROR"
+            click.echo(f"Status: {status}")
 
     elif action == "delete":
-        token = _get_token(from_file)
-        c = client.from_file(from_file, token)
-        rsp = c.delete(jobid)
+        c = client.nb_from_file(from_file, url_service=url_service)
+        rsp = c.workflows_delete(jobid)
         print(f"Jobid: {jobid}, deleted. Code {rsp}")
 
-    elif action == "login":
-        try:
-            nbc = client.open_config(from_file)
-            websrv = nbc.url_service
-        except:
-            websrv = web
-        click.echo(f"\nLogin to NB Workflows services {web}\n")
-        token = client.login_cli(web)
-        if not token:
-            click.echo(f"Error auth, try again")
-            # click.echo(f"ACCESS TOKEN: {token}")
+    elif action == "sync":
+        c = client.nb_from_file(from_file, url_service=url_service)
+        c.sync_file()
+        click.echo(f"{from_file} sync")
 
     else:
         print("Valid actions are: [init, push, list, exec, delete]")
@@ -105,42 +98,38 @@ def workflows(from_file, web, remote, update, action, jobid):
 
 @click.command()
 @click.option(
-    "--from-file",
-    "-f",
-    default="workflows.toml",
-    help="toml file with the configuration",
+    "--url-service",
+    "-u",
+    default=load_client().WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
 )
-@click.argument("jobid")
-def history(from_file, jobid):
-    """Get the last exectuion of a workflow from the history"""
-    token = _get_token(from_file)
-    c = client.from_file(from_file, token)
-    r = c.history_last(jobid)
-    print("Notebook: ", r["result"]["name"])
-    print("Execution ID: ", r["executionid"])
-    print("Status: ", r["status"])
-    print("Elapsed: ", r["result"]["elapsed_secs"])
-    print("Last Run: ", r["created_at"])
+def login(url_service):
+    """Login to NB Workflows service"""
+    click.echo(f"\nLogin to NB Workflows services {url_service}\n")
+    creds = client.login_cli(url_service)
+    if not creds:
+        click.echo(f"Error auth, try again")
 
 
-@click.command()
+@workflowscli.command()
 @click.option(
-    "--from-file",
-    "-f",
-    default="workflows.toml",
-    help="toml file with the configuration",
+    "--create-dirs",
+    "-C",
+    is_flag=True,
+    default=True,
+    help="Create outpus and workflows dir",
 )
-@click.option("--jobid", "-J", help="Jobid to operate with")
-@click.argument("action", type=click.Choice(["status"]))
-def rq(from_file, jobid, action):
-    """Information of running jobs"""
-    token = _get_token(from_file)
-    c = client.from_file(from_file, token)
-    if action == "status":
-        s = c.rq_status(jobid)
-        click.echo(s)
+@click.argument("base_path")
+def startproject(base_path, create_dirs):
+    """Start a new project"""
+    init_script.init(base_path, create_dirs)
+    print("\n Next steps: ")
+    print("\n\t1. init a git repository")
+    print("\t2. create a workflow inside of the workflows folder")
+    print("\t3. publish your work")
+    print()
 
 
-workflowscli.add_command(workflows)
-workflowscli.add_command(history)
-workflowscli.add_command(rq)
+workflowscli.add_command(wf)
+workflowscli.add_command(login)
+workflowscli.add_command(startproject)

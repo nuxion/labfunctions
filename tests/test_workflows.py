@@ -1,11 +1,11 @@
 from redislite import Redis
 from rq import Queue
 
-from nb_workflows.workflows import scheduler
-from nb_workflows.workflows.entities import NBTask, ScheduleData
-from nb_workflows.workflows.models import HistoryModel, ScheduleModel
+from nb_workflows.core import scheduler
+from nb_workflows.core.entities import NBTask, ScheduleData
+from nb_workflows.core.models import HistoryModel, WorkflowModel
 
-from .factories import history_factory, schedule_factory
+from .factories import history_factory, workflow_factory
 
 nb_task_simple = NBTask(
     nb_name="test_workflow",
@@ -22,7 +22,7 @@ def test_workflows_historymodel(connection, session):
 
 def test_workflows_schedulemodel(connection, session):
 
-    sched = schedule_factory(session)()
+    sched = workflow_factory(session)()
 
     session.add(sched)
     session.commit()
@@ -30,9 +30,9 @@ def test_workflows_schedulemodel(connection, session):
 
 
 def test_workflows_get_job_from_db(connection, session):
-    sched = schedule_factory(session)()
+    sched = workflow_factory(session)()
     obj = scheduler.get_job_from_db(session, sched.jobid)
-    assert isinstance(obj, ScheduleModel)
+    assert isinstance(obj, WorkflowModel)
 
 
 def test_workflows_QueueExecutor(redis):

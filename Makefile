@@ -42,8 +42,13 @@ clean:
 	rm -rf dist/* > /dev/null 2>&1
 	rm -rf .ipynb_checkpoints/* > /dev/null 2>&1
 
-lock:
-	poetry export -f requirements.txt --output requirements.txt --without-hashes
+lock-server:
+	poetry export -f requirements.txt --output requirements.txt --without-hashes --extras server
+
+lock-client:
+	poetry export -f requirements.txt --output requirements_client.txt --without-hashes
+
+lock: lock-server lock-client
 
 prepare: lock
 	poetry build
@@ -74,11 +79,11 @@ run:
 
 .PHONY: web
 web:
-	poetry run nb web --apps workflows --workers 1
+	poetry run nb web --apps core --workers 1
 
 .PHONY: rqworker
 rqworker:
-	poetry run nb rqworker
+	poetry run nb rqworker -w 1
 
 .PHONY: rqscheduler
 rqscheduler:
@@ -108,7 +113,7 @@ publish:
 
 .PHONY: publish-test
 publish-test:
-	poetry publish --build -r testpypi
+	poetry publish --build -r test
 
 .PHONY: docker-env
 docker-env:

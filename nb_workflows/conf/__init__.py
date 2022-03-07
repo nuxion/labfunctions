@@ -1,18 +1,24 @@
 import importlib
 import os
+import sys
 
-from .types import Settings
+from .types import ClientSettings, ServerSettings
 
 # from logging import NullHandler
 
 
+# Client defaults
+GLOBAL_CLIENT = "nb_workflows.conf.global_client"
+CLIENT_VARIABLE = "NB_CLIENT_MODULE"
+DEFAULT_CLIENT = os.environ.get(CLIENT_VARIABLE, "nb_app.settings")
+
+# Server defaults
 GLOBAL_MODULE = "nb_workflows.conf.global_settings"
 ENVIRONMENT_VARIABLE = "NB_SETTINGS_MODULE"
-DEFAULT_MODULE = os.environ.get(
-    ENVIRONMENT_VARIABLE, "nb_app.settings")
+DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
 
 
-def load(settings_module=DEFAULT_MODULE) -> Settings:
+def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
     try:
         mod = importlib.import_module(settings_module)
     except ModuleNotFoundError:
@@ -24,11 +30,25 @@ def load(settings_module=DEFAULT_MODULE) -> Settings:
             value = getattr(mod, m)
             settings_dict[m] = value
 
-    cfg = Settings(**settings_dict)
+    cfg = ServerSettings(**settings_dict)
     cfg.SETTINGS_MODULE = settings_module
     return cfg
 
 
-# logging.basicConfig(format="%(asctime)s %(message)s")
-# logging.getLogger(__name__).addHandler(NullHandler())
-settings = load()
+def load_client(settings_module=DEFAULT_CLIENT) -> ClientSettings:
+    sys.path.append(os.getcwd())
+    try:
+        mod = importlib.import_module(settings_module)
+    except ModuleNotFoundError:
+        mod = importlib.import_module(GLOBAL_CLIENT)
+
+    settings_dict = {}
+    for m in dir(mod):
+        if m.isupper():
+            # sets.add(m)
+            value = getattr(mod, m)
+            settings_dict[m] = value
+
+    cfg = ClientSettings(**settings_dict)
+    cfg.SETTINGS_MODULE = settings_module
+    return cfg

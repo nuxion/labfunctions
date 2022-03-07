@@ -4,7 +4,7 @@ import factory
 from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
-from nb_workflows.workflows.models import HistoryModel, ScheduleModel
+from nb_workflows.core.models import HistoryModel, WorkflowModel
 
 
 def history_factory(session):
@@ -25,10 +25,10 @@ def history_factory(session):
     return HistoryFactory
 
 
-def schedule_factory(session):
-    class ScheduleFactory(SQLAlchemyModelFactory):
+def workflow_factory(session):
+    class WorkflowFactory(SQLAlchemyModelFactory):
         class Meta:
-            model = ScheduleModel
+            model = WorkflowModel
             sqlalchemy_session_persistence = "commit"
             sqlalchemy_session = session
 
@@ -39,4 +39,4 @@ def schedule_factory(session):
         job_detail = {}
         enabled = True
 
-    return ScheduleFactory
+    return WorkflowFactory

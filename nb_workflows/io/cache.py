@@ -1,5 +1,6 @@
 # import tempfile
 import json
+import logging
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -9,13 +10,11 @@ from typing import Any, Dict, Optional
 import cloudpickle
 import httpx
 
-from nb_workflows.conf import settings
-from nb_workflows.utils import set_logger
-
+from nb_workflows.conf.client_settings import settings
 # from nb_workflows.workflows.core import build_context
-from nb_workflows.workflows.entities import ExecContext
+from nb_workflows.core.entities import ExecContext
 
-logger = set_logger(__name__)
+logger = logging.getLogger(__name__)
 
 VALID_STRATEGIES = ["local", "fileserver"]
 
@@ -79,9 +78,7 @@ def _restore_pickle(name, ctx: ExecContext):
 
 def _write_fileserver(name, data, ctx: ExecContext):
     urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
-    metapath = (
-        f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
-    )
+    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     blob = cloudpickle.dumps(data)
     rsp = httpx.put(urlpath, content=blob)
     rsp2 = httpx.put(metapath, json=asdict(ctx))
@@ -93,9 +90,7 @@ def _write_fileserver(name, data, ctx: ExecContext):
 
 def _restore_fileserver(name, ctx: ExecContext):
     urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
-    metapath = (
-        f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
-    )
+    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     data = None
     meta = None
 

@@ -1,11 +1,11 @@
+import importlib
 from logging.config import fileConfig
 
 from alembic import context
-from nb_workflows.db.common import Base
-# from nb_workflows.workflows.models import HistoryModel, ScheduleModel
 from sqlalchemy import engine_from_config, pool
-from nb_workflows.conf import settings
-import importlib
+
+from nb_workflows.conf.server_settings import settings
+from nb_workflows.db.common import Base
 
 wf_mod = importlib.import_module("nb_workflows.workflows.models")
 auth_mod = importlib.import_module("nb_workflows.auth.models")
@@ -63,7 +63,7 @@ def run_migrations_online():
 
     """
     cfg = config.get_section(config.config_ini_section)
-    cfg['sqlalchemy.url'] = settings.SQL
+    cfg["sqlalchemy.url"] = settings.SQL
 
     connectable = engine_from_config(
         cfg,
@@ -73,7 +73,8 @@ def run_migrations_online():
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata,
+            connection=connection,
+            target_metadata=target_metadata,
             version_table="nb_workflows_version",
         )
 
