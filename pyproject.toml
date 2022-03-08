@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nb_workflows"
-version = "0.5.0"
+version = "0.6.0-alpha.0"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [
@@ -104,6 +104,9 @@ sphinx-autobuild = "^2021.3.14"
 redislite = "^6.0.674960"
 factory-boy = "^3.2.1"
 pre-commit = "^2.17.0"
+tox = "^3.24.5"
+pytest-mock = "^3.7.0"
+pytest-cov = "^3.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

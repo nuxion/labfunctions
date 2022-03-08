@@ -19,6 +19,7 @@ def history_factory(session):
         executionid = factory.Faker("text", max_nb_chars=24)
         nb_name = factory.Faker("text", max_nb_chars=24)
         result = dict()
+        # project_id = "Az"
         elapsed_secs = float(5)
         status = 0
 
@@ -37,6 +38,7 @@ def workflow_factory(session):
         alias = factory.Faker("text", max_nb_chars=24)
         nb_name = factory.Faker("text", max_nb_chars=24)
         job_detail = {}
+        # project_id = "Az"
         enabled = True
 
     return WorkflowFactory

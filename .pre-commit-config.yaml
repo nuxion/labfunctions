@@ -18,7 +18,7 @@ repos:
       types: [python]
       args:
         [
-          "--disable=R,C,W"
+          "--disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows"
         ]
 
 
