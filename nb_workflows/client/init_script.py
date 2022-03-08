@@ -3,6 +3,7 @@ import pathlib
 from typing import Tuple
 
 from nb_workflows import client
+from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 
@@ -30,11 +31,7 @@ def generate_files(base_path):
     root = pathlib.Path(base_path)
     settings = load_client(settings_module="nb_app.settings")
     if settings.DOCKER_IMAGE:
-        render_to_file(
-            "Dockerfile",
-            str((root / "Dockerfile.nbruntime").resolve()),
-            data=settings.DOCKER_IMAGE,
-        )
+        generate_dockerfile(root, settings.DOCKER_IMAGE)
 
     render_to_file("Makefile", str((root / "Makefile").resolve()))
     render_to_file("dockerignore", str((root / ".dockerignore").resolve()))

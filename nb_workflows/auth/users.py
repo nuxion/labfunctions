@@ -5,9 +5,24 @@ from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from nb_workflows.auth.models import GroupModel, UserModel
+# from nb_workflows.auth import gorups
+from nb_workflows.auth.models import UserModel
 from nb_workflows.auth.types import UserData
-from nb_workflows.auth.utils import password_manager
+from nb_workflows.conf.server_settings import settings
+from nb_workflows.hashes import PasswordScript
+
+
+def select_user():
+    stmt = select(UserModel).options(
+        selectinload(UserModel.groups),
+        selectinload(UserModel.projects),
+    )
+    return stmt
+
+
+def password_manager() -> PasswordScript:
+    s = settings.SALT
+    return PasswordScript(salt=s.encode("utf-8"))
 
 
 def create_user(
@@ -25,6 +40,17 @@ def create_user(
     return u
 
 
+# async def assign_group(session, user: UserModel, group_name):
+#     g_obj = await gorups.get_group_by_name(session, group_name)
+#     user.groups.append(g_obj)
+#
+#
+# def assign_group_sync(session, user: UserModel, group_name):
+#     g_obj = gorups.get_group_by_name_sync(session, group_name)
+#     if g_obj:
+#         user.groups.append(g_obj)
+
+
 def get_user(session, username: str) -> Union[UserModel, None]:
     stmt = select(UserModel).where(UserModel.username == username).limit(1)
     user_t = session.execute(stmt).fetchone()
@@ -34,12 +60,7 @@ def get_user(session, username: str) -> Union[UserModel, None]:
 
 
 async def get_user_async(session, username: str) -> Union[UserModel, None]:
-    stmt = (
-        select(UserModel)
-        .where(UserModel.username == username)
-        .options(selectinload(UserModel.groups))
-        .limit(1)
-    )
+    stmt = select_user().where(UserModel.username == username).limit(1)
     rsp = await session.execute(stmt)
     user_t = rsp.fetchone()
     if user_t:
@@ -48,12 +69,8 @@ async def get_user_async(session, username: str) -> Union[UserModel, None]:
 
 
 async def get_userid_async(session, id_: int) -> Union[UserModel, None]:
-    stmt = (
-        select(UserModel)
-        .where(UserModel.id == id_)
-        .options(selectinload(UserModel.groups))
-        .limit(1)
-    )
+    stmt = select_user().where(UserModel.id == id_).limit(1)
+
     rsp = await session.execute(stmt)
     user_t = rsp.fetchone()
     if user_t:

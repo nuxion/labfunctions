@@ -16,6 +16,7 @@ from sqlalchemy.schema import Table
 from sqlalchemy_serializer import SerializerMixin
 
 from nb_workflows.db.common import Base
+from nb_workflows.models import assoc_projects_users
 
 association_table = Table(
     "nb_auth_user_groups",
@@ -39,6 +40,9 @@ class UserModel(Base, SerializerMixin):
 
     groups = relationship(
         "GroupModel", secondary=association_table, back_populates="users"
+    )
+    projects = relationship(
+        "ProjectModel", secondary=assoc_projects_users, back_populates="users"
     )
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
     updated_at = Column(DateTime(), default=datetime.utcnow())

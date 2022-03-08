@@ -12,18 +12,11 @@ class ServerSettings(BaseSettings):
     SECRET_KEY: str
     AGENT_TOKEN: str
     AGENT_REFRESH_TOKEN: str
+    AGENT_TOKEN_EXP: int
     # Services
     SQL: str
     ASQL: str
-    RQ_REDIS_HOST: str
-    RQ_REDIS_PORT: str
-    RQ_REDIS_DB: str
-    WEB_REDIS: str
     WORKFLOW_SERVICE: str
-
-    # Logs:
-    LOGLEVEL: str
-    DEBUG: bool
 
     # Folders:
     BASE_PATH: str
@@ -35,8 +28,18 @@ class ServerSettings(BaseSettings):
     WF_UPLOADS: str
     DOCKER_RUNTIMES: str
 
+    WEB_REDIS: Optional[str] = None
+    RQ_REDIS_HOST: Optional[str] = None
+    RQ_REDIS_PORT: Optional[str] = None
+    RQ_REDIS_DB: Optional[str] = None
     RQ_CONTROL_QUEUE: str = "control"
+    EXECUTIONID_LEN: int = 8
     PROJECTID_LEN: int = 10
+
+    # Logs:
+    LOGLEVEL: str = "INFO"
+    LOGFORMAT: str = "%(asctime)s %(message)s"
+    DEBUG: bool = False
 
     FILESERVER: Optional[str] = None
     FILESERVER_BUCKET: Optional[str] = None
@@ -60,11 +63,13 @@ class ClientSettings(BaseSettings):
     AGENT_TOKEN: str
     AGENT_REFRESH_TOKEN: str
 
-    LOGLEVEL: str
-    DEBUG: bool
     BASE_PATH: str
     # NB_WORKFLOWS: str
     # NB_OUTPUT: str
+    LOGLEVEL: str = "INFO"
+    LOGFORMAT: str = "%(asctime)s %(message)s"
+    DEBUG: bool = False
+
     PROJECT_NAME: Optional[str] = None
     PROJECTID_LEN: int = 10
     CLIENT_TOKEN: Optional[str] = None

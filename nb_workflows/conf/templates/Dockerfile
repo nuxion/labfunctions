@@ -1,5 +1,7 @@
 FROM {{ data.image }} as builder
 # supress pip warning
+# For Dev & Debug
+# ADD dist/nb_workflows-0.5.0-py3-none-any.whl /tmp
 
 SHELL ["/bin/bash", "-c"]
 ADD requirements.txt /tmp
@@ -10,7 +12,7 @@ RUN apt-get -y update \
     && apt-get install -y --no-install-recommends \
        {{ data.build_packages }} \
     && pip install --user -r /tmp/requirements.txt
-
+    # && pip install --user /tmp/nb_workflows-0.5.0-py3-none-any.whl
 FROM {{ data.image }} as app
 LABEL maintener="{{ data.maintener }}"
 RUN groupadd app -g {{ data.user.gid }} \

@@ -1,32 +1,30 @@
 import logging
 import os
 import pathlib
-import subprocess
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 from zipfile import ZipFile
 
 from nb_workflows import secrets
 from nb_workflows.conf import defaults
+from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
+from nb_workflows.errors import CommandExecutionException
+from nb_workflows.utils import execute_cmd
 
 from .types import Credentials, ProjectZipFile
 
 logger = logging.getLogger(__name__)
 
 
-def execute(cmd) -> str:
-    with subprocess.Popen(
-        cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ) as p:
-
-        out, err = p.communicate()
-        if err:
-            raise AttributeError(err.decode())
-
-        return out.decode().strip()
+def generate_dockerfile(root, docker_options: Dict[str, Any]):
+    render_to_file(
+        "Dockerfile",
+        str((root / defaults.DOCKERFILE_RUNTIME_NAME).resolve()),
+        data=docker_options,
+    )
 
 
-def write_secrets(root, private_key, vars_file) -> str:
-    _vars = secrets.encrypt_nbvars(private_key, vars_file)
+def write_secrets(root, private_key, nbvars_dict) -> str:
+    _vars = secrets.encrypt_nbvars(private_key, nbvars_dict)
     newline = "\n"
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
     outfile = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
@@ -36,8 +34,12 @@ def write_secrets(root, private_key, vars_file) -> str:
     return outfile
 
 
-def short_head_id():
-    return execute("git rev-parse --short HEAD")
+def git_short_head_id():
+    return execute_cmd("git rev-parse --short HEAD")
+
+
+def git_last_tag():
+    return execute_cmd("git describe --tags")
 
 
 def zip_git_current(
@@ -51,7 +53,7 @@ def zip_git_current(
     secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
 
     output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/CURRENT.zip"
-    stash_id = execute("git stash create")
+    stash_id = execute_cmd("git stash create")
     if not stash_id:
         return None
     cmd = (
@@ -60,20 +62,36 @@ def zip_git_current(
         f"-o {output_file} {stash_id} "
     )
 
-    execute(cmd)
+    execute_cmd(cmd)
 
     return ProjectZipFile(filepath=output_file, current=True)
 
 
-def zip_git_head(root) -> ProjectZipFile:
+def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
     """Zip the head of the repository.
     Not commited files wouldn't included in this zip file
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
-    id_ = short_head_id()
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/HEAD-{id_}.zip"
-    execute(f"git archive -o {output_file} HEAD")
-    return ProjectZipFile(filepath=output_file, commit=id_)
+
+    secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
+
+    tagname = None
+    try:
+        tagname = git_last_tag()
+    except CommandExecutionException:
+        logger.warning(
+            "Any tag were found in the git repository, the last commit id will be used instad"
+        )
+    if not tagname:
+        tagname = git_short_head_id()
+
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{tagname}.zip"
+    execute_cmd(
+        f"git archive --prefix={prefix_folder} "
+        f"--add-file {secrets_file} "
+        f"-o {output_file} HEAD "
+    )
+    return ProjectZipFile(filepath=output_file, commit=tagname)
 
 
 def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
@@ -96,13 +114,26 @@ def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
             raise TypeError(
                 "There isn't changes in the git repository to perform a CURRENT zip file. For untracked files you should add to the stash the changes, perform: git add ."
             )
+    else:
+        zfile = zip_git_head(root)
 
     return zfile
 
 
 def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipFile:
     """
-    it manages how to upload project files to the server.
+    It manages how to upload project files to the server.
+
+    Right now AGENT_TOKEN and AGENT_REFRESH_TOKEN are injected dinamically
+    generating the keys on the server and puting it encrypted in the .secrets's file
+
+    This is a little magical from the point of view of the user, but the intention is the
+    simplification of the overall process, and we try to avoid that the user handle
+    sensible information manually
+
+    Same approach is taken with the private key to sign secrets. In the future this could
+    change or at least we will provide to the user with the right mechanisms
+    and documentation so that they can handle it manually if they want.
     """
 
     secrets.nbvars["AGENT_TOKEN"] = creds.access_token
@@ -111,7 +142,7 @@ def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipF
     root = pathlib.Path(os.getcwd())
     (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
 
-    secrets_file = write_secrets(root, privkey, env_file)
+    secrets_file = write_secrets(root, privkey, secrets.nbvars)
     zfile = zip_project(root, secrets_file, current)
 
     pathlib.Path(secrets_file).unlink(missing_ok=True)

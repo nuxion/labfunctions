@@ -6,6 +6,7 @@ import pickle
 import re
 import resource
 import socket
+import subprocess
 import unicodedata
 from datetime import datetime
 from functools import wraps
@@ -15,6 +16,8 @@ from time import time
 import redis
 import toml
 import yaml
+
+from nb_workflows.errors import CommandExecutionException
 
 _formats = {"hours": "%Y%m%d.%H%M%S", "day": "%Y%m%d", "month": "%Y%m"}
 _filename_ascii_strip_re = re.compile(r"[^A-Za-z0-9_.-]")
@@ -65,10 +68,14 @@ async def run_async(func, *args, **kwargs):
 
 
 def init_blueprints(app, blueprints_allowed):
+    """It import and mount each module inside `nb_workflows.web`
+    which ends with _bp.
+
+    """
     blueprints = set()
     mod = app.__module__
     for mod_name in blueprints_allowed:
-        module = import_module(f"nb_workflows.{mod_name}.web", mod)
+        module = import_module(f"nb_workflows.web.{mod_name}_bp", mod)
         for el in dir(module):
             if el.endswith("_bp"):
                 bp = getattr(module, el)
@@ -273,3 +280,16 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
+def execute_cmd(cmd) -> str:
+    """Wrapper around subprocess"""
+    with subprocess.Popen(
+        cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ) as p:
+
+        out, err = p.communicate()
+        if err:
+            raise CommandExecutionException(err.decode())
+
+        return out.decode().strip()

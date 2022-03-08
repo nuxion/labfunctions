@@ -1,9 +1,15 @@
+import os
+from pathlib import Path
+
 import click
 
 from nb_workflows import client, secrets
-from nb_workflows.conf import load_client
+from nb_workflows.client.uploads import generate_dockerfile
+from nb_workflows.conf import defaults, load_client
 
 # from nb_workflows.uploads import manage_upload
+
+settings = load_client()
 
 
 @click.group()
@@ -44,10 +50,10 @@ def projectcli():
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
+    default=settings.WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
-@click.argument("action", type=click.Choice(["upload"]))
+@click.argument("action", type=click.Choice(["upload", "dockerfile"]))
 def project(from_file, only_zip, env_file, current, url_service, action):
     """Manage project settings"""
     c = client.nb_from_file(from_file, url_service)
@@ -62,6 +68,12 @@ def project(from_file, only_zip, env_file, current, url_service, action):
         click.echo(f"Zipfile generated in {zfile.filepath}")
         if not only_zip:
             c.projects_upload(zfile)
+
+    elif action == "dockerfile":
+        root = Path(os.getcwd())
+        generate_dockerfile(root, settings.DOCKER_IMAGE)
+        click.echo(f"{defaults.DOCKERFILE_RUNTIME_NAME} updated")
+        click.echo("Remember add this change to git...")
 
 
 projectcli.add_command(project)

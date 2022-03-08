@@ -4,7 +4,7 @@ import factory
 from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
-from nb_workflows.core.models import HistoryModel, WorkflowModel
+from nb_workflows.models import HistoryModel, WorkflowModel
 
 
 def history_factory(session):

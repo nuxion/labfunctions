@@ -7,7 +7,7 @@ from sqlalchemy import engine_from_config, pool
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.common import Base
 
-wf_mod = importlib.import_module("nb_workflows.workflows.models")
+wf_mod = importlib.import_module("nb_workflows.models")
 auth_mod = importlib.import_module("nb_workflows.auth.models")
 
 # this is the Alembic Config object, which provides

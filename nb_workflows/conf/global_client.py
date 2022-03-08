@@ -2,22 +2,32 @@ import os
 
 from nb_workflows.secrets import nbvars
 
+# WARNING:
+# We do our best effort to keep sensible information private
+# but in the scenario of an intrusion into the network or machines
+# where agents or servers that represents a risk for the information
+# stored in that machines.
+
+
 # Main settings
 WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
-
+# PROJECTID = "{{ data.projectid }}"
+# PROJECT_NAME = "{{ data.project_name }}"
 PROJECTID = ""
 PROJECT_NAME = ""
 
+# Theese information is used to run workloads in the workers.
+# Don't modify at least you know what you are doing.
 AGENT_TOKEN = nbvars.get("AGENT_TOKEN", "")
 AGENT_REFRESH_TOKEN = nbvars.get("AGENT_REFRESH", "")
 
+# USER Credentials
 CLIENT_TOKEN = nbvars.get("NB_CLIENT_TOKEN", "")
 CLIENT_REFRESH_TOKEN = nbvars.get("NB_CLIENT_REFRESH", "")
 
 # Log
-LOGLEVEL = nbvars.get("NB_LOG", "INFO")
-# If None it will be false, anything else true
-DEBUG = bool(nbvars.get("NB_DEBUG", None))
+LOGLEVEL = "INFO"
+LOGFORMAT = "%(levelname)s - %(message)s"
 
 
 # Folders

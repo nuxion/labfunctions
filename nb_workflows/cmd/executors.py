@@ -4,7 +4,6 @@ import click
 
 from nb_workflows import client
 from nb_workflows.conf import load_client
-from nb_workflows.core.executors import local_dev_exec, local_exec
 
 settings = load_client()
 
@@ -30,19 +29,19 @@ def executorscli():
     default=settings.WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
+@click.option("--jobid", "-J", default=None, help="Jobid to execute")
 @click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
-# @click.option("--jobid", "-J", default=None, help="Jobid to execute")
-# @click.argument(
-#     "action",
-#     type=click.Choice(["init", "push", "sync", "list", "exec", "dev-exec", "delete"]),
-# )
-@click.argument("jobid")
 def exec(from_file, url_service, dev, jobid):
-    """Execute workflows by jobid"""
+    """Execute workflows. If any jobid is provided, it will look in the environment"""
+
+    from nb_workflows.executors.development import local_dev_exec
+    from nb_workflows.executors.local import local_exec_env
 
     if not dev:
-        c = client.nb_from_settings_agent()
-        rsp = local_exec(jobid)
+        # TODO: Should be inject or validate url_service param
+        # when running from the data plane machine?
+        # c = client.nb_from_settings_agent()
+        rsp = local_exec_env()
         if rsp:
             click.echo(f"Jobid: {rsp.jobid} locally executed")
             click.echo(f"Executionid: {rsp.executionid}")

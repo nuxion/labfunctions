@@ -2,9 +2,11 @@ import os
 
 import click
 
-from nb_workflows import client, init_script
+from nb_workflows import client
+from nb_workflows.client import init_script
 from nb_workflows.conf import load_client
-from nb_workflows.core.executors import local_dev_exec, local_exec
+from nb_workflows.executors.development import local_dev_exec
+from nb_workflows.executors.local import local_exec_env
 
 
 @click.group()
@@ -62,14 +64,11 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
 
     elif action == "exec":
         c = client.nb_from_file(from_file, url_service=url_service)
-        rsp = local_exec(jobid)
+        rsp = c.workflows_enqueue(jobid)
         if rsp:
-            click.echo(f"Jobid: {rsp.jobid} locally executed")
-            click.echo(f"Executionid: {rsp.executionid}")
-            status = "OK"
-            if rsp.error:
-                status = "ERROR"
-            click.echo(f"Status: {status}")
+            click.echo(f"Executed: {rsp} on the server {url_service}")
+        else:
+            click.echo(f"Something went wrong")
 
     elif action == "dev-exec":
         c = client.nb_from_file(from_file, url_service=url_service)

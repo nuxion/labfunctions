@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nb_workflows"
-version = "0.4.0"
+version = "0.5.0"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [
@@ -62,6 +62,8 @@ PyYAML = "^6.0"
 pydantic = "^1.9.0"
 fsspec = {version="^2022.2.0", optional=true }
 PyJWT = ">=2.1.0,<2.2.0"
+ipython = "^8.1.1"
+ipykernel = "^6.9.1"
 
 [tool.poetry.extras]
 fsspec = ["fsspec"]
@@ -80,8 +82,6 @@ server = [
 ]
 
 [tool.poetry.dev-dependencies]
-jupyterlab = "^3.1.14"
-ipython = "^7.26.0"
 sqlalchemy-stubs = "^0.4"
 pylint = "^2.10.2"
 isort = "^5.9.3"

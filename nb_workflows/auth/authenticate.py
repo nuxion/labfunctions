@@ -2,7 +2,9 @@ import warnings
 
 from sanic import Sanic
 from sanic.response import json
-from sanic_jwt import Authentication, Initialize, exceptions, utils
+from sanic_jwt import Authentication, Initialize, exceptions
+from sanic_jwt import initialize as sanic_initialize
+from sanic_jwt import utils
 
 from nb_workflows.auth.types import UserData
 from nb_workflows.auth.users import (
@@ -10,6 +12,7 @@ from nb_workflows.auth.users import (
     get_userid_async,
     verify_user_from_model,
 )
+from nb_workflows.conf.server_settings import settings
 
 
 class NBAuthentication(Authentication):
@@ -77,3 +80,22 @@ class NBAuthentication(Authentication):
             request=request,
         )
         return refresh_token
+
+
+def initialize() -> NBAuthentication:
+    """To be used out of the webserver context"""
+    app = Sanic("nb_workflows")
+    a = sanic_initialize(
+        app,
+        authentication_class=NBAuthentication,
+        secret=settings.SECRET_KEY,
+        refresh_token_enabled=True,
+    )
+    return app.ctx.auth
+
+
+def get_auth() -> NBAuthentication:
+    """to get a NBAuthentication instance from
+    webserver cxt"""
+    current = Sanic.get_app("nb_workflows")
+    return current.ctx.auth

@@ -1,3 +1,4 @@
+import logging
 import shutil
 import time
 from datetime import datetime
@@ -6,10 +7,11 @@ from typing import Any, Dict, Optional
 
 import papermill as pm
 
+from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.entities import ExecutionResult, ExecutionTask, NBTask
 from nb_workflows.hashes import Hash96
-from nb_workflows.utils import today_string
+from nb_workflows.types import ExecutionResult, ExecutionTask, ExecutionTask2, NBTask
+from nb_workflows.utils import get_parent_folder, today_string
 
 # from nb_workflows import client
 # from nb_workflows.workflows.registers import job_history_register
@@ -60,6 +62,91 @@ def make_workflow_task(
         output=nb_output,
         created_at=_now,
     )
+
+
+def create_agent_exec_ctx(
+    projectid, jobid, task: NBTask, execid=None
+) -> ExecutionTask2:
+
+    root = Path.cwd()
+    today = today_string(format_="day")
+    _now = datetime.utcnow().isoformat()
+
+    if not execid:
+        _hash = Hash96.time_random_string()
+        execid = _hash.id_hex
+
+    _params = task.params.copy()
+    _params["JOBID"] = jobid
+    _params["EXECUTIONID"] = _hash.id_hex
+    _params["NOW"] = _now
+
+    nb_filename = f"{task.nb_name}.ipynb"
+
+    papermill_input = root / defaults.WORKFLOWS_FOLDER_NAME / nb_filename
+
+    output_dir = f"{defaults.NB_OUTPUTS}/ok/{today}"
+    error_dir = f"{defaults.NB_OUTPUTS}/errors/{today}"
+
+    output_name = f"{task.nb_name}.{execid}.ipynb"
+
+    return ExecutionTask2(
+        projectid=projectid,
+        jobid=jobid,
+        executionid=execid,
+        nb_name=task.nb_name,
+        params=_params,
+        pm_input=str(papermill_input),
+        pm_output=f"{output_dir}/{output_name}",
+        output_name=output_name,
+        output_dir=output_dir,
+        error_dir=error_dir,
+        today=today,
+        created_at=_now,
+    )
+
+
+def notebook_executor(etask: ExecutionTask2) -> ExecutionResult:
+
+    _error = False
+    _started = time.time()
+    logger = logging.getLogger(__name__)
+
+    Path(etask.output_dir).mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"Running.. {etask.nb_name}  {etask.jobid}")
+    try:
+        pm.execute_notebook(etask.pm_input, etask.pm_output, parameters=etask.params)
+    except pm.exceptions.PapermillExecutionError as e:
+        logger.error(f"Task {etask.jobid} {etask.executionid} failed {e}")
+        _error = True
+        error_handler2(etask)
+
+    elapsed = time.time() - _started
+    return ExecutionResult(
+        jobid=etask.jobid,
+        executionid=etask.executionid,
+        name=etask.name,
+        params=etask.params,
+        input_=etask.pm_input,
+        output_dir=etask.output_dir,
+        output_name=etask.output_name,
+        error_dir=etask.error_dir,
+        error=_error,
+        elapsed_secs=round(elapsed, 2),
+        created_at=etask.created_at,
+    )
+
+
+def error_handler2(etask: ExecutionTask2):
+
+    error_output = f"{etask.error_dir}/{etask.output_name}"
+    Path(error_output).mkdir(parents=True, exist_ok=True)
+    shutil.move(etask.pm_output, error_output)
+
+
+def workflow_executor(projectid, jobid, task: NBTask):
+    pass
 
 
 def task_handler(etask: ExecutionTask) -> ExecutionResult:

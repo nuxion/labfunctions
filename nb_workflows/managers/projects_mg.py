@@ -7,9 +7,9 @@ from sqlalchemy.orm import selectinload
 
 from nb_workflows import secrets
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.entities import ProjectData, ProjectReq
-from nb_workflows.core.models import ProjectModel
 from nb_workflows.hashes import generate_random
+from nb_workflows.models import ProjectModel
+from nb_workflows.types import ProjectData, ProjectReq
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 
@@ -168,7 +168,7 @@ async def delete_by_projectid(session, projectid):
 
 
 def get_private_key_sync(session, project_id) -> Union[str, None]:
-    stmt = select(ProjectModel).where(ProjectModel.project_id == project_id).limit(1)
+    stmt = select(ProjectModel).where(ProjectModel.projectid == project_id).limit(1)
     r = session.execute(stmt)
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
     if obj:

@@ -7,8 +7,8 @@ import httpx
 
 from nb_workflows.conf import load_client
 from nb_workflows.conf.types import ClientSettings
-from nb_workflows.core.entities import NBTask, ProjectData, ScheduleData
 from nb_workflows.io import MemoryStore
+from nb_workflows.types import NBTask, ProjectData, ScheduleData
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 from .agent import AgentClient
@@ -49,6 +49,7 @@ def init(url_service, example=True, version="0.1.0") -> NBClient:
         name = ask_project_name()
         rsp = httpx.get(f"{settings.WORKFLOW_SERVICE}/projects/_generateid")
         projectid = rsp.json()["projectid"]
+        breakpoint()
 
     # wf_file = create_empty_workfile(projectid, name, tasks=tasks)
 
@@ -64,6 +65,7 @@ def init(url_service, example=True, version="0.1.0") -> NBClient:
 
     create = str(input("Create project in the server? (Y/n): ") or "y")
     if create.lower() == "y":
+        breakpoint()
         nb_client.projects_create()
     nb_client.write()
 

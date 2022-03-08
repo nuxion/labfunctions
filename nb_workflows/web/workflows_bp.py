@@ -9,9 +9,9 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-from nb_workflows.core.entities import NBTask, ScheduleData, WorkflowData, WorkflowsList
-from nb_workflows.core.managers import workflows
-from nb_workflows.core.scheduler import SchedulerExecutor
+from nb_workflows.managers import workflows_mg
+from nb_workflows.scheduler import SchedulerExecutor, scheduler_dispatcher
+from nb_workflows.types import NBTask, ScheduleData, WorkflowData, WorkflowsList
 from nb_workflows.utils import (
     get_query_param,
     parse_page_limit,
@@ -19,39 +19,9 @@ from nb_workflows.utils import (
     secure_filename,
 )
 
+from .utils import get_scheduler
+
 workflows_bp = Blueprint("workflows", url_prefix="workflows")
-
-
-def _get_scheduler(qname="default") -> SchedulerExecutor:
-
-    current_app = Sanic.get_app("nb_workflows")
-    r = current_app.ctx.rq_redis
-    return SchedulerExecutor(r)
-
-
-# @workflows_bp.post("/<projectid>/notebooks/_run")
-# @openapi.body({"application/json": NBTask})
-# @openapi.parameter("projectid", str, "path")
-# @openapi.response(202, {"executionid": str}, "Task executed")
-# @openapi.response(400, {"msg": str}, "Wrong params")
-# @protected()
-# def launch_task(request, projectid):
-#     """
-#     Prepare and execute a Notebook Workflow Job based on a filename
-#     This endpoint allows to execution any notebook without restriction.
-#     The file should exist remotetly but it doesn't need to be
-#     previously scheduled
-#     """
-#     try:
-#         nb_task = NBTask(**request.json)
-#     except TypeError:
-#         return json(dict(msg="wrong params"), 400)
-#
-#     Q = _get_q_executor()
-#
-#     job = Q.enqueue_notebook(nb_task)
-#
-#     return json(dict(executionid=job.id), status=202)
 
 
 @workflows_bp.get("/<projectid>/notebooks/_files")
@@ -60,24 +30,11 @@ def _get_scheduler(qname="default") -> SchedulerExecutor:
 def list_nb_workflows(request, projectid):
     """
     List file workflows
+    TODO: implement a way to register notebooks from each project
     """
     # pylint: disable=unused-argument
 
     # nb_files = list_workflows()
-    nb_files = []
-
-    return json(nb_files)
-
-
-@workflows_bp.post("/<projectid>/notebooks/_upload")
-@openapi.parameter("projectid", str, "path")
-@protected()
-def upload_notebook(request, projectid):
-    """
-    Upload a notebook file to the server
-    """
-    # pylint: disable=unused-argument
-
     nb_files = []
 
     return json(nb_files)
@@ -93,7 +50,7 @@ async def workflows_list(request, projectid):
 
     session = request.ctx.session
 
-    result = await workflows.get_all(session, projectid)
+    result = await workflows_mg.get_all(session, projectid)
     data = [asdict(r) for r in result]
 
     return json(dict(rows=data), 200)
@@ -107,7 +64,7 @@ async def workflow_delete(request, projectid, jobid):
     """Delete from db and queue a workflow"""
     # pylint: disable=unused-argument
     session = request.ctx.session
-    scheduler = _get_scheduler()
+    scheduler = get_scheduler()
     async with session.begin():
         await scheduler.delete_workflow(session, projectid, jobid)
         await session.commit()
@@ -136,10 +93,13 @@ async def workflow_create(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
+    scheduler = get_scheduler()
 
     async with session.begin():
         try:
-            jobid = await workflows.register(session, projectid, nb_task)
+            jobid = await workflows_mg.register(session, projectid, nb_task)
+            if nb_task.schedule and nb_task.schedule.enabled:
+                await scheduler.schedule(projectid, jobid, nb_task)
         except KeyError as e:
             print(e)
             return json(dict(msg="workflow already exist"), status=200)
@@ -174,10 +134,17 @@ async def workflow_update(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
+    scheduler = get_scheduler()
 
     async with session.begin():
         try:
-            jobid = await workflows.register(session, projectid, nb_task, update=True)
+            jobid = await workflows_mg.register(
+                session, projectid, nb_task, update=True
+            )
+            await scheduler.cancel_job_async(jobid)
+            if nb_task.enabled and nb_task.schedule:
+                await scheduler.schedule(projectid, jobid, nb_task)
+
         except KeyError as e:
             print(e)
             return json(dict(msg="workflow already exist"), status=200)
@@ -198,43 +165,38 @@ async def workflow_get(request, projectid, jobid):
     # pylint: disable=unused-argument
     session = request.ctx.session
     async with session.begin():
-        obj_dict = await workflows.get_by_jobid_prj(session, projectid, jobid)
+        obj_dict = await workflows_mg.get_by_jobid_prj(session, projectid, jobid)
 
     if obj_dict:
         return json(asdict(obj_dict), 200)
     return json(dict(msg="Not found"), 404)
 
 
-@workflows_bp.get("/<projectid>/schedule/<jobid>")
+@workflows_bp.post("/<projectid>/queue/<jobid>")
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("jobid", str, "path")
-@openapi.response(200)
+@openapi.response(202)
 @openapi.response(404, {"msg": str}, description="Job not found")
 @protected()
-async def schedule_one_job(request, projectid, jobid):
-    """Delete a job from RQ and DB"""
+async def workflow_enqueue(request, projectid, jobid):
+    """Enqueue a workflow on demand"""
     # pylint: disable=unused-argument
-    scheduler = _get_scheduler()
-    session = request.ctx.session
-    async with session.begin():
-        obj_dict = await scheduler.get_jobid_db(session, jobid)
-
-    if obj_dict:
-        return json(obj_dict, 200)
-    return json(dict(msg="Not found"), 404)
+    scheduler = get_scheduler()
+    job = await run_async(scheduler.dispatcher, projectid, jobid)
+    return json({"execid": job.id}, 202)
 
 
-@workflows_bp.post("/<projectid>/schedule/<jobid>/_run")
-@openapi.parameter("projectid", str, "path")
-@openapi.parameter("jobid", str, "path")
-@openapi.response(202, dict(executionid=str), "Execution id of the task")
-@protected()
-def schedule_run(request, projectid, jobid):
-    """
-    Manually execute a registered schedule task
-    """
-    Q = _get_q_executor()
-
-    job = Q.enqueue(scheduler_dispatcher, jobid)
-
-    return json(dict(executionid=job.id), status=202)
+# @workflows_bp.post("/<projectid>/schedule/<jobid>/_run")
+# @openapi.parameter("projectid", str, "path")
+# @openapi.parameter("jobid", str, "path")
+# @openapi.response(202, dict(executionid=str), "Execution id of the task")
+# @protected()
+# def schedule_run(request, projectid, jobid):
+#     """
+#     Manually execute a registered schedule task
+#     """
+#     Q = _get_q_executor()
+#
+#     job = Q.enqueue(scheduler_dispatcher, jobid)
+#
+#     return json(dict(executionid=job.id), status=202)
