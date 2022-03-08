@@ -34,6 +34,8 @@ class NBTask:
 
     nb_name: str
     params: Dict[str, Any]
+    # output_ok: str "fileserver://outputs/ok"
+    # output_fail = "fileserver://outputs/errors"
 
     machine: str = "default"
     docker_version: Optional[str] = "latest"
@@ -62,6 +64,28 @@ class ExecutionTask:
     created_at: str
 
 
+class ExecutionTask2(BaseModel):
+    """It will be send to task_handler, and it has the
+    configuration needed for papermill to run a specific notebook.
+    """
+
+    projectid: str
+    jobid: str
+    executionid: str
+    nb_name: str
+    params: Dict[str, Any]
+    # folders:
+    pm_input: str
+    pm_output: str
+    output_name: str
+
+    output_dir: str
+    error_dir: str
+
+    today: str
+    created_at: str
+
+
 @dataclass
 class ExecutionResult:
     """
@@ -82,7 +106,7 @@ class ExecutionResult:
 
 
 @dataclass
-class ExecContext:
+class SimpleExecCtx:
     jobid: str
     executionid: str
     execution_dt: str

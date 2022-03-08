@@ -1,5 +1,8 @@
 import os
 
+# detailed_format = "[%(asctime)s] - %(name)s %(lineno)d - %(levelname)s - %(message)s"
+detailed_format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
+
 # SALT is used as salt hash for users passwords
 SALT = os.getenv("SALT", "changeme")
 # Signing data
@@ -7,6 +10,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
 
 AGENT_TOKEN = os.getenv("NB_AGENT_TOKEN", "changeme")
 AGENT_REFRESH_TOKEN = os.getenv("NB_AGENT_REFRESH_TOKEN", "changeme")
+
+AGENT_TOKEN_EXP = (60 * 60) * 12
 # Services
 SQL = os.getenv("NB_SQL", "postgresql://postgres:secret@postgres:5432/nb_workflows")
 ASQL = os.getenv(
@@ -22,10 +27,8 @@ FILESERVER_BUCKET = "nb-workflows"
 
 
 WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
-# MISC
-LOGLEVEL = os.getenv("NB_LOG", "INFO")
-# None should be false, anything else true
-DEBUG = bool(os.getenv("NB_DEBUG", None))
+# Logs
+LOGFORMAT = detailed_format
 
 
 # General Folders for the server

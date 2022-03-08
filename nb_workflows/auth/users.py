@@ -5,7 +5,8 @@ from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from nb_workflows.auth.models import GroupModel, UserModel
+from nb_workflows.auth import gorups
+from nb_workflows.auth.models import UserModel
 from nb_workflows.auth.types import UserData
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import PasswordScript
@@ -29,6 +30,17 @@ def create_user(
     )
     session.add(u)
     return u
+
+
+async def assign_group(session, user: UserModel, group_name):
+    g_obj = await gorups.get_group_by_name(session, group_name)
+    user.groups.append(g_obj)
+
+
+def assign_group_sync(session, user: UserModel, group_name):
+    g_obj = gorups.get_group_by_name_sync(session, group_name)
+    if g_obj:
+        user.groups.append(g_obj)
 
 
 def get_user(session, username: str) -> Union[UserModel, None]:

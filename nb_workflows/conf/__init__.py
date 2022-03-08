@@ -1,4 +1,5 @@
 import importlib
+import logging
 import os
 import sys
 
@@ -18,6 +19,10 @@ ENVIRONMENT_VARIABLE = "NB_SETTINGS_MODULE"
 DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
 
 
+def _get_level(level):
+    return getattr(logging, level)
+
+
 def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
     try:
         mod = importlib.import_module(settings_module)
@@ -32,6 +37,14 @@ def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
 
     cfg = ServerSettings(**settings_dict)
     cfg.SETTINGS_MODULE = settings_module
+
+    if not cfg.DEBUG:
+        _level = _get_level(cfg.LOGLEVEL)
+    else:
+        _level = logging.DEBUG
+
+    logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
+
     return cfg
 
 
@@ -51,4 +64,13 @@ def load_client(settings_module=DEFAULT_CLIENT) -> ClientSettings:
 
     cfg = ClientSettings(**settings_dict)
     cfg.SETTINGS_MODULE = settings_module
+    if not cfg.DEBUG:
+        _level = _get_level(cfg.LOGLEVEL)
+    else:
+        _level = logging.DEBUG
+
+    logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
+    log = logging.getLogger(__name__)
+    log.debug("Using {cfg.SETTINGS_MODULE} as config module")
+
     return cfg

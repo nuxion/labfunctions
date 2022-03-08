@@ -16,3 +16,9 @@ DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
 
 # Sanic
 SANIC_APP_NAME = "nb_workflows"
+
+WORKFLOWS_FOLDER_NAME = "workflows"
+
+NB_OUTPUTS = "outputs"
+
+EXECUTIONTASK_VAR = "NB_EXECUTION_TASK"

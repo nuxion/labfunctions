@@ -1,13 +1,14 @@
 import logging
 import os
 import pathlib
-import subprocess
 from typing import Any, Dict, Optional, Union
 from zipfile import ZipFile
 
 from nb_workflows import secrets
 from nb_workflows.conf import defaults
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
+from nb_workflows.errors import CommandExecutionException
+from nb_workflows.utils import execute_cmd
 
 from .types import Credentials, ProjectZipFile
 
@@ -22,18 +23,6 @@ def generate_dockerfile(root, docker_options: Dict[str, Any]):
     )
 
 
-def execute(cmd) -> str:
-    with subprocess.Popen(
-        cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ) as p:
-
-        out, err = p.communicate()
-        if err:
-            raise AttributeError(err.decode())
-
-        return out.decode().strip()
-
-
 def write_secrets(root, private_key, nbvars_dict) -> str:
     _vars = secrets.encrypt_nbvars(private_key, nbvars_dict)
     newline = "\n"
@@ -45,8 +34,12 @@ def write_secrets(root, private_key, nbvars_dict) -> str:
     return outfile
 
 
-def short_head_id():
-    return execute("git rev-parse --short HEAD")
+def git_short_head_id():
+    return execute_cmd("git rev-parse --short HEAD")
+
+
+def git_last_tag():
+    return execute_cmd("git describe --tags")
 
 
 def zip_git_current(
@@ -60,7 +53,7 @@ def zip_git_current(
     secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
 
     output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/CURRENT.zip"
-    stash_id = execute("git stash create")
+    stash_id = execute_cmd("git stash create")
     if not stash_id:
         return None
     cmd = (
@@ -69,7 +62,7 @@ def zip_git_current(
         f"-o {output_file} {stash_id} "
     )
 
-    execute(cmd)
+    execute_cmd(cmd)
 
     return ProjectZipFile(filepath=output_file, current=True)
 
@@ -79,10 +72,20 @@ def zip_git_head(root) -> ProjectZipFile:
     Not commited files wouldn't included in this zip file
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
-    id_ = short_head_id()
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/HEAD-{id_}.zip"
-    execute(f"git archive -o {output_file} HEAD")
-    return ProjectZipFile(filepath=output_file, commit=id_)
+
+    tagname = None
+    try:
+        tagname = git_last_tag()
+    except CommandExecutionException:
+        logger.warning(
+            "Any tag were found in the git repository, the last commit id will be used instad"
+        )
+    if not tagname:
+        tagname = git_short_head_id()
+
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{tagname}.zip"
+    execute_cmd(f"git archive -o {output_file} HEAD")
+    return ProjectZipFile(filepath=output_file, commit=tagname)
 
 
 def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
@@ -105,6 +108,8 @@ def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
             raise TypeError(
                 "There isn't changes in the git repository to perform a CURRENT zip file. For untracked files you should add to the stash the changes, perform: git add ."
             )
+    else:
+        zfile = zip_git_head(root)
 
     return zfile
 

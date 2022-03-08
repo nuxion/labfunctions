@@ -13,7 +13,7 @@ import httpx
 from nb_workflows.conf.client_settings import settings
 
 # from nb_workflows.workflows.core import build_context
-from nb_workflows.types import ExecContext
+from nb_workflows.types import SimpleExecCtx
 
 logger = logging.getLogger(__name__)
 
@@ -23,33 +23,33 @@ VALID_STRATEGIES = ["local", "fileserver"]
 @dataclass
 class CacheConfig:
     name: str
-    ctx: ExecContext
+    ctx: SimpleExecCtx
     valid_for_min: int = 60
     strategy: str = "local"
 
 
-def build_ctx_global(globals_dict) -> ExecContext:
+def build_ctx_global(globals_dict) -> SimpleExecCtx:
     jobid = globals_dict.get("JOBID")
     execid = globals_dict.get("EXECUTIONID")
     _now = datetime.utcnow().isoformat()
     now = globals_dict.get("NOW", _now)
-    return ExecContext(
+    return SimpleExecCtx(
         jobid=jobid,
         executionid=execid,
         execution_dt=now,
     )
 
 
-def build_ctx(jobid, execid, now=None) -> ExecContext:
+def build_ctx(jobid, execid, now=None) -> SimpleExecCtx:
     _now = now or datetime.utcnow().isoformat()
-    return ExecContext(
+    return SimpleExecCtx(
         jobid=jobid,
         executionid=execid,
         execution_dt=_now,
     )
 
 
-def _write_pickle(name, data, ctx: ExecContext):
+def _write_pickle(name, data, ctx: SimpleExecCtx):
     fpath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.pickle"
     metapath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.json"
     with open(fpath, "wb") as f:
@@ -59,7 +59,7 @@ def _write_pickle(name, data, ctx: ExecContext):
         json.dump(asdict(ctx), f)
 
 
-def _restore_pickle(name, ctx: ExecContext):
+def _restore_pickle(name, ctx: SimpleExecCtx):
     fpath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.pickle"
     metapath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.json"
     try:
@@ -77,7 +77,7 @@ def _restore_pickle(name, ctx: ExecContext):
         return None
 
 
-def _write_fileserver(name, data, ctx: ExecContext):
+def _write_fileserver(name, data, ctx: SimpleExecCtx):
     urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
     metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     blob = cloudpickle.dumps(data)
@@ -89,7 +89,7 @@ def _write_fileserver(name, data, ctx: ExecContext):
         logger.debug("CACHE: wrote to fileserver %s", urlpath)
 
 
-def _restore_fileserver(name, ctx: ExecContext):
+def _restore_fileserver(name, ctx: SimpleExecCtx):
     urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
     metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
     data = None

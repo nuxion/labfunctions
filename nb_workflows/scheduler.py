@@ -39,7 +39,7 @@ def generate_execid():
 def scheduler_dispatcher(projectid: str, jobid: str) -> Union[Job, None]:
     """
     This is the entrypoint of any workflow or job to be executed by RQ and it
-    will be executed by :class:`nb_workflows.core.scheduler.SchedulerExecutor`
+    will be executed by :class:`nb_workflows.scheduler.SchedulerExecutor`
     in the RQWorker of the control plane.
 
 

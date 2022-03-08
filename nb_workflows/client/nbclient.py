@@ -139,3 +139,20 @@ class NBClient(BaseClient):
             return Credentials(**r.json())
 
         return None
+
+    def projects_register_exec(self, exec_result: ExecutionResult):
+        self.auth_verify_or_refresh()
+
+        file_dir = f"{exec_result.output_dir}/{exec_result.output_name}"
+        if exec_result.error:
+            file_dir = f"{exec_result.error_dir}/{exec_result.output_name}"
+
+        files = {"file": open(file_dir)}
+        data = asdict(exec_result)
+
+        rsp = self._http.post(
+            f"{self._addr}/projects/{self.projectid}/_register_exec",
+            files=files,
+            data=data,
+        )
+        return rsp.status_code

@@ -1,4 +1,5 @@
 # pylint: disable=unused-argument
+import json as std_json
 import pathlib
 from dataclasses import asdict
 from typing import List, Union
@@ -17,7 +18,7 @@ from nb_workflows.conf.server_settings import settings
 from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg
 from nb_workflows.scheduler import SchedulerExecutor
-from nb_workflows.types import ProjectData, ProjectReq
+from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
 from nb_workflows.utils import run_async, secure_filename
 
 projects_bp = Blueprint("projects", url_prefix="projects")
@@ -160,7 +161,7 @@ async def project_create_agent_token(request, projectid, user: UserData):
     # pylint: disable=unused-argument
     _auth = get_auth()
     # default is 30 min
-    with _auth.override(expiration_delta=(60 * 60) * 12):
+    with _auth.override(expiration_delta=settings.AGENT_TOKEN_EXP):
         token = await _auth.generate_access_token(user)
         refresh = await _auth.generate_refresh_token(request, asdict(user))
 
@@ -178,10 +179,10 @@ async def project_upload(request, projectid):
     # root = pathlib.Path(settings.BASE_PATH)
     # (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
     fsrv = AsyncFileserver(settings.FILESERVER)
-    root = pathlib.Path(settings.WF_UPLOADS)
+    root = pathlib.Path(projectid / settings.WF_UPLOADS)
     file_body = request.files["file"][0].body
     name = secure_filename(request.files["file"][0].name)
-    fp = str(root / projectid / name)
+    fp = str(root / name)
     await fsrv.put(fp, file_body)
 
     sche = _get_scheduler()
@@ -193,3 +194,25 @@ async def project_upload(request, projectid):
     #    await f.write(file_body)
 
     return json(dict(msg="ok", jobid=job.id), 201)
+
+
+@projects_bp.post("/<projectid:str>/_register_exec")
+@protected()
+async def project_register_exec(request, projectid):
+    """
+    Upload a workflow project
+    """
+    # pylint: disable=unused-argument
+
+    fsrv = AsyncFileserver(settings.FILESERVER)
+    root = pathlib.Path(projectid / defaults.NB_OUTPUTS)
+
+    data = request.form["result"][0]
+    exec_task = ExecutionResult(**std_json.loads(data))
+
+    file_body = request.files["file"][0].body
+
+    fp = str(root / exec_task.output_name)
+    await fsrv.put(fp, file_body)
+
+    return json(dict(msg="OK"))

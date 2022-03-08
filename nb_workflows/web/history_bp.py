@@ -11,10 +11,10 @@ from nb_workflows.managers import history_mg
 from nb_workflows.types import ExecutionResult, HistoryRequest, NBTask
 from nb_workflows.utils import get_query_param
 
-stats_bp = Blueprint("history", url_prefix="history")
+history_bp = Blueprint("history", url_prefix="history")
 
 
-@stats_bp.get("/<jobid>")
+@history_bp.get("/<jobid>")
 @openapi.parameter("jobid", str, "path")
 @openapi.response(200, "Found")
 @openapi.response(404, dict(msg=str), "Not Found")
@@ -33,7 +33,7 @@ async def history_last_job(request, jobid):
         return json(dict(msg="not found"), 404)
 
 
-@stats_bp.post("/")
+@history_bp.post("/")
 @openapi.body({"application/json": HistoryRequest})
 @openapi.response(201, "Created")
 @protected()
@@ -50,3 +50,26 @@ async def history_create(request):
         await session.commit()
 
     return json(dict(msg="created"), 201)
+
+
+@history_bp.post("/<projectid:str>/<jobid>/_output")
+@openapi.parameter("jobid", str, "path")
+@protected()
+async def project_register_exec(request, projectid):
+    """
+    Upload a workflow project
+    """
+    # pylint: disable=unused-argument
+
+    fsrv = AsyncFileserver(settings.FILESERVER)
+    root = pathlib.Path(projectid / defaults.NB_OUTPUTS)
+
+    data = request.form["result"][0]
+    exec_task = ExecutionResult(**std_json.loads(data))
+
+    file_body = request.files["file"][0].body
+
+    fp = str(root / exec_task.output_name)
+    await fsrv.put(fp, file_body)
+
+    return json(dict(msg="OK"))
