@@ -47,8 +47,8 @@ jobs:
           pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
       - name: Test with pytest
         env:
-          NB_SQL=postgresql://postgres:secret@postgres:5432/nb_workflows
-          NB_ASQL=postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows
+          NB_SQL: postgresql://postgres:secret@postgres:5432/nb_workflows
+          NB_ASQL: postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows
         run: |
           pytest --cov=nb_workflows tests/
  
