@@ -1,14 +1,16 @@
-name: nb-workflows
+name: pull-request-main
 
-on: [push]
+on:
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build:
+  build-n-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # python-version: [3.8, 3.9]
-        python-version: [3.8]
+        python-version: [3.8, 3.9]
 
     services:
       postgres:
@@ -31,15 +33,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements/requirements_dev.txt ]; then pip install -r requirements/requirements_dev.txt; fi
-      # - name: Lint with pylint
-      #   run: |
-      #     # stop the build if there are Python syntax errors or undefined names
-      #     pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
+      - name: Lint with pylint
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
       - name: Test with pytest
         env:
           NB_SQL: postgresql://postgres:secret@127.0.0.1:5432/nb_workflows
           NB_ASQL: postgresql+asyncpg://postgres:secret@127.0.0.1:5432/nb_workflows
 
         run: |
-          pytest --cov=nb_workflows tests/
- 
+          pytest --cov=nb_workflows --cov-report=xml tests/
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+            fail_ci_if_error: true
+            files: ./coverage.xml
+            verbose: true 
+
