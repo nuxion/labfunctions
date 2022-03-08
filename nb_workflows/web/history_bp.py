@@ -1,17 +1,25 @@
 # pylint: disable=unused-argument
+import json as std_json
+import pathlib
 from dataclasses import asdict
 
 from sanic import Blueprint
 from sanic.response import json
 from sanic_ext import openapi
-from sanic_jwt import protected
+from sanic_jwt import inject_user, protected
 
+from nb_workflows.conf import defaults
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.core.registers import register_history_db
+from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import history_mg
 from nb_workflows.types import ExecutionResult, HistoryRequest, NBTask
-from nb_workflows.utils import get_query_param
+from nb_workflows.utils import get_query_param, today_string
 
 history_bp = Blueprint("history", url_prefix="history")
+
+# async def validate_project(request):
+#     request.ctx.user = await extract_user_from_request(request)
 
 
 @history_bp.get("/<jobid>")
@@ -42,34 +50,70 @@ async def history_create(request):
     # pylint: disable=unused-argument
 
     dict_ = request.json
-    task = NBTask(**dict_["task"])
-    result = ExecutionResult(**dict_["result"])
+    # task = NBTask(**dict_["task"])
+    result = ExecutionResult(**dict_)
     session = request.ctx.session
     async with session.begin():
-        await register_history_db(session, result, task)
-        await session.commit()
+        hm = await history_mg.create(session, result)
 
     return json(dict(msg="created"), 201)
 
 
-@history_bp.post("/<projectid:str>/<jobid>/_output")
-@openapi.parameter("jobid", str, "path")
+@history_bp.get("/test")
+# @openapi.parameter("projectid", str, "path")
+# @openapi.parameter("jobid", str, "path")
+@inject_user()
 @protected()
-async def project_register_exec(request, projectid):
+async def project_test(request, user):
+    """
+    Upload a workflow project
+    """
+    breakpoint()
+    print(user)
+
+    return json(dict(msg="OK"), 201)
+
+
+@history_bp.post("/<projectid>/_output_ok")
+@openapi.parameter("projectid", str, "path")
+@protected()
+async def history_output_ok(request, projectid):
+    """
+    Upload a workflow project
+    """
+    # pylint: disable=unused-argument
+    fsrv = AsyncFileserver(settings.FILESERVER)
+    today = today_string(format_="day")
+    root = pathlib.Path(projectid)
+    output_dir = root / defaults.NB_OUTPUTS / "ok" / today
+
+    file_body = request.files["file"][0].body
+    output_name = request.form["output_name"][0]
+
+    fp = str(root / output_name)
+    await fsrv.put(fp, file_body)
+
+    return json(dict(msg="OK"), 201)
+
+
+@history_bp.post("/<projectid>/_output_fail")
+@openapi.parameter("projectid", str, "path")
+@openapi.parameter("projectid", str, "path")
+@protected()
+async def history_output_fail(request, projectid):
     """
     Upload a workflow project
     """
     # pylint: disable=unused-argument
 
     fsrv = AsyncFileserver(settings.FILESERVER)
-    root = pathlib.Path(projectid / defaults.NB_OUTPUTS)
-
-    data = request.form["result"][0]
-    exec_task = ExecutionResult(**std_json.loads(data))
+    today = today_string(format_="day")
+    root = pathlib.Path(projectid / defaults.NB_OUTPUTS / "fail" / today)
 
     file_body = request.files["file"][0].body
+    output_name = request.form["output_name"][0]
 
-    fp = str(root / exec_task.output_name)
+    fp = str(root / output_name)
     await fsrv.put(fp, file_body)
 
-    return json(dict(msg="OK"))
+    return json(dict(msg="OK"), 201)

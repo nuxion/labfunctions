@@ -24,7 +24,7 @@ def _create_or_update_workflow(jobid: str, projectid: str, task: NBTask):
         alias=task.alias,
         job_detail=task_dict,
         project_id=projectid,
-        enabled=task.schedule.enabled,
+        enabled=task.enabled,
     )
     stmt = stmt.on_conflict_do_update(
         # constraint="crawlers_page_bucket_id_fkey",
@@ -32,7 +32,7 @@ def _create_or_update_workflow(jobid: str, projectid: str, task: NBTask):
         set_=dict(
             job_detail=task_dict,
             alias=task.alias,
-            enabled=task.schedule.enabled,
+            enabled=task.enabled,
             updated_at=datetime.utcnow(),
         ),
     )

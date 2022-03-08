@@ -27,8 +27,11 @@ def servicescli():
 @click.option(
     "--auto-reload", "-A", default=False, is_flag=True, help="Enable Auto reload"
 )
+@click.option(
+    "--access-log", "-L", default=False, is_flag=True, help="Enable access_log"
+)
 @click.option("--debug", "-D", default=False, is_flag=True, help="Enable Auto reload")
-def web(host, port, workers, apps, auto_reload, debug):
+def web(host, port, workers, apps, auto_reload, access_log, debug):
     """Run web server"""
     # pylint: disable=import-outside-toplevel
     from nb_workflows.server import app
@@ -37,7 +40,14 @@ def web(host, port, workers, apps, auto_reload, debug):
     init_blueprints(app, list_bp)
     w = int(workers)
     print("Debug mode: ", debug)
-    app.run(host=host, port=int(port), workers=w, auto_reload=auto_reload, debug=debug)
+    app.run(
+        host=host,
+        port=int(port),
+        workers=w,
+        auto_reload=auto_reload,
+        debug=debug,
+        access_log=access_log,
+    )
 
 
 @servicescli.command()

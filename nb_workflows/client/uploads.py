@@ -67,11 +67,13 @@ def zip_git_current(
     return ProjectZipFile(filepath=output_file, current=True)
 
 
-def zip_git_head(root) -> ProjectZipFile:
+def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
     """Zip the head of the repository.
     Not commited files wouldn't included in this zip file
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
+
+    secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
 
     tagname = None
     try:
@@ -84,7 +86,11 @@ def zip_git_head(root) -> ProjectZipFile:
         tagname = git_short_head_id()
 
     output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{tagname}.zip"
-    execute_cmd(f"git archive -o {output_file} HEAD")
+    execute_cmd(
+        f"git archive --prefix={prefix_folder} "
+        f"--add-file {secrets_file} "
+        f"-o {output_file} HEAD "
+    )
     return ProjectZipFile(filepath=output_file, commit=tagname)
 
 

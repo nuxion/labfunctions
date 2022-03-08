@@ -16,10 +16,6 @@ class ServerSettings(BaseSettings):
     # Services
     SQL: str
     ASQL: str
-    RQ_REDIS_HOST: str
-    RQ_REDIS_PORT: str
-    RQ_REDIS_DB: str
-    WEB_REDIS: str
     WORKFLOW_SERVICE: str
 
     # Folders:
@@ -32,7 +28,12 @@ class ServerSettings(BaseSettings):
     WF_UPLOADS: str
     DOCKER_RUNTIMES: str
 
+    WEB_REDIS: Optional[str] = None
+    RQ_REDIS_HOST: Optional[str] = None
+    RQ_REDIS_PORT: Optional[str] = None
+    RQ_REDIS_DB: Optional[str] = None
     RQ_CONTROL_QUEUE: str = "control"
+    EXECUTIONID_LEN: int = 8
     PROJECTID_LEN: int = 10
 
     # Logs:

@@ -2,9 +2,11 @@ from typing import Union
 
 from nb_workflows import client
 from nb_workflows.conf.client_settings import settings
-from nb_workflows.notebooks import nb_job_executor
 from nb_workflows.types import ExecutionResult, NBTask, ScheduleData
 from nb_workflows.utils import set_logger
+
+from .local import notebook_executor
+from .utils import create_exec_ctx
 
 
 def local_dev_exec(jobid) -> Union[ExecutionResult, None]:
@@ -18,7 +20,9 @@ def local_dev_exec(jobid) -> Union[ExecutionResult, None]:
     wf = client.NBClient.read("workflows.yaml")
     for w in wf.workflows:
         if w.jobid == jobid:
-            exec_res = nb_job_executor(w)
+            ctx = create_exec_ctx(wf.project.projectid, jobid, task=w)
+
+            exec_res = notebook_executor(ctx)
             # nb_client.register_history(exec_res, task)
             return exec_res
     print(f"{jobid} not found in workflows.yaml")

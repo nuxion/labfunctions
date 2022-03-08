@@ -342,8 +342,15 @@ data/
 datasets/
 models/
 dask-worker-space/
-workflows/
-experiments/
+# TODO: the best pattern is tracking notebooks as common python files
+# but this will require an extra step to the user and a way to
+# convert *.py notebooks to .ipynb notebooks for papermill
+# by nb_workflows.
+# 
+# Another consequence of this, is that storing workflows
+# in the docker image itself, force to keep
+# runtime environment and code aligned. 
+# workflows/ 
 scripts/
 outputs/
 .env.docker

@@ -16,8 +16,8 @@ from sqlalchemy.orm import selectinload
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.sync import SQL
-from nb_workflows.executors.docker import build_dockerimage, docker_exec
-from nb_workflows.hashes import Hash96
+from nb_workflows.executors.docker import builder_executor, docker_exec
+from nb_workflows.hashes import Hash96, generate_random
 from nb_workflows.managers import projects_mg, workflows_mg
 from nb_workflows.models import WorkflowModel
 from nb_workflows.notebooks import nb_job_executor
@@ -27,13 +27,14 @@ from nb_workflows.utils import run_async
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
 
-def generate_execid():
+def generate_execid(size=settings.EXECUTIONID_LEN):
     """
     executionid refers to an unique id randomly generated for each execution
     of a workflow. It can be thought of as the id of an instance
     of the NB Workflow definition.
     """
-    return Hash96.time_random_string().id_hex
+    # return Hash96.time_random_string().id_hex
+    return generate_random(size=size)
 
 
 def scheduler_dispatcher(projectid: str, jobid: str) -> Union[Job, None]:
@@ -106,12 +107,16 @@ class SchedulerExecutor:
     :param qname: configured by default from settings, it MUST BE consistent between the different control plane components.
     """
 
-    def __init__(self, redis: Redis, qname=settings.RQ_CONTROL_QUEUE):
+    def __init__(self, redis: Redis, qname):
         self.redis = redis
         self.Q = Queue(qname, connection=self.redis)
         self.qname = qname
         # on_success=rq_job_ok, on_failure=rq_job_error)
         self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
+
+    def dispatcher(self, projectid, jobid) -> Job:
+        j = self.Q.enqueue(scheduler_dispatcher, projectid, jobid)
+        return j
 
     def enqueue_notebook_in_docker(
         self, projectid, priv_key, task: NBTask, executionid=None
@@ -148,7 +153,7 @@ class SchedulerExecutor:
         _id = generate_execid()
         if qname == settings.RQ_CONTROL_QUEUE:
             job = self.Q.enqueue(
-                build_dockerimage,
+                builder_executor,
                 projectid,
                 project_zip_route,
                 job_id=_id,
@@ -157,7 +162,7 @@ class SchedulerExecutor:
         else:
             Q = Queue(qname, connection=self.redis)
             job = Q.enqueue(
-                build_dockerimage,
+                builder_executor,
                 projectid,
                 project_zip_route,
                 job_id=_id,
@@ -166,17 +171,12 @@ class SchedulerExecutor:
 
         return job
 
-    async def schedule(self, session, project_id, data_dict, update=False) -> str:
-        schedule_data = data_dict["schedule"]
-        task = NBTask(**data_dict)
-        task.schedule = ScheduleData(**schedule_data)
-
-        jobid = await workflows_mg.register(session, project_id, task, update=update)
-
-        try:
-            await session.commit()
-        except IntegrityError:
-            raise KeyError("An integrity error when saving the workflow into db")
+    async def schedule(self, project_id, jobid, task: NBTask) -> str:
+        """Put in RQ-Scheduler a workflows previously created"""
+        # schedule_data = data_dict["schedule"]
+        # task = NBTask(**data_dict)
+        # task.schedule = ScheduleData(**schedule_data)
+        # jobid = await workflows_mg.register(session, project_id, task, update=update)
 
         if task.schedule.cron:
             await run_async(self._cron2redis, project_id, jobid, task)
@@ -232,6 +232,9 @@ class SchedulerExecutor:
     def cancel_job(self, jobid):
         """Cancel job from redis"""
         self.scheduler.cancel(jobid)
+
+    async def cancle_job_async(self, jobid):
+        await run_async(self.scheduler.cancel, jobid)
 
     async def delete_workflow(self, session, projectid, jobid: str):
         """Delete job from redis and db"""

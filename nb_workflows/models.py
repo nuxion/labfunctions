@@ -13,13 +13,38 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import BYTEA, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
+from sqlalchemy.schema import Table
 from sqlalchemy_serializer import SerializerMixin
 
 from nb_workflows.db.common import Base
 
+assoc_projects_users = Table(
+    "nb_projects_users",
+    Base.metadata,
+    Column("project_id", ForeignKey("nb_project.id")),
+    Column("user_id", ForeignKey("nb_auth_user.id")),
+)
 
-class HistoryModel(Base, SerializerMixin):
+
+@declarative_mixin
+class ProjectRelationMixin:
+    # pylint: disable=no-self-argument
+
+    @declared_attr
+    def project_id(cls):
+        return Column(
+            String(16),
+            ForeignKey("nb_project.projectid", ondelete="SET NULL"),
+            nullable=True,
+        )
+
+    @declared_attr
+    def project(cls):
+        return relationship("ProjectModel")
+
+
+class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
     """
     Register each execution of a workflow.
 
@@ -42,15 +67,9 @@ class HistoryModel(Base, SerializerMixin):
     elapsed_secs = Column(Float(), nullable=False)
     status = Column(Integer, index=True)
 
-    project_id = Column(
-        String(16),
-        ForeignKey("nb_project.projectid", ondelete="SET NULL"),
-        nullable=True,
+    created_at = Column(
+        DateTime(), default=datetime.utcnow(), index=True, nullable=False
     )
-    project = relationship("ProjectModel")
-
-    # code = Column(BigInteger, index=True, unique=True, nullable=False)
-    created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
 
 
 class ProjectModel(Base, SerializerMixin):
@@ -79,14 +98,25 @@ class ProjectModel(Base, SerializerMixin):
         ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
         nullable=False,
     )
-
     user = relationship("UserModel")
-    # folder = Column(String(24))  # should be execution id
+    users = relationship(
+        "UserModel",
+        secondary=assoc_projects_users,
+        back_populates="projects",
+    )
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
     updated_at = Column(DateTime(), default=datetime.utcnow())
 
 
-class WorkflowModel(Base, SerializerMixin):
+# class VersionModel(Base, ProjectRelationMixin):
+#
+#     id = Column(BigInteger, primary_key=True)
+#     version = Column(String(), nullable=False)
+#
+#     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
+
+
+class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     """
     Configuration for each workflow.
 
@@ -101,7 +131,6 @@ class WorkflowModel(Base, SerializerMixin):
     :param enabled: if the task should run or not.
     """
 
-    # pylint: disable=too-few-public-methods
     __tablename__ = "nb_workflow"
     __table_args__ = (
         UniqueConstraint("alias", "project_id", name="_nb_workflow__project_alias"),
@@ -115,12 +144,6 @@ class WorkflowModel(Base, SerializerMixin):
     nb_name = Column(String(), nullable=False)
     job_detail = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
-    project_id = Column(
-        String(16),
-        ForeignKey("nb_project.projectid", ondelete="SET NULL"),
-        nullable=True,
-    )
-    project = relationship("ProjectModel")
 
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
     updated_at = Column(DateTime(), default=datetime.utcnow())

@@ -81,6 +81,7 @@ async def project_create(request, user: UserData):
                 "-updated_at",
                 "-user",
                 "-user_id",
+                "-users",
             )
         )
         return json(d_, 201)
@@ -163,7 +164,7 @@ async def project_create_agent_token(request, projectid, user: UserData):
     # default is 30 min
     with _auth.override(expiration_delta=settings.AGENT_TOKEN_EXP):
         token = await _auth.generate_access_token(user)
-        refresh = await _auth.generate_refresh_token(request, asdict(user))
+        refresh = await _auth.generate_refresh_token(request, user.dict())
 
     return json(dict(access_token=token, refresh_token=refresh), 200)
 
@@ -179,10 +180,11 @@ async def project_upload(request, projectid):
     # root = pathlib.Path(settings.BASE_PATH)
     # (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
     fsrv = AsyncFileserver(settings.FILESERVER)
-    root = pathlib.Path(projectid / settings.WF_UPLOADS)
+    root = pathlib.Path(projectid)
+
     file_body = request.files["file"][0].body
     name = secure_filename(request.files["file"][0].name)
-    fp = str(root / name)
+    fp = str(root / settings.WF_UPLOADS / name)
     await fsrv.put(fp, file_body)
 
     sche = _get_scheduler()

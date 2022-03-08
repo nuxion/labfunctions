@@ -11,8 +11,10 @@ from nb_workflows.secrets import nbvars
 
 # Main settings
 WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
-PROJECTID = "{{ data.projectid }}"
-PROJECT_NAME = "{{ data.project_name }}"
+# PROJECTID = "{{ data.projectid }}"
+# PROJECT_NAME = "{{ data.project_name }}"
+PROJECTID = ""
+PROJECT_NAME = ""
 
 # Theese information is used to run workloads in the workers.
 # Don't modify at least you know what you are doing.

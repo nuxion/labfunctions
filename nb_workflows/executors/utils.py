@@ -9,7 +9,8 @@ from nb_workflows.utils import today_string
 
 def create_exec_ctx(projectid, jobid, task: NBTask, execid=None) -> ExecutionTask2:
 
-    root = Path.cwd()
+    # root = Path.cwd()
+    root = Path(defaults.WORKFLOWS_FOLDER_NAME)
     today = today_string(format_="day")
     _now = datetime.utcnow().isoformat()
 
@@ -24,7 +25,7 @@ def create_exec_ctx(projectid, jobid, task: NBTask, execid=None) -> ExecutionTas
 
     nb_filename = f"{task.nb_name}.ipynb"
 
-    papermill_input = root / defaults.WORKFLOWS_FOLDER_NAME / nb_filename
+    papermill_input = str(root / nb_filename)
 
     output_dir = f"{defaults.NB_OUTPUTS}/ok/{today}"
     error_dir = f"{defaults.NB_OUTPUTS}/errors/{today}"

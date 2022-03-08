@@ -40,6 +40,7 @@ class NBTask:
     machine: str = "default"
     docker_version: Optional[str] = "latest"
 
+    enabled: bool = True
     alias: Optional[str] = None
     description: Optional[str] = None
     jobid: Optional[str] = None
@@ -92,6 +93,7 @@ class ExecutionResult:
     Is the result of a ExecutionTask execution.
     """
 
+    projectid: str
     executionid: str
     jobid: str
     name: str
@@ -123,8 +125,7 @@ class HistoryResult:
     created_at: Optional[str] = None
 
 
-@dataclass
-class HistoryRequest:
+class HistoryRequest(BaseModel):
     task: NBTask
     result: ExecutionResult
 

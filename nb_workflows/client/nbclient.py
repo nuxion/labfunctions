@@ -1,3 +1,4 @@
+import logging
 from dataclasses import asdict
 from typing import Dict, List, Optional, Union
 
@@ -90,6 +91,12 @@ class NBClient(BaseClient):
             self.sync_file()
         return r.status_code
 
+    def workflows_enqueue(self, jobid) -> str:
+        self.auth_verify_or_refresh()
+        r = self._http.post(f"{self._addr}/workflows/{self.projectid}/queue/{jobid}")
+        if r.status_code == 202:
+            return r.json()["execid"]
+
     def projects_create(self) -> Union[ProjectData, None]:
         self.auth_verify_or_refresh()
 
@@ -140,19 +147,41 @@ class NBClient(BaseClient):
 
         return None
 
-    def projects_register_exec(self, exec_result: ExecutionResult):
+    def history_register(self, exec_result: ExecutionResult) -> bool:
         self.auth_verify_or_refresh()
 
+        rsp = self._http.post(
+            f"{self._addr}/history",
+            json=asdict(exec_result),
+        )
+
+        if rsp.status_code == 201:
+            return True
+        return False
+
+    def history_nb_output(self, exec_result: ExecutionResult) -> bool:
+        """Upload the notebook from the execution result
+        TODO: zip or compress notebook before upload.
+        :return: True if ok, False if something fails.
+        """
+        self.auth_verify_or_refresh()
+        logger = logging.getLogger(__name__)
+
+        form_data = dict(output_name=exec_result.output_name)
+
         file_dir = f"{exec_result.output_dir}/{exec_result.output_name}"
+        _addr = f"{self._addr}/history/{exec_result.projectid}/_output_ok"
+        logger.warning(_addr)
         if exec_result.error:
+            _addr = f"{self._addr}/history/{exec_result.projectid}/_output_fail"
             file_dir = f"{exec_result.error_dir}/{exec_result.output_name}"
 
         files = {"file": open(file_dir)}
-        data = asdict(exec_result)
-
         rsp = self._http.post(
-            f"{self._addr}/projects/{self.projectid}/_register_exec",
+            _addr,
             files=files,
-            data=data,
+            data=form_data,
         )
-        return rsp.status_code
+        if rsp.status_code == 201:
+            return True
+        return False

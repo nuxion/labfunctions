@@ -38,9 +38,7 @@ async def get_last(session, jobid: str, limit=1) -> Union[HistoryLastResponse, N
     return HistoryLastResponse(rows=rsp)
 
 
-async def create(
-    session, execution_result: ExecutionResult, nb_task: NBTask
-) -> HistoryModel:
+async def create(session, execution_result: ExecutionResult) -> HistoryModel:
     result_data = asdict(execution_result)
 
     status = 0
@@ -48,8 +46,9 @@ async def create(
         status = -1
 
     row = HistoryModel(
-        jobid=nb_task.jobid,
+        jobid=execution_result.jobid,
         executionid=execution_result.executionid,
+        project_id=execution_result.projectid,
         elapsed_secs=execution_result.elapsed_secs,
         nb_name=execution_result.name,
         result=result_data,

@@ -168,7 +168,7 @@ async def delete_by_projectid(session, projectid):
 
 
 def get_private_key_sync(session, project_id) -> Union[str, None]:
-    stmt = select(ProjectModel).where(ProjectModel.project_id == project_id).limit(1)
+    stmt = select(ProjectModel).where(ProjectModel.projectid == project_id).limit(1)
     r = session.execute(stmt)
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
     if obj:
