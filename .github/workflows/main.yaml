@@ -9,6 +9,27 @@ jobs:
       matrix:
         python-version: [3.8, 3.9]
 
+    services:
+      # label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:14
+        # service environment variables
+        # `POSTGRES_HOST` is `postgres`
+        env:
+          POSTGRES_DB: nb_workflows
+          POSTGRES_PASSWORD: secret
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        # set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -25,6 +46,9 @@ jobs:
           # stop the build if there are Python syntax errors or undefined names
           pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
       - name: Test with pytest
+        env:
+          NB_SQL=postgresql://postgres:secret@postgres:5432/nb_workflows
+          NB_ASQL=postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows
         run: |
           pytest --cov=nb_workflows tests/
  
