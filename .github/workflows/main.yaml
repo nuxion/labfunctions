@@ -27,10 +27,14 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Lint with pylint
+      - name: Install dependencies
         run: |
-          # stop the build if there are Python syntax errors or undefined names
-          pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
+          python -m pip install --upgrade pip
+          if [ -f requirements/requirements_dev.txt ]; then pip install -r requirements/requirements_dev.txt; fi
+      # - name: Lint with pylint
+      #   run: |
+      #     # stop the build if there are Python syntax errors or undefined names
+      #     pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
       - name: Test with pytest
         env:
           NB_SQL: postgresql://postgres:secret@127.0.0.1:5432/nb_workflows
