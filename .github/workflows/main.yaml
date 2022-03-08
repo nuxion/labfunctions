@@ -23,7 +23,7 @@ jobs:
       - name: Lint with pylint
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py
+          pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
       - name: Test with pytest
         run: |
           pytest --cov=nb_workflows tests/
