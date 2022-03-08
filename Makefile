@@ -42,13 +42,16 @@ clean:
 	rm -rf dist/* > /dev/null 2>&1
 	rm -rf .ipynb_checkpoints/* > /dev/null 2>&1
 
+lock-dev:
+	poetry export -f requirements.txt --output requirements/requirements_dev.txt --extras server --without-hashes --dev
+
 lock-server:
-	poetry export -f requirements.txt --output requirements.txt --without-hashes --extras server
+	poetry export -f requirements.txt --output requirements/requirements.txt --without-hashes --extras server
 
 lock-client:
-	poetry export -f requirements.txt --output requirements_client.txt --without-hashes
+	poetry export -f requirements.txt --output requirements/requirements_client.txt --without-hashes
 
-lock: lock-server lock-client
+lock: lock-server lock-client lock-dev
 
 prepare: lock
 	poetry build
@@ -67,7 +70,7 @@ lint: black isort
 
 .PHONY: test
 test:
-	PYTHONPATH=$(PWD) pytest tests/
+	PYTHONPATH=$(PWD) pytest --cov=nb_workflows tests/
 
 .PHONY: install
 install:

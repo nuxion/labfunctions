@@ -4,20 +4,21 @@ import pytest
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
+from nb_workflows.auth.models import GroupModel, UserModel
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.models import HistoryModel, WorkflowModel
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
+from nb_workflows.models import HistoryModel, WorkflowModel
 
-SQL_URI = os.getenv("SQLTEST")
-ASQL_URI = os.getenv("ASQLTEST")
+# SQL_URI = os.getenv("SQLTEST")
+# ASQL_URI = os.getenv("ASQLTEST")
 
 Session = sessionmaker()
 
 
 @pytest.fixture(scope="module")
 def connection():
-    db = SQL(SQL_URI)
+    db = SQL(settings.SQL)
     conn = db.engine.connect()
 
     db.create_all()
@@ -38,7 +39,7 @@ def session(connection):
 
 @pytest.fixture(scope="module")
 async def async_conn():
-    adb = AsyncSQL(ASQL_URI)
+    adb = AsyncSQL(settings.ASQL)
     await adb.init()
     await adb.create_all()
     yield adb._engine
@@ -54,7 +55,7 @@ async def async_session(async_conn):
 
 @pytest.fixture
 async def async_clean_db():
-    _db = AsyncSQL(ASQL_URI)
+    _db = AsyncSQL(settings.ASQL)
     await _db.init()
     await _db.drop_all()
     await _db.create_all()
@@ -63,7 +64,7 @@ async def async_clean_db():
 
 @pytest.fixture(scope="function")
 async def async_db():
-    db = AsyncSQL(ASQL_URI)
+    db = AsyncSQL(settings.ASQL)
     await db.init()
     s = db.sessionmaker()
     async with s.begin():

@@ -13,36 +13,28 @@
 # ---
 
 # + tags=["parameters"]
-SLEEP=5
-ERROR=False
+SLEEP = 5
+ERROR = False
 
-NOW=None
-JOBID="test_job"
-EXECUTIONID="test_exec"
+NOW = None
+JOBID = "test_job"
+EXECUTIONID = "test_exec"
+
+import time
 
 # + tags=[]
 from datetime import datetime
-import time
-print("="*10)
+
+print("=" * 10)
 print(f"JOBID: {JOBID} starting")
 print(f"EXECUTIONID: {EXECUTIONID} starting")
-print("="*10)
+print("=" * 10)
 print(f"SLEEP: {SLEEP}")
 print(f"ERROR: {ERROR}")
 
 NOW = datetime.utcnow().isoformat()
 
 time.sleep(SLEEP)
-
-# +
-from nb_workflows.cache import frozen_result
-
-@frozen_result(valid_for_min=1, strategy="fileserver", from_global=globals())
-def return_data():
-    return "Goodbye"*5
-
-return_data()
-# -
 
 if ERROR:
     raise IndexError("Error was requested for this task")

@@ -17,24 +17,16 @@ from sqlalchemy.orm import selectinload
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.sync import SQL
 from nb_workflows.executors.docker import builder_executor, docker_exec
+from nb_workflows.executors.utils import generate_execid
 from nb_workflows.hashes import Hash96, generate_random
 from nb_workflows.managers import projects_mg, workflows_mg
 from nb_workflows.models import WorkflowModel
-from nb_workflows.notebooks import nb_job_executor
+
+# from nb_workflows.notebooks import nb_job_executor
 from nb_workflows.types import NBTask, ScheduleData
 from nb_workflows.utils import run_async
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
-
-
-def generate_execid(size=settings.EXECUTIONID_LEN):
-    """
-    executionid refers to an unique id randomly generated for each execution
-    of a workflow. It can be thought of as the id of an instance
-    of the NB Workflow definition.
-    """
-    # return Hash96.time_random_string().id_hex
-    return generate_random(size=size)
 
 
 def scheduler_dispatcher(projectid: str, jobid: str) -> Union[Job, None]:
@@ -107,12 +99,13 @@ class SchedulerExecutor:
     :param qname: configured by default from settings, it MUST BE consistent between the different control plane components.
     """
 
-    def __init__(self, redis: Redis, qname):
+    def __init__(self, redis: Redis, qname, is_async=True):
         self.redis = redis
-        self.Q = Queue(qname, connection=self.redis)
+        self.Q = Queue(qname, connection=self.redis, is_async=is_async)
         self.qname = qname
         # on_success=rq_job_ok, on_failure=rq_job_error)
         self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
+        self.is_async = is_async
 
     def dispatcher(self, projectid, jobid) -> Job:
         j = self.Q.enqueue(scheduler_dispatcher, projectid, jobid)
@@ -128,8 +121,9 @@ class SchedulerExecutor:
         :param task: NBTask object
         :param executionid: An optional executionid
         """
-        _id = executionid or generate_execid()
-        Q = Queue(task.machine, connection=self.redis)
+
+        _id = executionid or generate_execid(size=settings.EXECUTIONID_LEN)
+        Q = Queue(task.machine, connection=self.redis, is_async=self.is_async)
         job = Q.enqueue(
             docker_exec,
             projectid,
@@ -150,7 +144,7 @@ class SchedulerExecutor:
         TODO: design internal, onpremise or external docker registries.
         """
 
-        _id = generate_execid()
+        _id = generate_execid(size=10)
         if qname == settings.RQ_CONTROL_QUEUE:
             job = self.Q.enqueue(
                 builder_executor,
@@ -167,6 +161,7 @@ class SchedulerExecutor:
                 project_zip_route,
                 job_id=_id,
                 job_timeout=(60 * 60) * 24,
+                is_async=self.is_async,
             )
 
         return job
