@@ -18,9 +18,12 @@ A Notebook could be launched remotly on demand, or could be schedule by interval
 Internally it uses [Sanic](https://sanicframework.org) as web server, [papermill](https://papermill.readthedocs.io/en/latest/) as notebook executor, an [RQ](https://python-rq.org/)
 for task distributions and coordination. 
 
+
 ### Goal
 
+
 Empowering different data roles in a project to put code into production, simplifying the time required to do so. It enables people to go from a data exploration instance to an entirely pipeline deployed in production, using the same notebook file made by a data scientist, analyst or whatever role working with data in an iterative way.
+
 
 ### Features
 
@@ -29,18 +32,35 @@ Empowering different data roles in a project to put code into production, simpli
 - Docker building and versioning: it build and track each release. 
 - Execution History, Notifications to Slack or Discord.
 
+
+## Starting
+
+Client: 
+
+```
+pip install nb-workflows==0.6.0
+nb startporject .
+```
+
+Server:
+```
+pip install nb-workflows[server]==0.6.0
+```
+
+
+### Roadmap
+
+See [Roadmap](/ROADMAP.md) *draft*
+
 ## Architecture
 
 ![nb_workflows architecture](/docs/platform-workflows.jpg)
+
+
 
 ## References & inspirations
 - [Notebook Innovation - Netflix](https://netflixtechblog.com/notebook-innovation-591ee3221233)
 - [Tensorflow metastore](https://www.tensorflow.org/tfx/guide/mlmd)
 - [Maintainable and collaborative pipelines](https://blog.jupyter.org/ploomber-maintainable-and-collaborative-pipelines-in-jupyter-acb3ad2101a7)
 
-### Alembic configuration
-- [version table per package](https://gist.github.com/miohtama/9088958fef0d37e5cb10)
-- [Alembic config inside of a package](https://github.com/openstack/neutron/blob/master/neutron/db/migration/alembic.ini)
-- [Distributing alembic files](https://stackoverflow.com/questions/42383400/python-packaging-alembic-migrations-with-setuptools)
-- [Command API](https://stackoverflow.com/questions/24622170/using-alembic-api-from-inside-application-code/35211383#35211383)
 
