@@ -95,6 +95,7 @@ def docker_exec(projectid, priv_key, jobid):
                     defaults.EXECUTIONTASK_VAR: json.dumps(ctx.dict()),
                     "NB_WORKFLOW_SERVICE": "http://192.168.88.150:8000",
                 },
+                remove=True,
             )
 
         elif not wd:

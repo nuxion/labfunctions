@@ -72,6 +72,10 @@ lint: black isort
 test:
 	PYTHONPATH=$(PWD) pytest --cov=nb_workflows tests/
 
+.PHONY: test-html
+test-html:
+	PYTHONPATH=$(PWD) pytest --cov-report=html --cov=nb_workflows tests/
+
 .PHONY: install
 install:
 	poetry install --dev

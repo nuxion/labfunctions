@@ -59,21 +59,6 @@ async def history_create(request):
     return json(dict(msg="created"), 201)
 
 
-@history_bp.get("/test")
-# @openapi.parameter("projectid", str, "path")
-# @openapi.parameter("jobid", str, "path")
-@inject_user()
-@protected()
-async def project_test(request, user):
-    """
-    Upload a workflow project
-    """
-    breakpoint()
-    print(user)
-
-    return json(dict(msg="OK"), 201)
-
-
 @history_bp.post("/<projectid>/_output_ok")
 @openapi.parameter("projectid", str, "path")
 @protected()

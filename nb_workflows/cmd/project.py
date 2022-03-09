@@ -53,7 +53,7 @@ def projectcli():
     default=settings.WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
-@click.argument("action", type=click.Choice(["upload", "dockerfile"]))
+@click.argument("action", type=click.Choice(["upload", "dockerfile", "agent-token"]))
 def project(from_file, only_zip, env_file, current, url_service, action):
     """Manage project settings"""
     c = client.nb_from_file(from_file, url_service)
@@ -74,6 +74,11 @@ def project(from_file, only_zip, env_file, current, url_service, action):
         generate_dockerfile(root, settings.DOCKER_IMAGE)
         click.echo(f"{defaults.DOCKERFILE_RUNTIME_NAME} updated")
         click.echo("Remember add this change to git...")
+
+    elif action == "agent-token":
+        creds = c.projects_agent_token()
+
+        click.echo(f"access token (keep private): \n{creds.access_token}")
 
 
 projectcli.add_command(project)
