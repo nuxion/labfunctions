@@ -1,5 +1,6 @@
 import logging
 from dataclasses import asdict
+from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from nb_workflows import secrets
@@ -16,6 +17,7 @@ from nb_workflows.types import (
 
 from .base import BaseClient
 from .types import Credentials, ProjectZipFile, WFCreateRsp
+from .uploads import generate_dockerfile
 from .utils import store_credentials_disk, store_private_key
 
 
@@ -146,6 +148,10 @@ class NBClient(BaseClient):
             return Credentials(**r.json())
 
         return None
+
+    def projects_generate_dockerfile(self, docker_opts):
+        root = Path.cwd()
+        generate_dockerfile(root, docker_opts)
 
     def history_register(self, exec_result: ExecutionResult) -> bool:
         self.auth_verify_or_refresh()

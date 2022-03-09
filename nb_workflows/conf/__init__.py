@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 
+from . import defaults
 from .types import ClientSettings, ServerSettings
 
 # from logging import NullHandler
@@ -43,6 +44,9 @@ def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
     else:
         _level = logging.DEBUG
 
+    # set BASE_PATH
+    os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
+
     logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
 
     return cfg
@@ -68,6 +72,9 @@ def load_client(settings_module=DEFAULT_CLIENT) -> ClientSettings:
         _level = _get_level(cfg.LOGLEVEL)
     else:
         _level = logging.DEBUG
+
+    # set BASE_PATH
+    os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
 
     logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
     log = logging.getLogger(__name__)

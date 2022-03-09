@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import pathlib
 import pickle
 import re
 import resource
@@ -11,12 +10,14 @@ import unicodedata
 from datetime import datetime
 from functools import wraps
 from importlib import import_module
+from pathlib import Path
 from time import time
 
 import redis
 import toml
 import yaml
 
+from nb_workflows.conf import defaults
 from nb_workflows.errors import CommandExecutionException
 
 _formats = {"hours": "%Y%m%d.%H%M%S", "day": "%Y%m%d", "month": "%Y%m"}
@@ -234,7 +235,7 @@ def get_parent_folder():
     """Get only the name of the parent folder
     commonly used to define the project name
     """
-    root = pathlib.Path(os.getcwd())
+    root = Path(os.getcwd())
     return str(root).rsplit("/", maxsplit=1)[-1]
 
 
@@ -293,3 +294,21 @@ def execute_cmd(cmd) -> str:
             raise CommandExecutionException(err.decode())
 
         return out.decode().strip()
+
+
+def path_relative(fp):
+    """Given a  filepath returns a normalized a path"""
+    return str(Path(fp))
+
+
+def fullpath(fp):
+    """Returns a fullpath based on the BASE_PATH env"""
+    base_p = os.getenv(defaults.BASE_PATH_ENV)
+    return str(Path(f"{base_p}/{fp}").resolve())
+
+
+def mkdir_p(fp):
+    """Make the fullpath
+    similar to mkdir -p in unix systems.
+    """
+    Path(fp).mkdir(parents=True, exist_ok=True)

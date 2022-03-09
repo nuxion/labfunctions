@@ -121,15 +121,10 @@ async def workflow_update(request, projectid):
     """
     Register a notebook workflow and schedule it
     """
-    """
-    Register a notebook workflow and schedule it
-    """
     try:
         nb_task = NBTask(**request.json)
-        if not nb_task.schedule:
-            return json(dict(msg="schedule information is needed"), 400)
-
-        nb_task.schedule = ScheduleData(**request.json["schedule"])
+        if nb_task.schedule:
+            nb_task.schedule = ScheduleData(**request.json["schedule"])
     except TypeError:
         return json(dict(msg="wrong params"), 400)
 
@@ -141,12 +136,10 @@ async def workflow_update(request, projectid):
             jobid = await workflows_mg.register(
                 session, projectid, nb_task, update=True
             )
-            await scheduler.cancel_job_async(jobid)
-            if nb_task.enabled and nb_task.schedule:
-                await scheduler.schedule(projectid, jobid, nb_task)
-
+            # await scheduler.cancel_job_async(jobid)
+            # if nb_task.enabled and nb_task.schedule:
+            #    await scheduler.schedule(projectid, jobid, nb_task)
         except KeyError as e:
-            print(e)
             return json(dict(msg="workflow already exist"), status=200)
         except AttributeError:
             return json(dict(msg="project not found"), status=404)
