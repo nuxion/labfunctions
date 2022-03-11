@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import click
@@ -38,7 +39,14 @@ def projectcli():
     "-C",
     is_flag=True,
     default=False,
-    help="untracked files are zipped too",
+    help="untracked files are zipped too but the will exist in git stash",
+)
+@click.option(
+    "--all",
+    "-A",
+    is_flag=True,
+    default=False,
+    help="It will zip all the files ignoring .gitignore =P",
 )
 @click.option(
     "--only-zip",
@@ -53,17 +61,23 @@ def projectcli():
     default=settings.WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
-@click.argument("action", type=click.Choice(["upload", "dockerfile", "agent-token"]))
-def project(from_file, only_zip, env_file, current, url_service, action):
+@click.argument(
+    "action", type=click.Choice(["upload", "dockerfile", "agent-token", "recreate"])
+)
+def project(from_file, only_zip, env_file, current, url_service, all, action):
     """Manage project settings"""
     c = client.nb_from_file(from_file, url_service)
     if action == "upload":
 
         # prepare secrets
-        pv = client.utils.get_private_key(c.projectid)
+        pv = c.get_private_key()
+        if not pv:
+            print("Not private key found or authentication error")
+            sys.exit(-1)
+
         _agent_token = c.projects_agent_token()
 
-        zfile = client.manage_upload(pv, env_file, current, _agent_token)
+        zfile = client.manage_upload(pv, env_file, current, _agent_token, all)
 
         click.echo(f"Zipfile generated in {zfile.filepath}")
         if not only_zip:
@@ -79,6 +93,9 @@ def project(from_file, only_zip, env_file, current, url_service, action):
         creds = c.projects_agent_token()
 
         click.echo(f"access token (keep private): \n{creds.access_token}")
+
+    elif action == "recreate":
+        c.projects_create()
 
 
 projectcli.add_command(project)

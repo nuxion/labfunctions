@@ -5,7 +5,7 @@ from nb_workflows.conf.types import ServerSettings
 from nb_workflows.types import WorkflowData
 
 from .base import BaseClient
-from .types import Credentials, WFCreateRsp
+from .types import Credentials, ExecutionResult, WFCreateRsp
 
 
 class AgentClient(BaseClient):
@@ -26,3 +26,27 @@ class AgentClient(BaseClient):
         if r.status_code == 401:
             raise KeyError("Invalid auth")
         raise TypeError("Something went wrong %s", r.text)
+
+    def projects_private_key(self) -> Union[str, None]:
+        """Gets private key to be shared to the docker container of a
+        workflow task
+        """
+        self.auth_verify_or_refresh()
+        r = self._http.get(f"{self._addr}/projects/{self.projectid}/_private_key")
+
+        if r.status_code == 200:
+            key = r.json()["private_key"]
+            return key
+        return None
+
+    def history_register(self, exec_result: ExecutionResult) -> bool:
+        self.auth_verify_or_refresh()
+
+        rsp = self._http.post(
+            f"{self._addr}/history",
+            json=exec_result.dict(),
+        )
+
+        if rsp.status_code == 201:
+            return True
+        return False

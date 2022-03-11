@@ -8,8 +8,8 @@ This file is used only as kind of backlog or/and draft for ideas.
 
 - [ ] Executors: SeqPipe implmentation
 - [ ] Executors: Docker volumes specification
-- [ ] Executios: Namespacing Execution ID for tracking loads. 
-- [ ] Executors: Execution ID injected from Web 
+- [x] Executios: Namespacing Execution ID for tracking loads. 
+- [x] Executors: Execution ID injected from Web 
 - [ ] Notifications: slack and discord
 - [ ] Doc: about architecture
 - [ ] Doc: how to install client nb-workflows
@@ -18,6 +18,7 @@ This file is used only as kind of backlog or/and draft for ideas.
 - [ ] History: Execution result of a Workflow
 - [ ] Web: API versioning
 - [ ] Models: Alembic migrations implemented
+- [ ] Copy outputs executions locally
 
 **MAY:**
 
@@ -54,5 +55,6 @@ let the user define the folrders shared between workflows
 - [ ] Review private_key strategy, evaluate [sealed boxes](https://libsodium.gitbook.io/doc/public-key_cryptography/sealed_boxes) 
 - [ ] Allows Control plane to spawn machines
 - [ ] If a job dies by timeout or by a runtime error, the docker spawned will still be running, review this case. 
+- [ ] Default project for each user ? this will allow uploading and executing notebooks from any place without worryng about dependencies. 
  
 

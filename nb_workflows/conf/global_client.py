@@ -10,7 +10,6 @@ from nb_workflows.secrets import nbvars
 
 
 # Main settings
-WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
 # PROJECTID = "{{ data.projectid }}"
 # PROJECT_NAME = "{{ data.project_name }}"
 PROJECTID = ""

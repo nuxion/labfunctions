@@ -1,7 +1,6 @@
 from .core import (
+    ExecutionNBTask,
     ExecutionResult,
-    ExecutionTask,
-    ExecutionTask2,
     HistoryRequest,
     HistoryResult,
     NBTask,

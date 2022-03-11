@@ -24,3 +24,9 @@ NB_OUTPUTS = "outputs"
 EXECUTIONTASK_VAR = "NB_EXECUTION_TASK"
 
 BASE_PATH_ENV = "NB_BASE_PATH"
+
+# see https://zelark.github.io/nano-id-cc/
+PROJECTID_LEN = 8  # 3 years 1% collision at 100 projects creations per hour
+JOBID_LEN = 11  # ~139 thousand years 1% collision at 1000 jobs creation per hour
+EXECID_LEN = 14  # ~20 years %1 collision at 1000 execs per second
+NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"

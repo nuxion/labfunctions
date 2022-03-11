@@ -5,8 +5,8 @@ from nb_workflows.conf.client_settings import settings
 from nb_workflows.types import ExecutionResult, NBTask, ScheduleData
 from nb_workflows.utils import set_logger
 
+from .context import create_notebook_ctx, generate_execid
 from .local import notebook_executor
-from .utils import create_exec_ctx
 
 
 def local_dev_exec(jobid) -> Union[ExecutionResult, None]:
@@ -20,7 +20,8 @@ def local_dev_exec(jobid) -> Union[ExecutionResult, None]:
     wf = client.NBClient.read("workflows.yaml")
     for w in wf.workflows:
         if w.jobid == jobid:
-            ctx = create_exec_ctx(wf.project.projectid, jobid, task=w)
+            _execid = generate_execid(4)
+            ctx = create_notebook_ctx(wf.project, w, _execid)
 
             exec_res = notebook_executor(ctx)
             # nb_client.register_history(exec_res, task)

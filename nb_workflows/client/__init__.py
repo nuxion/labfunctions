@@ -1,5 +1,6 @@
 from .nbclient import NBClient
 from .shortcuts import (
+    agent_client,
     init,
     login_cli,
     minimal_client,

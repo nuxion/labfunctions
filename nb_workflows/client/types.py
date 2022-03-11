@@ -38,7 +38,7 @@ class WFCreateRsp:
 class ScheduleExecRsp:
     status_code: int
     msg: Optional[str] = None
-    executionid: Optional[str] = None
+    execid: Optional[str] = None
 
 
 @dataclass

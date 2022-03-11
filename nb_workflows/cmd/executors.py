@@ -44,7 +44,7 @@ def exec(from_file, url_service, dev, jobid):
         rsp = local_exec_env()
         if rsp:
             click.echo(f"Jobid: {rsp.jobid} locally executed")
-            click.echo(f"Executionid: {rsp.executionid}")
+            click.echo(f"Executionid: {rsp.execid}")
             status = "OK"
             if rsp.error:
                 status = "ERROR"
@@ -54,7 +54,7 @@ def exec(from_file, url_service, dev, jobid):
         rsp = local_dev_exec(jobid)
         if rsp:
             click.echo(f"Jobid: {rsp.jobid} locally executed")
-            click.echo(f"Executionid: {rsp.executionid}")
+            click.echo(f"Executionid: {rsp.execid}")
             status = "OK"
             if rsp.error:
                 status = "ERROR"

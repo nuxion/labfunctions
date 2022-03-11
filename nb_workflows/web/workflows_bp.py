@@ -182,7 +182,7 @@ async def workflow_enqueue(request, projectid, jobid):
 # @workflows_bp.post("/<projectid>/schedule/<jobid>/_run")
 # @openapi.parameter("projectid", str, "path")
 # @openapi.parameter("jobid", str, "path")
-# @openapi.response(202, dict(executionid=str), "Execution id of the task")
+# @openapi.response(202, dict(execid=str), "Execution id of the task")
 # @protected()
 # def schedule_run(request, projectid, jobid):
 #     """
@@ -192,4 +192,4 @@ async def workflow_enqueue(request, projectid, jobid):
 #
 #     job = Q.enqueue(scheduler_dispatcher, jobid)
 #
-#     return json(dict(executionid=job.id), status=202)
+#     return json(dict(execid=job.id), status=202)

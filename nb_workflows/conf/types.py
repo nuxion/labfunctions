@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseSettings
 
-from nb_workflows.utils import Singleton
+from .defaults import EXECID_LEN, JOBID_LEN, PROJECTID_LEN
 
 
 class ServerSettings(BaseSettings):
@@ -33,8 +33,9 @@ class ServerSettings(BaseSettings):
     RQ_REDIS_PORT: Optional[str] = None
     RQ_REDIS_DB: Optional[str] = None
     RQ_CONTROL_QUEUE: str = "control"
-    EXECUTIONID_LEN: int = 8
-    PROJECTID_LEN: int = 10
+    EXECID_LEN: int = EXECID_LEN
+    PROJECTID_LEN: int = PROJECTID_LEN
+    JOBID_LEN: int = JOBID_LEN
 
     # Logs:
     LOGLEVEL: str = "INFO"

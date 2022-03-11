@@ -98,10 +98,13 @@ async def create_or_update(session, user_id: int, pq: ProjectReq):
 async def get_by_projectid_model(session, projectid) -> Union[ProjectModel, None]:
     stmt = select_project().where(ProjectModel.projectid == projectid).limit(1)
     r = await session.execute(stmt)
-    obj: Optional[ProjectModel] = r.scalar_one_or_none()
-    if not obj:
-        return None
-    return obj
+    return r.scalar_one_or_none()
+
+
+def get_by_projectid_model_sync(session, projectid) -> Union[ProjectModel, None]:
+    stmt = select_project().where(ProjectModel.projectid == projectid).limit(1)
+    r = session.execute(stmt)
+    return r.scalar_one_or_none()
 
 
 async def get_by_projectid(
@@ -170,6 +173,15 @@ async def delete_by_projectid(session, projectid):
 def get_private_key_sync(session, project_id) -> Union[str, None]:
     stmt = select(ProjectModel).where(ProjectModel.projectid == project_id).limit(1)
     r = session.execute(stmt)
+    obj: Optional[ProjectModel] = r.scalar_one_or_none()
+    if obj:
+        return obj.private_key.decode("utf-8")
+    return None
+
+
+async def get_private_key(session, project_id) -> Union[str, None]:
+    stmt = select(ProjectModel).where(ProjectModel.projectid == project_id).limit(1)
+    r = await session.execute(stmt)
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
     if obj:
         return obj.private_key.decode("utf-8")

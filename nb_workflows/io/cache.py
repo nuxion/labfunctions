@@ -35,7 +35,7 @@ def build_ctx_global(globals_dict) -> SimpleExecCtx:
     now = globals_dict.get("NOW", _now)
     return SimpleExecCtx(
         jobid=jobid,
-        executionid=execid,
+        execid=execid,
         execution_dt=now,
     )
 
@@ -44,14 +44,14 @@ def build_ctx(jobid, execid, now=None) -> SimpleExecCtx:
     _now = now or datetime.utcnow().isoformat()
     return SimpleExecCtx(
         jobid=jobid,
-        executionid=execid,
+        execid=execid,
         execution_dt=_now,
     )
 
 
 def _write_pickle(name, data, ctx: SimpleExecCtx):
-    fpath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.pickle"
-    metapath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.json"
+    fpath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.pickle"
+    metapath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.json"
     with open(fpath, "wb") as f:
         f.write(cloudpickle.dumps(data))
         logger.debug("CACHE: Wrote to %s", fpath)
@@ -60,8 +60,8 @@ def _write_pickle(name, data, ctx: SimpleExecCtx):
 
 
 def _restore_pickle(name, ctx: SimpleExecCtx):
-    fpath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.pickle"
-    metapath = f"/tmp/{ctx.jobid}.{ctx.executionid}.{name}.json"
+    fpath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.pickle"
+    metapath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.json"
     try:
         with open(fpath, "rb") as f:
             data = cloudpickle.load(f)
@@ -78,8 +78,8 @@ def _restore_pickle(name, ctx: SimpleExecCtx):
 
 
 def _write_fileserver(name, data, ctx: SimpleExecCtx):
-    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
-    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
+    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}"
+    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}.json"
     blob = cloudpickle.dumps(data)
     rsp = httpx.put(urlpath, content=blob)
     rsp2 = httpx.put(metapath, json=asdict(ctx))
@@ -90,8 +90,8 @@ def _write_fileserver(name, data, ctx: SimpleExecCtx):
 
 
 def _restore_fileserver(name, ctx: SimpleExecCtx):
-    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}"
-    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.executionid}.{name}.json"
+    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}"
+    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}.json"
     data = None
     meta = None
 

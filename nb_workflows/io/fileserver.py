@@ -23,7 +23,7 @@ class Fileserver:
 
     def put(self, rpath: str, data: bytes):
         with httpx.Client() as client:
-            r = client.put(self._set_fullurl(rpath), data=data)
+            r = client.put(self._set_fullurl(rpath), content=data)
 
         return r.content
 
@@ -53,7 +53,7 @@ class AsyncFileserver:
 
     async def put(self, rpath: str, data: bytes):
         async with httpx.AsyncClient() as client:
-            r = await client.put(self._set_fullurl(rpath), data=data)
+            r = await client.put(self._set_fullurl(rpath), content=data)
 
     async def delete(self, rpath: str):
         async with httpx.AsyncClient() as client:

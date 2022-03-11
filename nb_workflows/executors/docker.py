@@ -8,12 +8,17 @@ import docker
 from nb_workflows import client, secrets
 from nb_workflows.build import generate_docker_name, make_build
 from nb_workflows.conf import defaults
+from nb_workflows.executors import context
 from nb_workflows.io import Fileserver
 
 # from nb_workflows.conf.server_settings import settings
-from nb_workflows.types import ExecutionResult, NBTask, ProjectData, ScheduleData
-
-from .utils import create_exec_ctx
+from nb_workflows.types import (
+    ExecutionNBTask,
+    ExecutionResult,
+    NBTask,
+    ProjectData,
+    ScheduleData,
+)
 
 
 def builder_executor(projectid, project_zip_route):
@@ -47,7 +52,7 @@ def builder_executor(projectid, project_zip_route):
     make_build(project_dir / zip_name, tag=docker_tag, temp_dir=str(temp_dir))
 
 
-def docker_exec(projectid, priv_key, jobid):
+def docker_exec(exec_ctx: ExecutionNBTask):
     """
     It will get a jobid from the control plane.
     This function runs in RQ Worker from a data plane machine.
@@ -66,65 +71,40 @@ def docker_exec(projectid, priv_key, jobid):
 
     _started = time.time()
     docker_client = docker.from_env()
-    nb_client = client.minimal_client(
+    ag_client = client.agent_client(
         url_service=settings.WORKFLOW_SERVICE,
         token=settings.AGENT_TOKEN,
         refresh=settings.AGENT_REFRESH_TOKEN,
-        projectid=projectid,
+        projectid=exec_ctx.projectid,
     )
     logger = logging.getLogger(__name__)
 
+    priv_key = ag_client.projects_private_key()
+    if not priv_key:
+        logger.error(f"jobdid:{exec_ctx.jobid} private key not found")
+        elapsed = time.time() - _started
+        result = context.make_error_result(exec_ctx, elapsed)
+        ag_client.history_register(result)
+        return
+
+    logger.info(
+        f"jobdid:{exec_ctx.jobid} execid:{exec_ctx.execid} "
+        f"Sending to docker: {exec_ctx.docker_name}"
+    )
     try:
-        wd = nb_client.workflows_get(jobid)
-        pd = nb_client.projects_get()
-        task = NBTask(**wd.job_detail)
-        if task.schedule:
-            task.schedule = ScheduleData(**wd.job_detail["schedule"])
-        if wd and wd.enabled and pd:
-            ctx = create_exec_ctx(projectid, jobid, task)
-            docker_name = generate_docker_name(pd, task.docker_version)
-            logger.info(
-                f"jobdid:{ctx.jobid} execid:{ctx.executionid} Sending to docker:{docker_name}"
-            )
-
-            logs = docker_client.containers.run(
-                docker_name,
-                f"nb exec",
-                environment={
-                    defaults.PRIVKEY_VAR_NAME: priv_key,
-                    defaults.EXECUTIONTASK_VAR: json.dumps(ctx.dict()),
-                    "NB_WORKFLOW_SERVICE": settings.WORKFLOW_SERVICE,
-                },
-                remove=True,
-            )
-
-        elif not wd:
-            logger.warning(f"jobdid:{jobid} Not found")
-        elif not wd.enabled:
-            logger.warning(f"jobdid:{jobid} disabled")
-        else:
-            logger.warning(f"jobdid:{jobid} project not found")
+        logs = docker_client.containers.run(
+            exec_ctx.docker_name,
+            f"nb exec",
+            environment={
+                defaults.PRIVKEY_VAR_NAME: priv_key,
+                defaults.EXECUTIONTASK_VAR: json.dumps(exec_ctx.dict()),
+                "NB_WORKFLOW_SERVICE": settings.WORKFLOW_SERVICE,
+            },
+            remove=True,
+        )
 
     except docker.errors.ContainerError as e:
         logger.error(e.stderr.decode())
         elapsed = time.time() - _started
-        result = ExecutionResult(
-            jobid=ctx.jobid,
-            executionid=ctx.executionid,
-            projectid=ctx.projectid,
-            name=ctx.nb_name,
-            params=ctx.params,
-            input_=ctx.pm_input,
-            output_dir=ctx.output_dir,
-            output_name=ctx.output_name,
-            error_dir=ctx.error_dir,
-            error=True,
-            elapsed_secs=round(elapsed, 2),
-            created_at=ctx.created_at,
-        )
-        nb_client.history_register(result)
-
-    except Exception as e:
-        logger.error(f"jobid:{jobid} Failed {e}")
-
-    return None
+        result = context.make_error_result(exec_ctx, elapsed)
+        ag_client.history_register(result)
