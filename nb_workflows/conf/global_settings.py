@@ -30,8 +30,6 @@ WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
 # Logs
 LOGFORMAT = detailed_format
 
-EXECUTIONID_LEN = 8
-
 # General Folders for the server
 BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
 SERVER_DATA_FOLDER = ".server_data/"
