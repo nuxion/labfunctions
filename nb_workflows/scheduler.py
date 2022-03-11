@@ -141,7 +141,7 @@ class SchedulerExecutor:
 
         Every time a task is enqueue again the step MUST be moved.
         """
-        execid = context.generate_execid(size=settings.EXECUTIONID_LEN)
+        execid = context.generate_execid(size=settings.EXECID_LEN)
         next_step = context.move_step_execid(context.steps.dispatcher, execid)
 
         j = self.Q.enqueue(

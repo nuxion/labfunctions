@@ -34,6 +34,5 @@ def test_scheduler_enqueue_docker(mocker: MockerFixture, redis):
     exec_ctx = ExecutionNBTaskFactory()
     j = s.enqueue_notebook(exec_ctx, qname="test")
 
-    # assert j.is_finished == True
-    assert j.is_failed
+    assert j.is_finished == True
     assert j.id == exec_ctx.execid

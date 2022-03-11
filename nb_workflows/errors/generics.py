@@ -18,3 +18,8 @@ class WorkflowNotFound(Exception):
 class ProjectNotFound(Exception):
     def __init__(self, message):
         super().__init__(message)
+
+
+class PrivateKeyNotFound(Exception):
+    def __init__(self, projectid):
+        super().__init__(f"Private Key not found for project {projectid}")

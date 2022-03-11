@@ -26,6 +26,7 @@ def generate_dockerfile(root, docker_options: Dict[str, Any]):
 def write_secrets(root, private_key, nbvars_dict) -> str:
     _vars = secrets.encrypt_nbvars(private_key, nbvars_dict)
     newline = "\n"
+    breakpoint()
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
     outfile = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
     with open(outfile, "w") as f:
@@ -94,7 +95,26 @@ def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
     return ProjectZipFile(filepath=output_file, commit=tagname)
 
 
-def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
+def zip_all(root, prefix_folder=defaults.ZIP_GIT_PREFIX):
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/ALL.zip"
+
+    with ZipFile(output_file, "w") as z:
+        for i in pathlib.Path(".").glob("**/*"):
+            if (
+                not str(i).startswith(".venv")
+                and not str(i).startswith(".git")
+                and not str(i).startswith(".tox")
+                and not str(i).startswith(defaults.CLIENT_TMP_FOLDER)
+            ):
+                if prefix_folder:
+                    z.write(i, (prefix_folder / i))
+                else:
+                    z.write(i)
+
+    return ProjectZipFile(filepath=output_file)
+
+
+def zip_project(root, secrets_file, current=False, all_=False) -> ProjectZipFile:
     """Make a zip of this project.
     It uses git to skip files in the .gitignore file.
     After making the zip file with git,  it will add a secret file
@@ -114,13 +134,17 @@ def zip_project(root, secrets_file, current=False) -> ProjectZipFile:
             raise TypeError(
                 "There isn't changes in the git repository to perform a CURRENT zip file. For untracked files you should add to the stash the changes, perform: git add ."
             )
+    elif all_:
+        zfile = zip_all(root)
     else:
         zfile = zip_git_head(root)
 
     return zfile
 
 
-def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipFile:
+def manage_upload(
+    privkey, env_file, current, creds: Credentials, all_=False
+) -> ProjectZipFile:
     """
     It manages how to upload project files to the server.
 
@@ -135,6 +159,7 @@ def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipF
     change or at least we will provide to the user with the right mechanisms
     and documentation so that they can handle it manually if they want.
     """
+    breakpoint()
 
     secrets.nbvars["AGENT_TOKEN"] = creds.access_token
     secrets.nbvars["AGENT_REFRESH_TOKEN"] = creds.refresh_token
@@ -143,7 +168,7 @@ def manage_upload(privkey, env_file, current, creds: Credentials) -> ProjectZipF
     (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
 
     secrets_file = write_secrets(root, privkey, secrets.nbvars)
-    zfile = zip_project(root, secrets_file, current)
+    zfile = zip_project(root, secrets_file, current, all_)
 
     pathlib.Path(secrets_file).unlink(missing_ok=True)
 

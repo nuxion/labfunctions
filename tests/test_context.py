@@ -1,18 +1,27 @@
+from nb_workflows.conf import defaults as df
 from nb_workflows.executors import context as ctx
 from nb_workflows.types import ProjectData
 from tests import factories
 
 
 def test_context_generate_execid():
-    id_ = ctx.generate_execid(10)
-    assert len(id_) == 10
+    id_ = ctx.generate_execid()
+    assert len(id_) == df.EXECID_LEN + len(ctx.steps.start) + 1
     assert isinstance(id_, str)
 
 
-def test_context_execid_from_scheduler():
-    id_ = ctx.execid_from_scheduler(size=10)
-    assert len(id_) == 10 + 4
-    assert id_.startswith("SCH")
+def test_context_pure_execid():
+    id_ = ctx.generate_execid()
+    pure = ctx.pure_execid(id_)
+    assert "." not in pure
+    assert len(pure) == df.EXECID_LEN
+
+
+def test_context_move_step_execid():
+
+    id_ = ctx.generate_execid()
+    new_ = ctx.move_step_execid(ctx.steps.build, id_)
+    assert ctx.steps.build in new_
 
 
 def test_context_docker_name():
@@ -25,10 +34,13 @@ def test_context_create_notebook():
     pd = factories.ProjectDataFactory()
     task = factories.NBTaskFactory()
 
-    execid = "testid"
+    id_ = ctx.generate_execid()
+    pure = ctx.pure_execid(id_)
+    execid = ctx.move_step_execid(ctx.steps.docker, id_)
+
     r = ctx.create_notebook_ctx(pd, task, execid=execid)
 
     assert r.params.get("JOBID")
     assert r.params.get("EXECUTIONID")
     assert r.params.get("NOW")
-    assert r.output_name == f"{task.nb_name}.{execid}.ipynb"
+    assert r.output_name == f"{task.nb_name}.{pure}.ipynb"

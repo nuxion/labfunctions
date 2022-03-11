@@ -8,8 +8,8 @@ This file is used only as kind of backlog or/and draft for ideas.
 
 - [ ] Executors: SeqPipe implmentation
 - [ ] Executors: Docker volumes specification
-- [ ] Executios: Namespacing Execution ID for tracking loads. 
-- [-] Executors: Execution ID injected from Web 
+- [x] Executios: Namespacing Execution ID for tracking loads. 
+- [x] Executors: Execution ID injected from Web 
 - [ ] Notifications: slack and discord
 - [ ] Doc: about architecture
 - [ ] Doc: how to install client nb-workflows

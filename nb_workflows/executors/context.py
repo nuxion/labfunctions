@@ -14,49 +14,43 @@ from nb_workflows.types import (
 )
 from nb_workflows.utils import today_string
 
-ExecIDNS = namedtuple("ExecIDNS", ["build", "scheduler", "remote", "docker"])
-exec_ids = ExecIDNS(build="BLD", scheduler="SCH", remote="RMT", docker="DCK")
-
 Steps = namedtuple("Steps", ["start", "build", "dispatcher", "docker"])
 
+# steps are used to prepend for each step in a workflow execution as namespace.
 steps = Steps(start="0", build="bld", dispatcher="dsp", docker="dck")
 
 
-def generate_execid(size: int) -> str:
+def generate_execid(size=defaults.EXECID_LEN) -> str:
     """
     execid refers to an unique id randomly generated for each execution
     of a workflow. It can be thought of as the id of an instance
     of the NB Workflow definition.
+
+    NanoID is used behind, the default len for this is 10 characters
+    using a urlsafe alphabet.
+
+    By default:
+    EXECID_LEN = 14
+    ~20 years needed for %1 collision at 1000 execs per second
     """
-    # return Hash96.time_random_string().id_hex
     _id = generate_random(size=size)
     return f"{steps.start}.{_id}"
 
 
 def pure_execid(execid):
+    """clean any NS added to the id"""
 
     return execid.split(".", maxsplit=1)[1]
 
 
 def move_step_execid(step: str, execid: str) -> str:
+    """replace the actual NS for a newone"""
     id_ = execid.split(".", maxsplit=1)[1]
     return f"{step}.{id_}"
 
 
-def execid_for_build(size=10):
+def execid_for_build(size=defaults.EXECID_LEN):
     return f"{steps.build}.{generate_random(size)}"
-
-
-def execid_from_scheduler(size: int) -> str:
-    """Where the path execution starts"""
-
-    id_ = generate_random(size=size)
-    return f"{exec_ids.scheduler}.{id_}"
-
-
-def execid_from_notebook(execid):
-    id_ = execid.split(".", maxsplit=1)[1]
-    return f"{exec_ids.docker}.{id_}"
 
 
 def generate_docker_name(pd: ProjectData, docker_version: str):
