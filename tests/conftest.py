@@ -15,6 +15,8 @@ from nb_workflows.models import HistoryModel, WorkflowModel
 
 Session = sessionmaker()
 
+os.environ["NB_WORKFLOW_SERVICE"] = "http://localhost:8000"
+
 
 @pytest.fixture(scope="module")
 def connection():
