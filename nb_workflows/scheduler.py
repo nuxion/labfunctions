@@ -159,7 +159,7 @@ class SchedulerExecutor:
         :param nb_job_ctx: a prepared notebook execution task
         :type nb_job_ctx: nb_workflows.types.core.ExecutionNBTask
         :param task: NBTask object
-        :param executionid: An optional executionid
+        :param execid: An optional execid
         :return: An RQ Job
         :rtype: rq.job.Job
         """
@@ -171,7 +171,7 @@ class SchedulerExecutor:
         job = Q.enqueue(
             docker_exec,
             nb_job_ctx,
-            job_id=nb_job_ctx.executionid,
+            job_id=nb_job_ctx.execid,
             job_timeout=nb_job_ctx.timeout,
         )
         return job

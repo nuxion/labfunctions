@@ -61,7 +61,7 @@ class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
 
     id = Column(BigInteger, primary_key=True)
     jobid = Column(String(24))
-    executionid = Column(String(24))  # should be execution id
+    execid = Column(String(24))  # should be execution id
     nb_name = Column(String(), nullable=False)
     result = Column(JSONB(), nullable=False)
     elapsed_secs = Column(Float(), nullable=False)

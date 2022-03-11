@@ -36,4 +36,4 @@ def test_scheduler_enqueue_docker(mocker: MockerFixture, redis):
 
     # assert j.is_finished == True
     assert j.is_failed
-    assert j.id == exec_ctx.executionid
+    assert j.id == exec_ctx.execid

@@ -57,7 +57,7 @@ class ExecutionNBTask(BaseModel):
 
     projectid: str
     jobid: str
-    executionid: str
+    execid: str
     nb_name: str
     params: Dict[str, Any]
     machine: str
@@ -81,7 +81,7 @@ class ExecutionResult(BaseModel):
     """
 
     projectid: str
-    executionid: str
+    execid: str
     jobid: str
     name: str
     params: Dict[str, Any]
@@ -97,7 +97,7 @@ class ExecutionResult(BaseModel):
 @dataclass
 class SimpleExecCtx:
     jobid: str
-    executionid: str
+    execid: str
     execution_dt: str
 
 
@@ -108,7 +108,7 @@ class HistoryResult:
     # finished, stopped, scheduled, canceled, failed.
     status: int
     result: Optional[ExecutionResult] = None
-    executionid: Optional[str] = None
+    execid: Optional[str] = None
     created_at: Optional[str] = None
 
 

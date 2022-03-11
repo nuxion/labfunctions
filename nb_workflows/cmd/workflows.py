@@ -75,7 +75,7 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
         rsp = local_dev_exec(jobid)
         if rsp:
             click.echo(f"Jobid: {rsp.jobid} locally executed")
-            click.echo(f"Executionid: {rsp.executionid}")
+            click.echo(f"Executionid: {rsp.execid}")
             status = "OK"
             if rsp.error:
                 status = "ERROR"

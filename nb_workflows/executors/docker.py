@@ -88,7 +88,7 @@ def docker_exec(exec_ctx: ExecutionNBTask):
         return
 
     logger.info(
-        f"jobdid:{exec_ctx.jobid} execid:{exec_ctx.executionid} "
+        f"jobdid:{exec_ctx.jobid} execid:{exec_ctx.execid} "
         f"Sending to docker: {exec_ctx.docker_name}"
     )
     try:

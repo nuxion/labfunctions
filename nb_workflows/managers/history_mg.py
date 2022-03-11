@@ -29,7 +29,7 @@ async def get_last(session, jobid: str, limit=1) -> Union[HistoryLastResponse, N
         rsp.append(
             HistoryResult(
                 jobid=jobid,
-                executionid=r.executionid,
+                execid=r.execid,
                 status=r.status,
                 result=r.result,
                 created_at=r.created_at.isoformat(),
@@ -47,7 +47,7 @@ async def create(session, execution_result: ExecutionResult) -> HistoryModel:
 
     row = HistoryModel(
         jobid=execution_result.jobid,
-        executionid=execution_result.executionid,
+        execid=execution_result.execid,
         project_id=execution_result.projectid,
         elapsed_secs=execution_result.elapsed_secs,
         nb_name=execution_result.name,

@@ -67,7 +67,7 @@ def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
 
     row = HistoryModel(
         jobid=nb_task.jobid,
-        executionid=execution_result.executionid,
+        execid=execution_result.execid,
         elapsed_secs=execution_result.elapsed_secs,
         nb_name=execution_result.name,
         result=result_data,

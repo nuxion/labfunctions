@@ -19,7 +19,7 @@ def history_factory(session):
 
         id = factory.Sequence(lambda n: n)
         jobid = factory.Faker("text", max_nb_chars=24)
-        executionid = factory.Faker("text", max_nb_chars=24)
+        execid = factory.Faker("text", max_nb_chars=24)
         nb_name = factory.Faker("text", max_nb_chars=24)
         result = dict()
         # project_id = "Az"
@@ -86,7 +86,7 @@ class ExecutionNBTaskFactory(factory.Factory):
 
     projectid = factory.LazyAttribute(lambda n: generate_random(10))
     jobid = factory.LazyAttribute(lambda n: generate_random(10))
-    executionid = factory.LazyAttribute(lambda n: generate_random(10))
+    execid = factory.LazyAttribute(lambda n: generate_random(10))
     nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
     params = {"TEST": True, "TIMEOUT": 5}
     machine = factory.Sequence(lambda n: "machine%d" % n)

@@ -24,7 +24,7 @@ steps = Steps(start="0", build="bld", dispatcher="dsp", docker="dck")
 
 def generate_execid(size: int) -> str:
     """
-    executionid refers to an unique id randomly generated for each execution
+    execid refers to an unique id randomly generated for each execution
     of a workflow. It can be thought of as the id of an instance
     of the NB Workflow definition.
     """
@@ -90,7 +90,7 @@ def create_notebook_ctx(pd: ProjectData, task: NBTask, execid) -> ExecutionNBTas
     return ExecutionNBTask(
         projectid=pd.projectid,
         jobid=task.jobid,
-        executionid=_execid,
+        execid=_execid,
         nb_name=task.nb_name,
         machine=task.machine,
         docker_name=docker_name,
@@ -109,7 +109,7 @@ def create_notebook_ctx(pd: ProjectData, task: NBTask, execid) -> ExecutionNBTas
 def make_error_result(ctx, elapsed) -> ExecutionResult:
     result = ExecutionResult(
         jobid=ctx.jobid,
-        executionid=ctx.executionid,
+        execid=ctx.execid,
         projectid=ctx.projectid,
         name=ctx.nb_name,
         params=ctx.params,
