@@ -1,4 +1,6 @@
 import asyncio
+import logging
+from collections import namedtuple
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
@@ -13,45 +15,64 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+from nb_workflows import errors
+
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.sync import SQL
+from nb_workflows.executors import context
 from nb_workflows.executors.docker import builder_executor, docker_exec
-from nb_workflows.executors.utils import generate_execid
-from nb_workflows.hashes import Hash96, generate_random
 from nb_workflows.managers import projects_mg, workflows_mg
 from nb_workflows.models import WorkflowModel
 
 # from nb_workflows.notebooks import nb_job_executor
-from nb_workflows.types import NBTask, ScheduleData
+from nb_workflows.types import ExecutionNBTask, NBTask, ScheduleData
 from nb_workflows.utils import run_async
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
+QueuesNS = namedtuple("QueuesNS", ["control", "machine", "build"])
+qs_ns = QueuesNS(control="ctrl", machine="mch", build="bui")
 
-def scheduler_dispatcher(projectid: str, jobid: str) -> Union[Job, None]:
+
+def control_q(name=settings.RQ_CONTROL_QUEUE) -> str:
+    return f"{qs_ns.control}.{name}"
+
+
+def machine_q(name) -> str:
+    return f"{qs_ns.machine}.{name}"
+
+
+def scheduler_dispatcher(projectid: str, jobid: str, execid: str) -> Union[Job, None]:
     """
     This is the entrypoint of any workflow or job to be executed by RQ and it
     will be executed by :class:`nb_workflows.scheduler.SchedulerExecutor`
     in the RQWorker of the control plane.
 
-
     This function receive the projectid and jobid as reference of the task to
-    be completed. Then it will prepare the context for it.
+    be completed. It will use this references to get information about the job
+    to execute. In the future, it could act as a router, or each kind of action
+    could have their own dispatcher.
 
+    Because rq-scheduler has some limitations:
+       1. Doesn't always follow the same functions firms of RQ
+       2. jobid is inmutable.
+       3. job params are inmutable.
+       4. Slow official releases in pypi
 
-    Because rq-scheduler has some limitations
-    and could be abandoned in the future, this abstraction was created
-    where the idea is to use the scheduler only to enqueue works through rq.
+    For those reasons, and beacause in the future RQ-Scheduler could be abandoned,
+    this abstraction was created, where the idea is to use the RQ-Scheduler only
+    to enqueue works through RQ.
 
     Also, adopting this strategy, allows to react dinamically to changes
-    in the workflow. Usually rq caches the params of each job.
+    in the workflow
 
+    Parameters
+    ----------
     :param projectid: is the id of project, from ProjectModel
     :type str:
     :param jobid: jobid from WorkflowModel
     :type str:
-
 
     :return: a Job instance from RQ a or None if the Job or the project is not found
     :rtype: an Union between Job or None.
@@ -59,31 +80,27 @@ def scheduler_dispatcher(projectid: str, jobid: str) -> Union[Job, None]:
     db = SQL(settings.SQL)
     _cfg = settings.rq2dict()
     redis = Redis(**_cfg)
-    scheduler = SchedulerExecutor(redis=redis, qname=settings.RQ_CONTROL_QUEUE)
+    scheduler = SchedulerExecutor(redis=redis, qname=control_q())
+
+    logger = logging.getLogger(__name__)
 
     Session = db.sessionmaker()
 
     with Session() as session:
-        obj_model = workflows_mg.get_by_jobid_model_sync(session, jobid)
-        if obj_model and obj_model.enabled:
+        try:
+            next_step = context.move_step_execid(context.steps.docker, execid)
 
-            priv_key = projects_mg.get_private_key_sync(session, projectid)
-
-            task = NBTask(**obj_model.job_detail)
-            _job = scheduler.enqueue_notebook_in_docker(
-                projectid,
-                priv_key,
-                task,
+            exec_nb_ctx = workflows_mg.prepare_notebook_job(
+                session, projectid, jobid, next_step
             )
-            return _job
-        else:
-            if not obj_model:
-                scheduler.cancel_job(jobid)
-                print(f"job: {jobid} not found, deleted")
-                # raise IndexError(f"job: {jobid} not found")
+            scheduler.enqueue_notebook(exec_nb_ctx, qname=exec_nb_ctx.machine)
 
-            print(f"Job: {jobid} disabled")
-    return None
+            # priv_key = projects_mg.get_private_key_sync(session, projectid)
+        except errors.WorkflowNotFound as e:
+            logger.error(e)
+        except errors.WorkflowDisabled as e:
+            logger.warning(e)
+            scheduler.cancel_job(jobid)
 
 
 class SchedulerExecutor:
@@ -108,34 +125,59 @@ class SchedulerExecutor:
         self.is_async = is_async
 
     def dispatcher(self, projectid, jobid) -> Job:
-        j = self.Q.enqueue(scheduler_dispatcher, projectid, jobid)
+        """
+        Entrypoint of a task execution. Beacause it is a dispatcher it only needs
+        the references of job to execute. It will dispatch a job to
+        :func:`scheduler_dispatcher` which will prepare the task to be executed in
+        a worker.
+
+        Usually this method is called from a web endpoint.
+
+        Sequence of calls for a workflow execution:
+             1- Enqueue in the control plane with :func:`scheduler_dispatcher` (control plane)
+             2- prepare context and use :method:`enqueue_notebook_in_docker` to
+             fire the task to a new queue for the agent. (control plane)
+             3- The agent execute the task (data plane)
+
+        Every time a task is enqueue again the step MUST be moved.
+        """
+        execid = context.generate_execid(size=settings.EXECUTIONID_LEN)
+        next_step = context.move_step_execid(context.steps.dispatcher, execid)
+
+        j = self.Q.enqueue(
+            scheduler_dispatcher, projectid, jobid, next_step, job_id=next_step
+        )
         return j
 
-    def enqueue_notebook_in_docker(
-        self, projectid, priv_key, task: NBTask, executionid=None
-    ) -> Job:
-        """It executes the task in the remote machine with runtime configuration of
+    def enqueue_notebook(self, nb_job_ctx: ExecutionNBTask, qname: str) -> Job:
+        """
+        It executes a :class:`nb_workflows.types.core.NBTask`
+        in the remote machine with runtime configuration of
         the project for this task
 
-        :param projectid: id of the project
+
+        :param nb_job_ctx: a prepared notebook execution task
+        :type nb_job_ctx: nb_workflows.types.core.ExecutionNBTask
         :param task: NBTask object
         :param executionid: An optional executionid
+        :return: An RQ Job
+        :rtype: rq.job.Job
         """
 
-        _id = executionid or generate_execid(size=settings.EXECUTIONID_LEN)
-        Q = Queue(task.machine, connection=self.redis, is_async=self.is_async)
+        _qname = machine_q(qname)
+
+        # _id = context.execid_from_scheduler(execid)
+        Q = Queue(_qname, connection=self.redis, is_async=self.is_async)
         job = Q.enqueue(
             docker_exec,
-            projectid,
-            priv_key,
-            task.jobid,
-            job_id=_id,
-            job_timeout=task.timeout,
+            nb_job_ctx,
+            job_id=nb_job_ctx.executionid,
+            job_timeout=nb_job_ctx.timeout,
         )
         return job
 
     def enqueue_build(
-        self, projectid, project_zip_route, qname=settings.RQ_CONTROL_QUEUE
+        self, projectid, project_zip_route, qname=settings.RQ_CONTROL_QUEUE, execid=None
     ) -> Job:
         """
         TODO: in the future a special queue should exists.
@@ -144,7 +186,7 @@ class SchedulerExecutor:
         TODO: design internal, onpremise or external docker registries.
         """
 
-        _id = generate_execid(size=10)
+        _id = execid or context.execid_for_build()
         if qname == settings.RQ_CONTROL_QUEUE:
             job = self.Q.enqueue(
                 builder_executor,

@@ -12,7 +12,7 @@ from nb_workflows import client
 from nb_workflows.conf import defaults, load_client
 
 # from nb_workflows.notebooks import nb_job_executor
-from nb_workflows.types import ExecutionResult, ExecutionTask2, NBTask
+from nb_workflows.types import ExecutionNBTask, ExecutionResult, NBTask
 
 
 def _simple_retry(func, params, max_retries=3, wait_time=5):
@@ -38,7 +38,7 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     # CTX creation
     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
 
-    etask = ExecutionTask2(**json.loads(ctx_str))
+    etask = ExecutionNBTask(**json.loads(ctx_str))
     logger.info(f"jobdid:{etask.jobid} execid:{etask.executionid} Starting")
 
     # Execution
@@ -58,7 +58,7 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     return result
 
 
-def notebook_executor(etask: ExecutionTask2) -> ExecutionResult:
+def notebook_executor(etask: ExecutionNBTask) -> ExecutionResult:
 
     _error = False
     _started = time.time()
@@ -90,7 +90,7 @@ def notebook_executor(etask: ExecutionTask2) -> ExecutionResult:
     )
 
 
-def error_handler(etask: ExecutionTask2):
+def error_handler(etask: ExecutionNBTask):
 
     error_output = f"{etask.error_dir}/{etask.output_name}"
     Path(error_output).mkdir(parents=True, exist_ok=True)

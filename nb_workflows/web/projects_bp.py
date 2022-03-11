@@ -218,3 +218,21 @@ async def project_register_exec(request, projectid):
     await fsrv.put(fp, file_body)
 
     return json(dict(msg="OK"))
+
+
+@projects_bp.get("/<projectid:str>/_private_key")
+@openapi.parameter("projectid", str, "path")
+@openapi.response(200, "project")
+@openapi.response(404, "not found")
+@protected()
+async def project_private_key(request, projectid):
+    """Get private key based on the project"""
+    # pylint: disable=unused-argument
+
+    session = request.ctx.session
+    async with session.begin():
+        r = await projects_mg.get_private_key(session, projectid)
+        if r:
+            return json({"private_key": r}, 200)
+
+    return json(dict(msg="Not found"))

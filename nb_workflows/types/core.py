@@ -50,22 +50,7 @@ class NBTask:
     schedule: Optional[ScheduleData] = None
 
 
-@dataclass
-class ExecutionTask:
-    """It will be send to task_handler, and it has the
-    configuration needed for papermill to run a specific notebook.
-    """
-
-    jobid: str
-    executionid: str
-    name: str
-    params: Dict[str, Any]
-    workflow: str
-    output: str
-    created_at: str
-
-
-class ExecutionTask2(BaseModel):
+class ExecutionNBTask(BaseModel):
     """It will be send to task_handler, and it has the
     configuration needed for papermill to run a specific notebook.
     """
@@ -75,6 +60,8 @@ class ExecutionTask2(BaseModel):
     executionid: str
     nb_name: str
     params: Dict[str, Any]
+    machine: str
+    docker_name: str
     # folders:
     pm_input: str
     pm_output: str
@@ -84,11 +71,11 @@ class ExecutionTask2(BaseModel):
     error_dir: str
 
     today: str
+    timeout: int
     created_at: str
 
 
-@dataclass
-class ExecutionResult:
+class ExecutionResult(BaseModel):
     """
     Is the result of a ExecutionTask execution.
     """
@@ -136,6 +123,9 @@ class ProjectData(BaseModel):
     username: Optional[str] = None
     description: Optional[str] = None
     repository: Optional[str] = None
+
+    class Config:
+        orm_mode = True
 
 
 @dataclass

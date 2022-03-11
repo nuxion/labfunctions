@@ -158,7 +158,7 @@ class NBClient(BaseClient):
 
         rsp = self._http.post(
             f"{self._addr}/history",
-            json=asdict(exec_result),
+            json=exec_result.dict(),
         )
 
         if rsp.status_code == 201:

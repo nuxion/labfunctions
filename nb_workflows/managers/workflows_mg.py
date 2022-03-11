@@ -7,10 +7,19 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+from nb_workflows import errors
+from nb_workflows.executors import context as ctx
 from nb_workflows.hashes import Hash96
 from nb_workflows.managers import projects_mg
 from nb_workflows.models import WorkflowModel
-from nb_workflows.types import NBTask, WorkflowData, WorkflowsList
+from nb_workflows.types import (
+    ExecutionNBTask,
+    NBTask,
+    ProjectData,
+    ScheduleData,
+    WorkflowData,
+    WorkflowsList,
+)
 
 WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
 
@@ -83,8 +92,12 @@ async def get_by_jobid_prj(session, projectid, jobid) -> WorkflowData:
     return None
 
 
-def get_by_jobid_model_sync(session, jobid) -> Union[WorkflowModel, None]:
-    stmt = select_workflow().where(WorkflowModel.jobid == jobid)
+def get_by_prj_and_jobid_sync(session, projectid, jobid) -> Union[WorkflowModel, None]:
+    stmt = (
+        select_workflow()
+        .where(WorkflowModel.project_id == projectid)
+        .where(WorkflowModel.jobid == jobid)
+    )
     result = session.execute(stmt)
     row = result.scalar()
     if row:
@@ -158,3 +171,25 @@ async def delete_wf(session, project_id, jobid):
         .where(WorkflowModel.jobid == jobid)
     )
     await session.execute(stmt)
+
+
+def prepare_notebook_job(
+    session, projectid: str, jobid: str, execid: str
+) -> ExecutionNBTask:
+    """It prepares the task execution of the notebook"""
+    wm = get_by_prj_and_jobid_sync(session, projectid, jobid)
+    if wm and wm.enabled:
+        pm = projects_mg.get_by_projectid_model_sync(session, projectid)
+        task = NBTask(**wm.job_detail)
+        if task.schedule:
+            task.schedule = ScheduleData(**wm.job_detail["schedule"])
+
+        pd = ProjectData.from_orm(pm)
+        pd.username = pm.user.username
+
+        exec_notebook_ctx = ctx.create_notebook_ctx(pd, task, execid)
+        return exec_notebook_ctx
+    elif not wm.enabled:
+        raise errors.WorkflowDisabled(projectid, jobid)
+
+    raise errors.WorkflowNotFound(projectid, jobid)

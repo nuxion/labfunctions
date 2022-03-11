@@ -151,3 +151,36 @@ def minimal_client(
         store_creds=store_creds,
         projectid=projectid,
     )
+
+
+def agent_client(
+    url_service, token, refresh, projectid, store_creds=False
+) -> AgentClient:
+    """A shortcut to intialize :class:`nb_workflows.client.NBClient`
+
+    Usually, it is used in each machine running a agent (data plane),
+    and is used to communicates with server for workflows task
+    preparations.
+
+    TODO: in the future agent use case should be treat apart. Right now
+    if the credential env variable is outdated, then
+    it will be allways refreshing their token.
+
+    Workaround #1: extend expire time for services like tokens
+    Workaround #2: manage a shared store like
+    store_creds_disk with redis instead
+    Workaround #3: Inject crendentials with the task.
+
+
+    :param url_service: WORKFLOWS_SERVICE url
+    :param token: access_token
+    :param refresh: refresh_token
+    :param projectid: projectid
+    """
+    creds = Credentials(access_token=token, refresh_token=refresh)
+    return AgentClient(
+        url_service=url_service,
+        creds=creds,
+        store_creds=store_creds,
+        projectid=projectid,
+    )

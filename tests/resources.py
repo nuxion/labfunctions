@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from nb_workflows.types import NBTask, ScheduleData, WorkflowData
+from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
 
 nb_task_simple = NBTask(
     nb_name="test_workflow",
@@ -23,3 +23,5 @@ wd = WorkflowData(
     job_detail=asdict(nb_task_schedule),
     enabled=True,
 )
+
+pd = ProjectData(name="test", projectid="asd", username="test")

@@ -39,7 +39,7 @@ async def get_last(session, jobid: str, limit=1) -> Union[HistoryLastResponse, N
 
 
 async def create(session, execution_result: ExecutionResult) -> HistoryModel:
-    result_data = asdict(execution_result)
+    result_data = execution_result.dict()
 
     status = 0
     if execution_result.error:

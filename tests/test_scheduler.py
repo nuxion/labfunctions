@@ -5,6 +5,7 @@ from pytest_mock import MockerFixture
 
 from nb_workflows.scheduler import SchedulerExecutor
 
+from .factories import ExecutionNBTaskFactory
 from .resources import nb_task_schedule, nb_task_simple, schedule_data, wd
 
 
@@ -14,7 +15,6 @@ def test_scheduler_instance(redis):
     assert isinstance(s, SchedulerExecutor)
 
 
-# @mock.patch('nb_workflows.executors.docker.docker_exec', return_value=3)
 def test_scheduler_enqueue_docker(mocker: MockerFixture, redis):
     from nb_workflows.executors.docker import docker_exec
 
@@ -28,8 +28,12 @@ def test_scheduler_enqueue_docker(mocker: MockerFixture, redis):
     mocker.patch(
         "nb_workflows.executors.docker.docker.from_env", return_value=docker_client
     )
-    mocker.patch("nb_workflows.client.minimal_client", return_value=nb_client)
+    mocker.patch("nb_workflows.client.agent_client", return_value=nb_client)
     s = SchedulerExecutor(redis, qname="test", is_async=False)
-    j = s.enqueue_notebook_in_docker("test_prj", "test_key", nb_task_schedule)
 
-    assert j.is_finished == True
+    exec_ctx = ExecutionNBTaskFactory()
+    j = s.enqueue_notebook(exec_ctx, qname="test")
+
+    # assert j.is_finished == True
+    assert j.is_failed
+    assert j.id == exec_ctx.executionid
