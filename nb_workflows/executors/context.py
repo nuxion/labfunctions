@@ -14,10 +14,48 @@ from nb_workflows.types import (
 )
 from nb_workflows.utils import today_string
 
-Steps = namedtuple("Steps", ["start", "build", "dispatcher", "docker"])
+Steps = namedtuple(
+    "Steps", ["start", "build", "dispatcher", "docker", "web", "seqpipe"]
+)
 
 # steps are used to prepend for each step in a workflow execution as namespace.
-steps = Steps(start="0", build="bld", dispatcher="dsp", docker="dck")
+steps = Steps(
+    start="0", build="bld", dispatcher="dsp", docker="dck", web="web", seqpipe="seq"
+)
+firms = Steps(
+    start="0", build="bld", dispatcher="dsp", docker="dck", web="web", seqpipe="seq"
+)
+
+
+class ExecID:
+
+    firms = firms
+
+    def __init__(self, execid=None, size=defaults.EXECID_LEN):
+        self.id_ = execid or generate_random(size=size)
+        self._signed = self.firm("start")
+
+    def firm(self, firm) -> str:
+        _name = getattr(self.firms, firm)
+        self.signed = f"{_name}.{self.id_}"
+        return self.signed
+
+    def pure(self):
+        return self.id_
+
+    @classmethod
+    def from_str(cls, execid: str):
+        return cls(pure_execid(execid))
+
+    def __str__(self):
+        return self.id_
+
+    def __repr__(self):
+        return self.id_
+
+
+def execid_from_str(execid) -> ExecID:
+    return ExecID(pure_execid(execid))
 
 
 def generate_execid(size=defaults.EXECID_LEN) -> str:

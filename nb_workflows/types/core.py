@@ -4,8 +4,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 
-@dataclass
-class ScheduleData:
+class ScheduleData(BaseModel):
     """Used as generic structure when querying database"""
 
     start_in_min: int = 0
@@ -14,8 +13,7 @@ class ScheduleData:
     interval: Optional[str] = None
 
 
-@dataclass
-class NBTask:
+class NBTask(BaseModel):
     """
     NBTask is the task definition. It will be executed by papermill.
     This interface is used together with the ScheduleCron or ScheduleInterval
@@ -44,6 +42,20 @@ class NBTask:
     alias: Optional[str] = None
     description: Optional[str] = None
     jobid: Optional[str] = None
+    timeout: int = 10800  # secs 3h default
+    notifications_ok: Optional[List[str]] = None
+    notifications_fail: Optional[List[str]] = None
+    schedule: Optional[ScheduleData] = None
+
+
+class SeqPipe(BaseModel):
+
+    pipeid: str
+    projectid: str
+    alias: str
+    description: Optional[str] = None
+    workflows: List[str]
+    shared_volumes: List[str]
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
@@ -147,8 +159,7 @@ class ProjectWebRsp:
     repository: Optional[str] = None
 
 
-@dataclass
-class WorkflowData:
+class WorkflowData(BaseModel):
     jobid: str
     nb_name: str
     job_detail: Dict[str, Any]

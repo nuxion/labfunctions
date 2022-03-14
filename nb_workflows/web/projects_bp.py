@@ -1,7 +1,6 @@
 # pylint: disable=unused-argument
 import json as std_json
 import pathlib
-from dataclasses import asdict
 from typing import List, Union
 
 # import aiofiles

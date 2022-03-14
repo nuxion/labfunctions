@@ -16,13 +16,15 @@ endef
 export USAGE
 .EXPORT_ALL_VARIABLES:
 VERSION := $(shell git describe --tags)
+VERSION_POETRY := $(shell poetry version | awk '{print $2}')
+FULLPY_PKG:= $(shell python scripts/poetry_version.py)
 BUILD := $(shell git rev-parse --short HEAD)
 PROJECTNAME := $(shell basename "$(PWD)")
 PACKAGE_DIR = $(shell basename "$(PWD)")
 DOCKERID = $(shell echo "nuxion")
 REGISTRY := registry.nyc1.algorinfo
-tarfile := nb_workflows-${VERSION}.tar.gz
-filename := nb_workflows-${VERSION}
+# tarfile := nb_workflows-${VERSION}.tar.gz
+# filename := nb_workflows-${VERSION}
 
 help:
 	@echo "$$USAGE"
@@ -41,6 +43,7 @@ clean:
 	rm -rf build/* > /dev/null 2>&1
 	rm -rf dist/* > /dev/null 2>&1
 	rm -rf .ipynb_checkpoints/* > /dev/null 2>&1
+	rm -rf docker/client/dist
 
 lock-dev:
 	poetry export -f requirements.txt --output requirements/requirements_dev.txt --extras server --without-hashes --dev
@@ -56,9 +59,9 @@ lock: lock-server lock-client lock-dev
 prepare: lock
 	poetry build
 	echo ${PWD}
-	tar xvfz dist/${tarfile} -C dist/
-	cp dist/${filename}/setup.py .
-	rm -Rf dist/
+	tar xvfz dist/${FULLPY_PKG}.tar.gz -C dist/
+	cp dist/${FULLPY_PKG}/setup.py .
+	# rm -Rf dist/
 
 black:
 	black --config ./.black.toml nb_workflows tests
@@ -75,6 +78,11 @@ test:
 .PHONY: test-html
 test-html:
 	PYTHONPATH=$(PWD) pytest --cov-report=html --cov=nb_workflows tests/
+
+
+.PHONY: e2e
+e2e:
+	pytest -s -k test_ e2e/
 
 .PHONY: install
 install:
@@ -103,6 +111,13 @@ jupyter:
 .PHONY: docker
 docker:
 	docker build -t ${DOCKERID}/${PROJECTNAME} .
+
+docker-client:
+	mkdir -p docker/client/dist
+	cp dist/*.whl docker/client/dist
+	cp requirements/requirements_client.txt  docker/client/requirements.txt
+	docker build -t ${DOCKERID}/${PROJECTNAME}-client -f docker/client/Dockerfile docker/client
+	docker tag ${DOCKERID}/${PROJECTNAME}-client:latest ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
 
 .PHONY: docker-local
 docker-local:

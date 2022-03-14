@@ -1,3 +1,4 @@
+from .client import WorkflowsFile
 from .core import (
     ExecutionNBTask,
     ExecutionResult,

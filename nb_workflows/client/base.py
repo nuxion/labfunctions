@@ -4,9 +4,10 @@ from typing import Callable, List, Optional
 import httpx
 
 from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
+from nb_workflows.types.client import WorkflowsFile
 from nb_workflows.utils import open_yaml, write_yaml
 
-from .types import Credentials, WorkflowsFile
+from .types import Credentials
 from .utils import store_credentials_disk, validate_credentials_local
 
 
@@ -122,7 +123,7 @@ class BaseClient:
 
     def write(self, output="workflows.yaml"):
 
-        wfs = [asdict(w) for w in self.wf_file.workflows]
+        wfs = [w.dict() for w in self.wf_file.workflows]
         wf_ = self.wf_file.dict()
         wf_["workflows"] = wfs
         write_yaml("workflows.yaml", wf_)

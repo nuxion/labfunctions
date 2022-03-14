@@ -1,18 +1,17 @@
 FROM python:3.8.10-slim as builder
 # supress pip warning
 SHELL ["/bin/bash", "-c"]
-ADD requirements/requirements.txt /tmp
+ADD requirements.txt /tmp
+ADD dist/nb_workflows-0.7.0a0-py3-none-any.whl /tmp
 # suppress warning
 ENV PATH=$PATH:/root/.local/bin 
 
 RUN apt-get -y update \
     && apt-get install -y --no-install-recommends \
     build-essential \
-    libopenblas-dev \
-    git  \
-    && pip install --user -r /tmp/requirements.txt
-    # && python setup.py install 
-
+    libopenblas-dev git \
+    && pip install --user -r /tmp/requirements.txt \
+    && pip install --user /tmp/nb_workflows-0.7.0a0-py3-none-any.whl
 # COPY --chown=root:root . /app/
 # WORKDIR /app
 # RUN python /app/setup.py install --user
@@ -29,13 +28,9 @@ RUN groupadd app -g 1090 \
     && mkdir -p /app/outputs \
     && chown -R app:app /app
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
-COPY --chown=app:app . /app
-RUN  mv /app/nb.bin /home/app/.local/bin/nb \
-     && chmod +x /home/app/.local/bin/nb
 
 USER app
 WORKDIR /app
- 
 ENV PATH=$PATH:/home/app/.local/bin
-ENV PYTHONPATH=/app
+# ENV PYTHONPATH=/app
 CMD ["nb"]

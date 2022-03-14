@@ -26,7 +26,7 @@ class NBClient(BaseClient):
         self.auth_verify_or_refresh()
         r = self._http.post(
             f"{self._addr}/workflows/{self.projectid}",
-            json=asdict(t),
+            json=t.dict(),
         )
 
         return WFCreateRsp(
@@ -39,7 +39,7 @@ class NBClient(BaseClient):
         self.auth_verify_or_refresh()
         r = self._http.put(
             f"{self._addr}/workflows/{self.projectid}",
-            json=asdict(t),
+            json=t.dict(),
         )
 
         return WFCreateRsp(

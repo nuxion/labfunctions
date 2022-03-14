@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from collections import namedtuple
-from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 

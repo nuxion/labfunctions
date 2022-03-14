@@ -1,6 +1,5 @@
 # pylint: disable=unused-argument
 import pathlib
-from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import List, Optional
 
@@ -9,6 +8,7 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
+from nb_workflows.executors.context import ExecID
 from nb_workflows.managers import workflows_mg
 from nb_workflows.scheduler import SchedulerExecutor, scheduler_dispatcher
 from nb_workflows.types import NBTask, ScheduleData, WorkflowData, WorkflowsList
@@ -51,7 +51,7 @@ async def workflows_list(request, projectid):
     session = request.ctx.session
 
     result = await workflows_mg.get_all(session, projectid)
-    data = [asdict(r) for r in result]
+    data = [r.dict() for r in result]
 
     return json(dict(rows=data), 200)
 
@@ -158,25 +158,31 @@ async def workflow_get(request, projectid, jobid):
     # pylint: disable=unused-argument
     session = request.ctx.session
     async with session.begin():
-        obj_dict = await workflows_mg.get_by_jobid_prj(session, projectid, jobid)
+        wd = await workflows_mg.get_by_jobid_prj(session, projectid, jobid)
 
-    if obj_dict:
-        return json(asdict(obj_dict), 200)
+    if wd:
+        return json(wd.dict(), 200)
     return json(dict(msg="Not found"), 404)
 
 
-@workflows_bp.post("/<projectid>/queue/<jobid>")
+@workflows_bp.post("/<projectid>/_ctx/<jobid>")
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("jobid", str, "path")
-@openapi.response(202)
+@openapi.response(200)
 @openapi.response(404, {"msg": str}, description="Job not found")
 @protected()
-async def workflow_enqueue(request, projectid, jobid):
+async def workflow_generate_ctx(request, projectid, jobid):
     """Enqueue a workflow on demand"""
     # pylint: disable=unused-argument
-    scheduler = get_scheduler()
-    job = await run_async(scheduler.dispatcher, projectid, jobid)
-    return json({"execid": job.id}, 202)
+    execid = ExecID()
+    signed = execid.firm("web")
+    session = request.ctx.session
+    async with session.begin():
+        nb_ctx = await workflows_mg.prepare_notebook_job_async(
+            session, projectid, jobid, signed
+        )
+    # job = await run_async(scheduler.dispatcher, projectid, jobid)
+    return json(nb_ctx.dict(), 200)
 
 
 # @workflows_bp.post("/<projectid>/schedule/<jobid>/_run")

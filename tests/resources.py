@@ -20,7 +20,7 @@ nb_task_schedule = NBTask(
 wd = WorkflowData(
     jobid="test_id",
     nb_name="test_workflows",
-    job_detail=asdict(nb_task_schedule),
+    job_detail=nb_task_schedule.dict(),
     enabled=True,
 )
 
