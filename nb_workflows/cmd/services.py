@@ -84,6 +84,9 @@ def rqworker(workers, qnames):
     # pylint: disable=import-outside-toplevel
     from nb_workflows.qworker import run_workers
 
+    # from nb_workflows.conf import defaults
+    # queues = [defaults. for q in qnames.split(",")]
+
     run_workers(qnames.split(","), workers)
 
 

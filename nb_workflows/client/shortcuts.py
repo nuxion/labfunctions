@@ -1,14 +1,16 @@
 import getpass
 import json
+import os
 from pathlib import Path
 from typing import Union
 
 import httpx
 
-from nb_workflows.conf import load_client
+from nb_workflows.conf import defaults, load_client
 from nb_workflows.conf.types import ClientSettings
+from nb_workflows.executors import context
 from nb_workflows.io import MemoryStore
-from nb_workflows.types import NBTask, ProjectData, ScheduleData
+from nb_workflows.types import ExecutionNBTask, NBTask, ProjectData, ScheduleData
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 from .agent import AgentClient
@@ -184,3 +186,25 @@ def agent_client(
         store_creds=store_creds,
         projectid=projectid,
     )
+
+
+def create_ctx(jobid=None) -> ExecutionNBTask:
+    ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
+    if ctx_str:
+        exec_ctx = ExecutionNBTask(**json.loads(ctx_str))
+    else:
+        execid = context.ExecID()
+        wf = NBClient.read("workflows.yaml")
+        pd = wf.project
+        pd.username = "dummy"
+        wf_data = None
+        if jobid:
+            for w in wf.workflows:
+                if w.jobid == jobid:
+                    wf_data = w
+        else:
+            # TODO: dumy nb_name
+            wf_data = NBTask(nb_name="test", params={})
+
+        exec_ctx = context.create_notebook_ctx(pd, wf_data, execid.pure())
+    return exec_ctx

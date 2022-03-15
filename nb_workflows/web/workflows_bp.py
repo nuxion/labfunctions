@@ -165,6 +165,22 @@ async def workflow_get(request, projectid, jobid):
     return json(dict(msg="Not found"), 404)
 
 
+@workflows_bp.post("/<projectid>/queue/<jobid>")
+@openapi.parameter("projectid", str, "path")
+@openapi.parameter("jobid", str, "path")
+@openapi.response(202, dict(execid=str))
+@protected()
+async def workflow_enqueue(request, projectid, jobid):
+    """Get a workflow by projectid"""
+    # pylint: disable=unused-argument
+    sche = get_scheduler()
+    execid = ExecID()
+    signed = execid.firm("web")
+    job = await run_async(sche.dispatcher, projectid, jobid, signed)
+
+    return json(dict(execid=job.id), 202)
+
+
 @workflows_bp.post("/<projectid>/_ctx/<jobid>")
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("jobid", str, "path")

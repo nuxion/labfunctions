@@ -15,6 +15,8 @@ from nb_workflows.secrets import nbvars
 PROJECTID = ""
 PROJECT_NAME = ""
 
+WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
+
 # Theese information is used to run workloads in the workers.
 # Don't modify at least you know what you are doing.
 AGENT_TOKEN = nbvars.get("AGENT_TOKEN", "")

@@ -23,11 +23,11 @@ RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
     && apt-get update -y  \
     && apt-get install -y --no-install-recommends \
-    vim-tiny \
+    vim-tiny git\
     && mkdir -p /app/workflows \
     && mkdir -p /app/outputs \
     && chown -R app:app /app
-COPY --from=builder --chown=app:app /root/.local /home/app/.local/
+COPY --from=builder --chown=app:app /root/.local /home/app/.local/ 
 
 USER app
 WORKDIR /app

@@ -23,8 +23,7 @@ PROJECTNAME := $(shell basename "$(PWD)")
 PACKAGE_DIR = $(shell basename "$(PWD)")
 DOCKERID = $(shell echo "nuxion")
 REGISTRY := registry.nyc1.algorinfo
-# tarfile := nb_workflows-${VERSION}.tar.gz
-# filename := nb_workflows-${VERSION}
+# RANDOM := $(shell echo $RANDOM | md5sum | head -c 20; echo;)
 
 help:
 	@echo "$$USAGE"
@@ -94,7 +93,7 @@ run:
 
 .PHONY: web
 web:
-	poetry run nb web --apps workflows,history,projects --workers 1 -L
+	poetry run nb web --apps workflows,history,projects -A --workers 1 -L
 
 .PHONY: rqworker
 rqworker:
@@ -112,12 +111,33 @@ jupyter:
 docker:
 	docker build -t ${DOCKERID}/${PROJECTNAME} .
 
+.PHONY: docker-client
 docker-client:
 	mkdir -p docker/client/dist
 	cp dist/*.whl docker/client/dist
 	cp requirements/requirements_client.txt  docker/client/requirements.txt
 	docker build -t ${DOCKERID}/${PROJECTNAME}-client -f docker/client/Dockerfile docker/client
 	docker tag ${DOCKERID}/${PROJECTNAME}-client:latest ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
+
+.PHONY: docker-env
+docker-env:
+	# $(eval(RANDOM := $(shell echo $RANDOM | md5sum | head -c 20; echo;))
+	docker run -it --rm -v ${PWD}:/app  --env-file=docker/.env.docker --network=host ${DOCKERID}/${PROJECTNAME} bash
+
+.PHONY: docker-env-client
+docker-env-client:
+	$(eval $@_TMP := $(shell mktemp -d))	
+	# mkdir /tmp/${RANDOM}
+	@echo $($@_TMP)
+	sudo chown 1089:1090 $($@_TMP)
+	docker run -it --rm -v $($@_TMP):/app --env-file=docker/.env.client.docker --network=host ${DOCKERID}/${PROJECTNAME}-client bash
+
+client-env:
+	$(eval $@_TMP := $(shell mktemp -d))	
+	# mkdir /tmp/${RANDOM}
+	@echo $($@_TMP)
+	cd $($@_TMP)
+
 
 .PHONY: docker-local
 docker-local:
@@ -137,10 +157,6 @@ publish:
 publish-test:
 	poetry publish --build -r test
 
-.PHONY: docker-env
-docker-env:
-	# docker run --rm -it --network host --env-file=.env.docker -v ${PWD}:/app ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:${VERSION} bash
-	docker run --rm -it --network host --env-file=.env.docker  -v /tmp/plasma:/tmp/plasma -v ${PWD}:/app ${DOCKERID}/${PROJECTNAME} bash
 .PHONY: redis-cli
 redis-cli:
 	docker-compose exec redis redis-cli

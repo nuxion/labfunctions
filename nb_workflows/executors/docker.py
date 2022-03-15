@@ -24,6 +24,7 @@ def builder_executor(projectid, project_zip_route):
     """It's in charge of building docker images from projects"""
     from nb_workflows.qworker import settings
 
+    logger = logging.getLogger(__name__)
     root = Path(settings.BASE_PATH)
     project_dir = root / settings.WORKER_DATA_FOLDER / "build" / projectid
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -48,6 +49,7 @@ def builder_executor(projectid, project_zip_route):
 
     pd = nb_client.projects_get()
     docker_tag = generate_docker_name(pd, docker_version=_version)
+    logger.error(docker_tag)
     make_build(project_dir / zip_name, tag=docker_tag, temp_dir=str(temp_dir))
 
 

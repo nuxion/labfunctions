@@ -1,4 +1,9 @@
+from collections import namedtuple
+
 # Shared defaults by server, agent and client
+QueuesNS = namedtuple("QueuesNS", ["control", "machine", "build"])
+Q_NS = QueuesNS(control="ctrl", machine="mch", build="bui")
+
 
 # Builder
 ZIP_GIT_PREFIX = "src/"
