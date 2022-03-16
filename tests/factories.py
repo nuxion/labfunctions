@@ -7,6 +7,7 @@ from factory.alchemy import SQLAlchemyModelFactory
 from nb_workflows import utils
 from nb_workflows.auth.models import GroupModel, UserModel
 from nb_workflows.auth.types import GroupData, UserData
+from nb_workflows.auth.users import password_manager
 from nb_workflows.hashes import generate_random
 from nb_workflows.models import HistoryModel, ProjectModel, WorkflowModel
 from nb_workflows.types import (
@@ -17,6 +18,7 @@ from nb_workflows.types import (
     SeqPipe,
 )
 from nb_workflows.types.core import SeqPipeSpec
+from nb_workflows.utils import run_sync
 
 
 def history_factory(session):
@@ -56,23 +58,6 @@ def workflow_factory(session):
     return WorkflowFactory
 
 
-# async def project_factory_async(session):
-#     class ProjectFactory(AsyncFactory):
-#         class Meta:
-#             msqlalchemy_session_persistence = "commit"
-#             sqlalchemy_session = session
-#             model = ProjectModel
-#
-#         id = factory.Sequence(lambda n: n)
-#         projectid = factory.LazyAttribute(lambda n: generate_random(10))
-#         name = factory.Sequence(lambda n: "pd-name%d" % n)
-#         username = factory.Sequence(lambda n: "user%d" % n)
-#         description = "test"
-#
-#
-#     return ProjectFactory
-
-
 class ProjectDataFactory(factory.Factory):
     class Meta:
         model = ProjectData
@@ -102,6 +87,7 @@ class NBTaskFactory(factory.Factory):
         model = NBTask
 
     jobid = factory.LazyAttribute(lambda n: generate_random(24))
+    alias = factory.Sequence(lambda n: "nb-alias%d" % n)
     nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
     params = {"TEST": True, "TIMEOUT": 5}
 
@@ -164,9 +150,12 @@ class UserFactory(factory.Factory):
 
 def create_user_model(*args, **kwargs) -> UserModel:
     uf = UserFactory(*args, **kwargs)
+    pm = password_manager()
+    _pass = kwargs.get("password", "meolvide")
+    key = pm.encrypt(_pass)
     user = UserModel(
         username=uf.username,
-        password=b"asdqwe",
+        password=key,
         is_superuser=uf.is_superuser,
         is_active=uf.is_active,
         # groups=uf.groups,
@@ -186,3 +175,9 @@ def create_project_model(user: UserModel, *args, **kwargs) -> ProjectModel:
         user=user,
     )
     return pm
+
+
+def token_generator(auth, user=None, *args, **kwargs):
+    _user = user or create_user_model(*args, **kwargs)
+    tkn = run_sync(auth.generate_access_token, _user)
+    return tkn

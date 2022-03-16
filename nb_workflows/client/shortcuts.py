@@ -14,9 +14,16 @@ from nb_workflows.types import ExecutionNBTask, NBTask, ProjectData, ScheduleDat
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 from .agent import AgentClient
+from .diskclient import DiskClient
 from .nbclient import NBClient
+from .state import WorkflowsState, from_file
 from .types import Credentials
-from .utils import _example_task, get_credentials_disk, login_cli
+from .utils import (
+    _example_task,
+    get_credentials_disk,
+    login_cli,
+    validate_credentials_local,
+)
 
 
 def normalize_name(name: str) -> str:
@@ -37,39 +44,41 @@ def ask_project_name() -> str:
     return name
 
 
-def init(url_service, example=True, version="0.1.0") -> NBClient:
+def init(url_service, example=True, version="0.2.0") -> DiskClient:
 
     settings = load_client()
     tasks = None
     if example:
-        tasks = [_example_task()]
+        task = _example_task()
+        tasks = {task.alias: task}
 
     creds = login_cli(url_service)
+
     projectid = settings.PROJECTID
     name = settings.PROJECT_NAME
+
     if not projectid:
         name = ask_project_name()
         rsp = httpx.get(f"{settings.WORKFLOW_SERVICE}/projects/_generateid")
         projectid = rsp.json()["projectid"]
 
-    # wf_file = create_empty_workfile(projectid, name, tasks=tasks)
+    pd = ProjectData(name=name, projectid=projectid)
+    wf_state = WorkflowsState(pd, workflows=tasks, version=version)
 
-    nb_client = NBClient(
-        creds=creds,
-        store_creds=True,
-        url_service=url_service,
+    _client = DiskClient(
+        url_service,
         projectid=projectid,
-        project=ProjectData(name=name, projectid=projectid),
-        workflows=tasks,
+        creds=creds,
+        wf_state=wf_state,
         version=version,
     )
 
     create = str(input("Create project in the server? (Y/n): ") or "y")
     if create.lower() == "y":
-        nb_client.projects_create()
-    nb_client.write()
+        _client.projects_create()
+    _client.write()
 
-    return nb_client
+    return _client
 
 
 def nb_from_settings() -> NBClient:
@@ -79,12 +88,14 @@ def nb_from_settings() -> NBClient:
         access_token=settings.CLIENT_TOKEN,
         refresh_token=settings.CLIENT_REFRESH_TOKEN,
     )
+    pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
 
+    wf_state = WorkflowsState(pd)
     return NBClient(
         url_service=settings.WORKFLOW_SERVICE,
         creds=creds,
         projectid=settings.PROJECTID,
-        project=ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID),
+        wf_state=wf_state,
     )
 
 
@@ -95,30 +106,31 @@ def nb_from_settings_agent() -> NBClient:
         access_token=settings.AGENT_TOKEN,
         refresh_token=settings.AGENT_REFRESH_TOKEN,
     )
+    pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
+
+    wf_state = WorkflowsState(pd)
 
     return NBClient(
         url_service=settings.WORKFLOW_SERVICE,
         creds=creds,
         projectid=settings.PROJECTID,
-        project=ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID),
+        wf_state=wf_state,
     )
 
 
-def nb_from_file(filepath, url_service) -> NBClient:
+def nb_from_file(filepath, url_service=None) -> DiskClient:
+
     settings = load_client()
-    wf = NBClient.read(filepath)
-    # tasks = [wf.workflows[k] for k in wf.workflows.keys()]
+    wf_state = from_file(filepath)
     creds = get_credentials_disk()
     if not creds:
         creds = login_cli(url_service)
 
-    return NBClient(
+    return DiskClient(
         url_service=settings.WORKFLOW_SERVICE,
-        projectid=wf.project.projectid,
+        projectid=wf_state.project.projectid,
         creds=creds,
-        store_creds=True,
-        project=wf.project,
-        workflows=wf.workflows,
+        wf_state=wf_state,
     )
 
 
@@ -150,7 +162,7 @@ def minimal_client(
     return NBClient(
         url_service=url_service,
         creds=creds,
-        store_creds=store_creds,
+        # store_creds=store_creds,
         projectid=projectid,
     )
 
@@ -183,7 +195,6 @@ def agent_client(
     return AgentClient(
         url_service=url_service,
         creds=creds,
-        store_creds=store_creds,
         projectid=projectid,
     )
 

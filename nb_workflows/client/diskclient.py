@@ -22,7 +22,7 @@ from .uploads import generate_dockerfile
 from .utils import get_private_key, store_credentials_disk, store_private_key
 
 
-class NBClient(BaseClient):
+class DiskClient(BaseClient):
     """Is to be used as cli client because it has side effects on local disk"""
 
     def workflows_create(self, t: NBTask) -> WFCreateRsp:
@@ -50,24 +50,26 @@ class NBClient(BaseClient):
         )
 
     def workflows_push(self, refresh_workflows=True, update=False):
-        _workflows = []
-        for task in self.state.workflows:
+        breakpoint()
+        _workflows = self.state.take_snapshot()
+        for _, task in _workflows:
             if update:
                 r = self.workflows_update(task)
             else:
                 if not task.jobid:
                     r = self.workflows_create(task)
+                    breakpoint()
                     if r.status_code == 200:
                         print(f"Workflow {task.alias} already exist")
                     elif r.status_code == 201:
                         print(f"Workflow {task.alias} created. Jobid: {r.jobid}")
                         if refresh_workflows:
                             task.jobid = r.jobid
+                            self.state.add_workflow(task)
 
         # self._workflows = _workflows
         if refresh_workflows:
-            pass
-            # self.sync_file()
+            self.write()
 
     def workflows_list(self) -> List[WorkflowData]:
         r = self._http.get(f"/workflows/{self.projectid}")

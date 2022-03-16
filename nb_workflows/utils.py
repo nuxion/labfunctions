@@ -69,6 +69,12 @@ async def run_async(func, *args, **kwargs):
     return rsp
 
 
+def run_sync(func, *args, **kwargs):
+    loop = asyncio.get_event_loop()
+    rsp = loop.run_until_complete(func(*args, **kwargs))
+    return rsp
+
+
 def init_blueprints(app, blueprints_allowed):
     """It import and mount each module inside `nb_workflows.web`
     which ends with _bp.

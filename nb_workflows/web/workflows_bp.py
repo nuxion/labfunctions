@@ -49,9 +49,9 @@ async def workflows_list(request, projectid):
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-
-    result = await workflows_mg.get_all(session, projectid)
-    data = [r.dict() for r in result]
+    async with session.begin():
+        result = await workflows_mg.get_all(session, projectid)
+        data = [r.dict() for r in result]
 
     return json(dict(rows=data), 200)
 
@@ -98,13 +98,11 @@ async def workflow_create(request, projectid):
     async with session.begin():
         try:
             jobid = await workflows_mg.register(session, projectid, nb_task)
-            if nb_task.schedule and nb_task.schedule.enabled:
-                await scheduler.schedule(projectid, jobid, nb_task)
+            # if nb_task.schedule and nb_task.enabled:
+            #     await scheduler.schedule(projectid, jobid, nb_task)
         except KeyError as e:
-            print(e)
             return json(dict(msg="workflow already exist"), status=200)
         except AttributeError as e:
-            print(e)
             return json(dict(msg="project not found"), status=404)
 
         return json(dict(jobid=jobid), status=201)

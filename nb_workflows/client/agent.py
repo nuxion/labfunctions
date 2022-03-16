@@ -16,8 +16,7 @@ class AgentClient(BaseClient):
     """
 
     def workflows_get(self, jobid) -> Union[WorkflowData, None]:
-        self.auth_verify_or_refresh()
-        r = self._http.get(f"{self._addr}/workflows/{self.projectid}/{jobid}")
+        r = self._http.get(f"/workflows/{self.projectid}/{jobid}")
 
         if r.status_code == 200:
             return WorkflowData(**r.json())
@@ -31,8 +30,7 @@ class AgentClient(BaseClient):
         """Gets private key to be shared to the docker container of a
         workflow task
         """
-        self.auth_verify_or_refresh()
-        r = self._http.get(f"{self._addr}/projects/{self.projectid}/_private_key")
+        r = self._http.get(f"/projects/{self.projectid}/_private_key")
 
         if r.status_code == 200:
             key = r.json()["private_key"]
@@ -40,10 +38,9 @@ class AgentClient(BaseClient):
         return None
 
     def history_register(self, exec_result: ExecutionResult) -> bool:
-        self.auth_verify_or_refresh()
 
         rsp = self._http.post(
-            f"{self._addr}/history",
+            f"/history",
             json=exec_result.dict(),
         )
 

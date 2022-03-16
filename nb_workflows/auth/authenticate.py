@@ -12,6 +12,7 @@ from nb_workflows.auth.users import (
     get_userid_async,
     verify_user_from_model,
 )
+from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
 
 
@@ -82,9 +83,9 @@ class NBAuthentication(Authentication):
         return refresh_token
 
 
-def initialize() -> NBAuthentication:
+def initialize(name=defaults.SANIC_APP_NAME) -> NBAuthentication:
     """To be used out of the webserver context"""
-    app = Sanic("nb_workflows")
+    app = Sanic(name)
     a = sanic_initialize(
         app,
         authentication_class=NBAuthentication,

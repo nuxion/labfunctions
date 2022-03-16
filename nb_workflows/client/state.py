@@ -1,11 +1,11 @@
 from collections import OrderedDict
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import yaml
 
 from nb_workflows.types import NBTask, ProjectData, SeqPipe
 from nb_workflows.types.client import Pipelines, WorkflowsFile
-from nb_workflows.utils import open_yaml, write_yaml
+from nb_workflows.utils import Singleton, open_yaml, write_yaml
 
 
 class WFDumper(yaml.Dumper):
@@ -13,22 +13,34 @@ class WFDumper(yaml.Dumper):
         return super(WFDumper, self).increase_indent(flow, False)
 
 
+# class WorkflowsState(metaclass=Singleton):
 class WorkflowsState:
+    """This manage workflows state, is NOT Thread safe"""
+
     def __init__(
         self,
         project: Optional[ProjectData] = None,
-        workflows: Optional[List[NBTask]] = None,
+        workflows: Optional[Dict[str, NBTask]] = None,
         seqpipes: Optional[List[SeqPipe]] = None,
         version="0.2.0",
     ):
         self._version = version
         self._project = project
         self._seq_pipes = seqpipes or []
-        self._workflows = workflows or []
+        self._workflows = workflows or {}
+
         self.snapshots: List[WorkflowsFile] = []
 
+    @staticmethod
+    def listworkflows2dict(workflows: List[NBTask]) -> Dict[str, NBTask]:
+        _workflows = {w.alias: w for w in workflows}
+        return _workflows
+
     def add_workflow(self, wf: NBTask):
-        self._workflows.append(wf)
+        self._workflows.update({wf.alias: wf})
+
+    def delete_workflow(self, alias):
+        del self._workflows[alias]
 
     def add_seq(self, sp: SeqPipe):
         self._seq_pipes.append(sp)
@@ -47,9 +59,17 @@ class WorkflowsState:
             pipelines=p,
         )
 
+    @property
+    def workflows(self) -> Dict[str, NBTask]:
+        return self._workflows
+
+    @property
+    def project(self) -> ProjectData:
+        return self._project
+
     def take_snapshot(self) -> WorkflowsFile:
         wf = self.file.copy(deep=True)
-        self.snapshots.append(wf)
+        # self.snapshots.append(wf)
         return wf
 
     @staticmethod

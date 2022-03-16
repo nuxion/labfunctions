@@ -2,11 +2,13 @@ import asyncio
 import os
 import tempfile
 
+import aioredis
 import pytest
 import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
+from nb_workflows.auth.authenticate import initialize
 from nb_workflows.auth.models import GroupModel, UserModel
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
@@ -14,6 +16,7 @@ from nb_workflows.db.sync import SQL
 from nb_workflows.models import HistoryModel, WorkflowModel
 
 from .factories import create_project_model, create_user_model
+from .resources import app_init
 
 # SQL_URI = os.getenv("SQLTEST")
 # ASQL_URI = os.getenv("ASQLTEST")
@@ -38,7 +41,7 @@ def connection():
 @pytest.fixture(scope="module", autouse=True)
 def setupdb(connection):
     s = Session(bind=connection)
-    um = create_user_model(username="admin_test")
+    um = create_user_model(username="admin_test", password="meolvide")
     pm = create_project_model(um, projectid="test", name="test")
 
     s.add(um)
@@ -116,3 +119,25 @@ def redis():
 def tempdir():
     with tempfile.TemporaryDirectory() as tmpdirname:
         yield tmpdirname
+
+
+@pytest.fixture
+async def sanic_app(async_conn):
+    # from nb_workflows.conf.server_settings import settings
+    # from nb_workflows.server import app
+    from nb_workflows.utils import init_blueprints
+
+    rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+
+    app = app_init(async_conn, web_redis=rweb)
+    init_blueprints(app, ["workflows", "history", "projects"])
+
+    yield app
+    await app.ctx.web_redis.close()
+    await app.asgi_client.aclose()
+
+
+@pytest.fixture(scope="module")
+def auth_helper():
+    auth = initialize("testing")
+    return auth
