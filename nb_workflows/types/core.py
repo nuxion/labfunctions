@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ScheduleData(BaseModel):
@@ -48,18 +48,24 @@ class NBTask(BaseModel):
     schedule: Optional[ScheduleData] = None
 
 
-class SeqPipe(BaseModel):
-
-    pipeid: str
-    projectid: str
-    alias: str
-    description: Optional[str] = None
+class SeqPipeOpts(BaseModel):
     workflows: List[str]
-    shared_volumes: List[str]
+    description: Optional[str] = None
+    shared_volumes: Optional[List[str]] = None
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
     schedule: Optional[ScheduleData] = None
+
+
+class SeqPipe(BaseModel):
+    alias: str
+    options: SeqPipeOpts
+    pipeid: Optional[str] = None
+    enabled: bool = True
+
+    class Config:
+        orm_mode = True
 
 
 class ExecutionNBTask(BaseModel):

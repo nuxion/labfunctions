@@ -8,6 +8,7 @@ from .core import (
     ProjectData,
     ProjectReq,
     ScheduleData,
+    SeqPipe,
     SimpleExecCtx,
     WorkflowData,
     WorkflowsList,

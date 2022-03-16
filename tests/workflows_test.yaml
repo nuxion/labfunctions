@@ -1,0 +1,52 @@
+project:
+  description: null
+  name: test
+  projectid: 1ad8pDO1
+  repository: null
+  username: null
+version: 0.1.0
+workflows:
+- alias: notebook.example
+  description: An example of how to configure a specific workflow
+  docker_version: latest
+  enabled: true
+  jobid: 0031185218a6eff65cfe3a90
+  machine: default
+  nb_name: test_workflow
+  notifications_fail: null
+  notifications_ok: null
+  params:
+    TIMEOUT: 5
+  schedule:
+    cron: null
+    interval: '10'
+    repeat: 1
+    start_in_min: 0
+  timeout: 10800
+- alias: get_images
+  description: Get urls and images from a site
+  docker_version: latest
+  enabled: true
+  jobid: 0031185218cc31cc4314d860
+  machine: default
+  nb_name: get_images
+  notifications_fail: null
+  notifications_ok: null
+  params:
+    LIMIT: 5
+    URL: https://www.test-site.com.ar
+  schedule: null
+  timeout: 10800
+- alias: proc images
+  description: Proc images
+  docker_version: latest
+  enabled: true
+  jobid: 0031186e26995f1032eb8e95
+  machine: default
+  nb_name: proc_image
+  notifications_fail: null
+  notifications_ok: null
+  params:
+    OUTPUT_DIR: data/
+  schedule: null
+  timeout: 10800
