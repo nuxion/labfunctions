@@ -63,11 +63,11 @@ class BaseClient:
         self._addr = url_service
         self._workflows: Optional[List[NBTask]] = workflows
         self._project = project
+        self._seqpipes = seqpipes
         self._version = version
         self._http_creator = http_init_func
         self._http: httpx.Client = self._http_client_creator()
         self.auth_verify_or_refresh()
-        self._seqpipes = seqpipes
 
     def _http_client_creator(self) -> httpx.Client:
         """When token is updated the client MUST BE updated too."""

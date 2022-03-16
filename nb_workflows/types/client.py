@@ -6,11 +6,11 @@ from .core import NBTask, ProjectData, SeqPipe
 
 
 class Pipelines(BaseModel):
-    sequences: Optional[List[SeqPipe]] = None
+    sequences: Optional[List[SeqPipe]] = []
 
 
 class WorkflowsFile(BaseModel):
     project: ProjectData
     version: str = "0.2"
-    workflows: Optional[List[NBTask]] = None
-    pipelines: Optional[Pipelines] = None
+    workflows: Optional[List[NBTask]] = []
+    pipelines: Optional[Pipelines] = Pipelines()

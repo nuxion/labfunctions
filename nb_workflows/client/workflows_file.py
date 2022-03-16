@@ -61,7 +61,8 @@ class WorkflowsState:
         return wf
 
     def write(self, fp="workflows.yaml"):
-        wf = self.take_snapshot()
+        """Order to be dumped to a yaml file"""
+        wf = self.file
         wf_dict = wf.dict()
         pipes = wf_dict.get("pipelines")
         _dict = OrderedDict()

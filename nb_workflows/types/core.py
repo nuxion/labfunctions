@@ -48,9 +48,8 @@ class NBTask(BaseModel):
     schedule: Optional[ScheduleData] = None
 
 
-class SeqPipeOpts(BaseModel):
+class SeqPipeSpec(BaseModel):
     workflows: List[str]
-    description: Optional[str] = None
     shared_volumes: Optional[List[str]] = None
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
@@ -60,12 +59,10 @@ class SeqPipeOpts(BaseModel):
 
 class SeqPipe(BaseModel):
     alias: str
-    options: SeqPipeOpts
+    spec: SeqPipeSpec
     pipeid: Optional[str] = None
+    description: Optional[str] = None
     enabled: bool = True
-
-    class Config:
-        orm_mode = True
 
 
 class ExecutionNBTask(BaseModel):

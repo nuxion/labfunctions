@@ -104,34 +104,34 @@ async def history_output_fail(request, projectid):
     return json(dict(msg="OK"), 201)
 
 
-@history_bp.get("/<projectid>/<execid>/_get_output")
-@openapi.parameter("projectid", str, "path")
-@openapi.parameter("execid", str, "path")
-@protected()
-async def history_get_output(request, projectid):
-    """
-    Upload a workflow project
-    """
-    # pylint: disable=unused-argument
-
-    fsrv = AsyncFileserver(settings.FILESERVER)
-    today = today_string(format_="day")
-
-    session = request.ctx.session
-    async with session.begin():
-        h = await history_mg.get_last(session, projectid, jobid, limit=lt)
-        if h:
-            return json(asdict(h), 200)
-
-        return json(dict(msg="not found"), 404)
-
-    root = pathlib.Path(projectid)
-    output_dir = root / defaults.NB_OUTPUTS / "ok" / today
-
-    file_body = request.files["file"][0].body
-    output_name = request.form["output_name"][0]
-
-    fp = str(output_dir / output_name)
-    await fsrv.put(fp, file_body)
-
-    return json(dict(msg="OK"), 201)
+# @history_bp.get("/<projectid>/<jobid>/_get_output")
+# @openapi.parameter("projectid", str, "path")
+# @openapi.parameter("jobid", str, "path")
+# @protected()
+# async def history_get_output(request, projectid, jobid):
+#     """
+#     Upload a workflow project
+#     """
+#     # pylint: disable=unused-argument
+#
+#     fsrv = AsyncFileserver(settings.FILESERVER)
+#     today = today_string(format_="day")
+#
+#     session = request.ctx.session
+#     async with session.begin():
+#         h = await history_mg.get_last(session, projectid, jobid, limit=lt)
+#         if h:
+#             return json(asdict(h), 200)
+#
+#         return json(dict(msg="not found"), 404)
+#
+#     root = pathlib.Path(projectid)
+#     output_dir = root / defaults.NB_OUTPUTS / "ok" / today
+#
+#     file_body = request.files["file"][0].body
+#     output_name = request.form["output_name"][0]
+#
+#     fp = str(output_dir / output_name)
+#     await fsrv.put(fp, file_body)
+#
+#     return json(dict(msg="OK"), 201)

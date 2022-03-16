@@ -16,7 +16,7 @@ from nb_workflows.types import (
     ScheduleData,
     SeqPipe,
 )
-from nb_workflows.types.core import SeqPipeOpts
+from nb_workflows.types.core import SeqPipeSpec
 
 
 def history_factory(session):
@@ -127,12 +127,11 @@ class ExecutionNBTaskFactory(factory.Factory):
     created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
 
 
-class SeqPipeOptsFactory(factory.Factory):
+class SeqPipeSpecFactory(factory.Factory):
     class Meta:
-        model = SeqPipeOpts
+        model = SeqPipeSpec
 
     workflows = factory.LazyAttribute(lambda n: [generate_random(5) for x in range(5)])
-    description = "desc"
     shared_volumes = ["data/", "models/"]
 
 
@@ -140,7 +139,7 @@ class SeqPipeFactory(factory.Factory):
     class Meta:
         model = SeqPipe
 
-    options = factory.LazyAttribute(lambda n: SeqPipeOptsFactory())
+    spec = factory.LazyAttribute(lambda n: SeqPipeSpecFactory())
     alias = factory.Sequence(lambda n: "alias-%d" % n)
 
 

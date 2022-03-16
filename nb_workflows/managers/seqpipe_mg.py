@@ -13,16 +13,16 @@ from nb_workflows.types import SeqPipe
 
 
 def _create_or_update(projectid, pipeid: str, pipe: SeqPipe):
-    options_dict = None
-    if pipe.options:
-        options_dict = pipe.options.dict()
+    spec_dict = None
+    if pipe.spec:
+        spec_dict = pipe.spec.dict()
 
     enabled = pipe.enabled or True
 
     stmt = insert(SeqPipeModel.__table__).values(
         pipeid=pipeid,
         alias=pipe.alias,
-        options=options_dict,
+        spec=spec_dict,
         project_id=projectid,
         enabled=enabled,
     )
@@ -30,7 +30,7 @@ def _create_or_update(projectid, pipeid: str, pipe: SeqPipe):
         # constraint="crawlers_page_bucket_id_fkey",
         index_elements=["pipeid"],
         set_=dict(
-            options=options_dict,
+            spec=spec_dict,
             alias=pipe.alias,
             enabled=enabled,
             updated_at=datetime.utcnow(),
