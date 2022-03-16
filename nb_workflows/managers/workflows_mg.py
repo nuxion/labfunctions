@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from datetime import datetime
 from typing import Any, Dict, List, Union
 
@@ -25,7 +24,8 @@ WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
 
 
 def _create_or_update_workflow(jobid: str, projectid: str, task: NBTask):
-    task_dict = asdict(task)
+    task_dict = task.dict()
+    task_dict["schedule"] = task.schedule.dict()
 
     stmt = insert(WorkflowModel.__table__).values(
         jobid=jobid,
@@ -133,7 +133,7 @@ async def get_by_alias(session, alias) -> Union[Dict[str, Any], None]:
 async def register(session, projectid: str, task: NBTask, update=False) -> str:
     """Register workflows"""
     jobid = generate_jobid()
-    data_dict = asdict(task)
+    data_dict = task.dict()
 
     pm = await projects_mg.get_by_projectid_model(session, projectid)
     if not pm:
@@ -181,8 +181,30 @@ def prepare_notebook_job(
     if wm and wm.enabled:
         pm = projects_mg.get_by_projectid_model_sync(session, projectid)
         task = NBTask(**wm.job_detail)
-        if task.schedule:
-            task.schedule = ScheduleData(**wm.job_detail["schedule"])
+        # if task.schedule:
+        #    task.schedule = ScheduleData(**wm.job_detail["schedule"])
+
+        pd = ProjectData.from_orm(pm)
+        pd.username = pm.user.username
+
+        exec_notebook_ctx = ctx.create_notebook_ctx(pd, task, execid)
+        return exec_notebook_ctx
+    elif not wm.enabled:
+        raise errors.WorkflowDisabled(projectid, jobid)
+
+    raise errors.WorkflowNotFound(projectid, jobid)
+
+
+async def prepare_notebook_job_async(
+    session, projectid: str, jobid: str, execid: str
+) -> ExecutionNBTask:
+    """It prepares the task execution of the notebook"""
+    wm = await get_by_jobid_prj(session, projectid, jobid)
+    if wm and wm.enabled:
+        pm = await projects_mg.get_by_projectid_model(session, projectid)
+        task = NBTask(**wm.job_detail)
+        # if task.schedule:
+        #    task.schedule = ScheduleData(**wm.job_detail["schedule"])
 
         pd = ProjectData.from_orm(pm)
         pd.username = pm.user.username

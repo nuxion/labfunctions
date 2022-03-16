@@ -20,10 +20,17 @@ NOW = None
 JOBID = "test_job"
 EXECUTIONID = "test_exec"
 
+
+# +
 import time
 
 # + tags=[]
 from datetime import datetime
+
+# from nb_workflows.client.shortcuts import create_ctx
+
+# create_ctx()
+
 
 print("=" * 10)
 print(f"JOBID: {JOBID} starting")

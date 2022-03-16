@@ -4,7 +4,6 @@ import time
 from pathlib import Path, PosixPath
 
 import docker
-
 from nb_workflows import client, secrets
 from nb_workflows.build import generate_docker_name, make_build
 from nb_workflows.conf import defaults
@@ -25,6 +24,7 @@ def builder_executor(projectid, project_zip_route):
     """It's in charge of building docker images from projects"""
     from nb_workflows.qworker import settings
 
+    logger = logging.getLogger(__name__)
     root = Path(settings.BASE_PATH)
     project_dir = root / settings.WORKER_DATA_FOLDER / "build" / projectid
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -49,10 +49,11 @@ def builder_executor(projectid, project_zip_route):
 
     pd = nb_client.projects_get()
     docker_tag = generate_docker_name(pd, docker_version=_version)
+    logger.error(docker_tag)
     make_build(project_dir / zip_name, tag=docker_tag, temp_dir=str(temp_dir))
 
 
-def docker_exec(exec_ctx: ExecutionNBTask):
+def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
     """
     It will get a jobid from the control plane.
     This function runs in RQ Worker from a data plane machine.
@@ -108,3 +109,15 @@ def docker_exec(exec_ctx: ExecutionNBTask):
         elapsed = time.time() - _started
         result = context.make_error_result(exec_ctx, elapsed)
         ag_client.history_register(result)
+
+
+def seqpipe_exec():
+    pass
+
+
+# def docker_seq_pipe(jobsid):
+#     from nb_workflows.qworker import settings
+#     _started = time.time()
+#     docker_client = docker.from_env()
+#
+#     priv_key = ag_client.projects_private_key()

@@ -74,8 +74,6 @@ async def main(db: AsyncSQL):
         rows[0].users.append(obj)
         # await s.commit()
 
-    breakpoint()
-
 
 if __name__ == "__main__":
     import asyncio

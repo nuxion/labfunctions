@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from collections import namedtuple
-from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 
@@ -16,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from nb_workflows import errors
+from nb_workflows.conf import defaults as df
 
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf.server_settings import settings
@@ -31,16 +31,13 @@ from nb_workflows.utils import run_async
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
-QueuesNS = namedtuple("QueuesNS", ["control", "machine", "build"])
-qs_ns = QueuesNS(control="ctrl", machine="mch", build="bui")
-
 
 def control_q(name=settings.RQ_CONTROL_QUEUE) -> str:
-    return f"{qs_ns.control}.{name}"
+    return f"{df.Q_NS.control}.{name}"
 
 
 def machine_q(name) -> str:
-    return f"{qs_ns.machine}.{name}"
+    return f"{df.Q_NS.machine}.{name}"
 
 
 def scheduler_dispatcher(projectid: str, jobid: str, execid: str) -> Union[Job, None]:
@@ -124,7 +121,7 @@ class SchedulerExecutor:
         self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
         self.is_async = is_async
 
-    def dispatcher(self, projectid, jobid) -> Job:
+    def dispatcher(self, projectid, jobid, execid=None) -> Job:
         """
         Entrypoint of a task execution. Beacause it is a dispatcher it only needs
         the references of job to execute. It will dispatch a job to
@@ -141,11 +138,10 @@ class SchedulerExecutor:
 
         Every time a task is enqueue again the step MUST be moved.
         """
-        execid = context.generate_execid(size=settings.EXECID_LEN)
-        next_step = context.move_step_execid(context.steps.dispatcher, execid)
+        execid = execid or context.ExecID().firm("dispatcher")
 
         j = self.Q.enqueue(
-            scheduler_dispatcher, projectid, jobid, next_step, job_id=next_step
+            scheduler_dispatcher, projectid, jobid, execid, job_id=execid
         )
         return j
 

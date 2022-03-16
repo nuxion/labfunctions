@@ -7,6 +7,7 @@ from nb_workflows import errors, secrets
 from nb_workflows.types import (
     ExecutionResult,
     HistoryRequest,
+    HistoryResult,
     NBTask,
     ProjectData,
     ProjectReq,
@@ -26,7 +27,7 @@ class NBClient(BaseClient):
         self.auth_verify_or_refresh()
         r = self._http.post(
             f"{self._addr}/workflows/{self.projectid}",
-            json=asdict(t),
+            json=t.dict(),
         )
 
         return WFCreateRsp(
@@ -39,7 +40,7 @@ class NBClient(BaseClient):
         self.auth_verify_or_refresh()
         r = self._http.put(
             f"{self._addr}/workflows/{self.projectid}",
-            json=asdict(t),
+            json=t.dict(),
         )
 
         return WFCreateRsp(
@@ -153,7 +154,6 @@ class NBClient(BaseClient):
         """Gets private key to be shared to the docker container of a
         workflow task
         """
-        breakpoint()
         self.auth_verify_or_refresh()
         r = self._http.get(f"{self._addr}/projects/{self.projectid}/_private_key")
 
@@ -190,6 +190,17 @@ class NBClient(BaseClient):
         if rsp.status_code == 201:
             return True
         return False
+
+    def history_get_last(self, jobid, last=1) -> List[HistoryResult]:
+        self.auth_verify_or_refresh()
+        rsp = self._http.get(f"{self._addr}/history/{self.projectid}/{jobid}?lt={last}")
+        rows = []
+        for r in rsp.json()["rows"]:
+            h = HistoryResult(**r)
+            h.result = ExecutionResult(**r["result"])
+            rows.append(h)
+
+        return rows
 
     def history_nb_output(self, exec_result: ExecutionResult) -> bool:
         """Upload the notebook from the execution result

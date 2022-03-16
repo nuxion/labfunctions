@@ -5,8 +5,6 @@ import click
 from nb_workflows import client
 from nb_workflows.conf import load_client
 
-settings = load_client()
-
 
 @click.group()
 def executorscli():
@@ -26,7 +24,7 @@ def executorscli():
 @click.option(
     "--url-service",
     "-u",
-    default=settings.WORKFLOW_SERVICE,
+    default=os.getenv("NB_WORKFLOWS_SERVICE"),
     help="URL of the NB Workflow Service",
 )
 @click.option("--jobid", "-J", default=None, help="Jobid to execute")
@@ -37,6 +35,7 @@ def exec(from_file, url_service, dev, jobid):
     from nb_workflows.executors.development import local_dev_exec
     from nb_workflows.executors.local import local_exec_env
 
+    settings = load_client()
     if not dev:
         # TODO: Should be inject or validate url_service param
         # when running from the data plane machine?

@@ -6,7 +6,7 @@ This file is used only as kind of backlog or/and draft for ideas.
 
 **MUST:**
 
-- [ ] Executors: SeqPipe implmentation
+- [-] Executors: SeqPipe implmentation
 - [ ] Executors: Docker volumes specification
 - [x] Executios: Namespacing Execution ID for tracking loads. 
 - [x] Executors: Execution ID injected from Web 
@@ -24,15 +24,17 @@ This file is used only as kind of backlog or/and draft for ideas.
 
 - [ ] Log execution streaming
 - [ ] Jupyter on demand instance
-- [ ] Custom Errors
+- [-] Custom Errors
 - [ ] Example project using nb-workflows
 - [ ] Timeouts default for server, tasks and clients
 - [ ] Split NBClient into UserClient and AgentClient
 - [ ] CI/CD: constraint merges to main branch
 - [ ] Optional [Any] Dockerfile RUN command definition from settings.
 - [ ] Tracks dockerfiles versions.
-- [ ] Types: NBTask and ScheduleData as pydantic models.
+- [x] Types: NBTask as pydantic model.
+- [x] Types: ScheduleData as pydantic model.
 - [ ] Projects: File spec change where each Workflow Name will be a dict (like serivces in docker-compose.yml)
+- [ ] Clients refactoring: One client for command line (with filesystem side effects), Another one as agent. 
  
 
 **Details**
@@ -56,5 +58,6 @@ let the user define the folrders shared between workflows
 - [ ] Allows Control plane to spawn machines
 - [ ] If a job dies by timeout or by a runtime error, the docker spawned will still be running, review this case. 
 - [ ] Default project for each user ? this will allow uploading and executing notebooks from any place without worryng about dependencies. 
+- [ ] Separation between client and server, settings flag ? base settings shared? 
  
 

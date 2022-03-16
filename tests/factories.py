@@ -5,9 +5,18 @@ from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from nb_workflows import utils
+from nb_workflows.auth.models import GroupModel, UserModel
+from nb_workflows.auth.types import GroupData, UserData
 from nb_workflows.hashes import generate_random
-from nb_workflows.models import HistoryModel, WorkflowModel
-from nb_workflows.types import ExecutionNBTask, NBTask, ProjectData, ScheduleData
+from nb_workflows.models import HistoryModel, ProjectModel, WorkflowModel
+from nb_workflows.types import (
+    ExecutionNBTask,
+    NBTask,
+    ProjectData,
+    ScheduleData,
+    SeqPipe,
+)
+from nb_workflows.types.core import SeqPipeSpec
 
 
 def history_factory(session):
@@ -45,6 +54,23 @@ def workflow_factory(session):
         enabled = True
 
     return WorkflowFactory
+
+
+# async def project_factory_async(session):
+#     class ProjectFactory(AsyncFactory):
+#         class Meta:
+#             msqlalchemy_session_persistence = "commit"
+#             sqlalchemy_session = session
+#             model = ProjectModel
+#
+#         id = factory.Sequence(lambda n: n)
+#         projectid = factory.LazyAttribute(lambda n: generate_random(10))
+#         name = factory.Sequence(lambda n: "pd-name%d" % n)
+#         username = factory.Sequence(lambda n: "user%d" % n)
+#         description = "test"
+#
+#
+#     return ProjectFactory
 
 
 class ProjectDataFactory(factory.Factory):
@@ -99,3 +125,64 @@ class ExecutionNBTaskFactory(factory.Factory):
     today = factory.LazyAttribute(lambda n: utils.today_string(format_="day"))
     timeout = 5
     created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
+
+
+class SeqPipeSpecFactory(factory.Factory):
+    class Meta:
+        model = SeqPipeSpec
+
+    workflows = factory.LazyAttribute(lambda n: [generate_random(5) for x in range(5)])
+    shared_volumes = ["data/", "models/"]
+
+
+class SeqPipeFactory(factory.Factory):
+    class Meta:
+        model = SeqPipe
+
+    spec = factory.LazyAttribute(lambda n: SeqPipeSpecFactory())
+    alias = factory.Sequence(lambda n: "alias-%d" % n)
+
+
+class GroupFactory(factory.Factory):
+    class Meta:
+        model = GroupData
+
+    name = factory.Sequence(lambda n: "g-name%d" % n)
+
+
+class UserFactory(factory.Factory):
+    class Meta:
+        model = UserData
+
+    user_id = factory.Sequence(lambda n: n)
+    username = factory.Sequence(lambda n: "u-name%d" % n)
+    is_superuser = False
+    is_active = True
+    groups = None
+    projects = None
+
+
+def create_user_model(*args, **kwargs) -> UserModel:
+    uf = UserFactory(*args, **kwargs)
+    user = UserModel(
+        username=uf.username,
+        password=b"asdqwe",
+        is_superuser=uf.is_superuser,
+        is_active=uf.is_active,
+        # groups=uf.groups,
+        # projects=uf.projects
+    )
+    return user
+
+
+def create_project_model(user: UserModel, *args, **kwargs) -> ProjectModel:
+    pd = ProjectDataFactory(*args, **kwargs)
+    pm = ProjectModel(
+        projectid=pd.projectid,
+        name=pd.name,
+        private_key=b"key",
+        description=pd.description,
+        repository=pd.repository,
+        user=user,
+    )
+    return pm

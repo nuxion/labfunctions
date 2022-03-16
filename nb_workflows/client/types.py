@@ -15,13 +15,6 @@ from nb_workflows.types import (
 )
 
 
-class WorkflowsFile(BaseModel):
-    project: ProjectData
-    version: str = "0.1"
-    # workflows: Optional[Dict[str, NBTask]] = None
-    workflows: Optional[List[NBTask]] = None
-
-
 class Credentials(BaseModel):
     access_token: str
     refresh_token: Optional[str] = None

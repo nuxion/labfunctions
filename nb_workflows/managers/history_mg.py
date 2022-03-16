@@ -2,6 +2,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from nb_workflows.models import HistoryModel
 from nb_workflows.types import ExecutionResult, HistoryResult, NBTask
@@ -12,10 +13,19 @@ class HistoryLastResponse:
     rows: List[HistoryResult]
 
 
-async def get_last(session, jobid: str, limit=1) -> Union[HistoryLastResponse, None]:
+def select_history():
+
+    stmt = select(HistoryModel).options(selectinload(HistoryModel.project))
+    return stmt
+
+
+async def get_last(
+    session, projectid: str, jobid: str, limit=1
+) -> Union[HistoryLastResponse, None]:
     stmt = (
         select(HistoryModel)
         .where(HistoryModel.jobid == jobid)
+        .where(HistoryModel.project_id == projectid)
         .order_by(HistoryModel.created_at.desc())
         .limit(limit)
     )
@@ -36,6 +46,15 @@ async def get_last(session, jobid: str, limit=1) -> Union[HistoryLastResponse, N
             )
         )
     return HistoryLastResponse(rows=rsp)
+
+
+async def get_exec_data(session, projectid: str, execid: str):
+    """WORKING"""
+    stmt = (
+        select_history()
+        .where(HistoryModel.project_id == projectid)
+        .where(HistoryModel.execid == execid)
+    )
 
 
 async def create(session, execution_result: ExecutionResult) -> HistoryModel:

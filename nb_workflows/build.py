@@ -4,7 +4,6 @@ from io import BytesIO
 from zipfile import ZipFile
 
 import docker
-
 from nb_workflows.conf import defaults
 from nb_workflows.types import ProjectData
 from nb_workflows.types.docker import DockerBuildLog, DockerBuildLowLog, DockerPushLog
@@ -17,7 +16,9 @@ def _open_dockerfile(dockerfile):
 
 
 def generate_docker_name(pd: ProjectData, docker_version: str):
-    return f"{pd.username}/{pd.name}:{docker_version}"
+    # if not pd.username:
+    # return f"{pd.name}/{pd.name}:{docker_version}"
+    return f"{pd.username.lower()}/{pd.name.lower()}:{docker_version}"
 
 
 def docker_build(path, dockerfile, tag, rm=False, push=False) -> DockerBuildLog:

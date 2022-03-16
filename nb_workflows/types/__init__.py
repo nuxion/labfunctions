@@ -1,3 +1,4 @@
+from .client import WorkflowsFile
 from .core import (
     ExecutionNBTask,
     ExecutionResult,
@@ -7,6 +8,7 @@ from .core import (
     ProjectData,
     ProjectReq,
     ScheduleData,
+    SeqPipe,
     SimpleExecCtx,
     WorkflowData,
     WorkflowsList,

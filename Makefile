@@ -16,13 +16,14 @@ endef
 export USAGE
 .EXPORT_ALL_VARIABLES:
 VERSION := $(shell git describe --tags)
+VERSION_POETRY := $(shell poetry version | awk '{print $2}')
+FULLPY_PKG:= $(shell python scripts/poetry_version.py)
 BUILD := $(shell git rev-parse --short HEAD)
 PROJECTNAME := $(shell basename "$(PWD)")
 PACKAGE_DIR = $(shell basename "$(PWD)")
 DOCKERID = $(shell echo "nuxion")
 REGISTRY := registry.nyc1.algorinfo
-tarfile := nb_workflows-${VERSION}.tar.gz
-filename := nb_workflows-${VERSION}
+# RANDOM := $(shell echo $RANDOM | md5sum | head -c 20; echo;)
 
 help:
 	@echo "$$USAGE"
@@ -41,6 +42,7 @@ clean:
 	rm -rf build/* > /dev/null 2>&1
 	rm -rf dist/* > /dev/null 2>&1
 	rm -rf .ipynb_checkpoints/* > /dev/null 2>&1
+	rm -rf docker/client/dist
 
 lock-dev:
 	poetry export -f requirements.txt --output requirements/requirements_dev.txt --extras server --without-hashes --dev
@@ -56,9 +58,9 @@ lock: lock-server lock-client lock-dev
 prepare: lock
 	poetry build
 	echo ${PWD}
-	tar xvfz dist/${tarfile} -C dist/
-	cp dist/${filename}/setup.py .
-	rm -Rf dist/
+	tar xvfz dist/${FULLPY_PKG}.tar.gz -C dist/
+	cp dist/${FULLPY_PKG}/setup.py .
+	# rm -Rf dist/
 
 black:
 	black --config ./.black.toml nb_workflows tests
@@ -76,6 +78,11 @@ test:
 test-html:
 	PYTHONPATH=$(PWD) pytest --cov-report=html --cov=nb_workflows tests/
 
+
+.PHONY: e2e
+e2e:
+	pytest -s -k test_ e2e/
+
 .PHONY: install
 install:
 	poetry install --dev
@@ -86,7 +93,7 @@ run:
 
 .PHONY: web
 web:
-	poetry run nb web --apps workflows,history,projects --workers 1 -L
+	poetry run nb web --apps workflows,history,projects -A --workers 1 -L
 
 .PHONY: rqworker
 rqworker:
@@ -103,6 +110,34 @@ jupyter:
 .PHONY: docker
 docker:
 	docker build -t ${DOCKERID}/${PROJECTNAME} .
+
+.PHONY: docker-client
+docker-client:
+	mkdir -p docker/client/dist
+	cp dist/*.whl docker/client/dist
+	cp requirements/requirements_client.txt  docker/client/requirements.txt
+	docker build -t ${DOCKERID}/${PROJECTNAME}-client -f docker/client/Dockerfile docker/client
+	docker tag ${DOCKERID}/${PROJECTNAME}-client:latest ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
+
+.PHONY: docker-env
+docker-env:
+	# $(eval(RANDOM := $(shell echo $RANDOM | md5sum | head -c 20; echo;))
+	docker run -it --rm -v ${PWD}:/app  --env-file=docker/.env.docker --network=host ${DOCKERID}/${PROJECTNAME} bash
+
+.PHONY: docker-env-client
+docker-env-client:
+	$(eval $@_TMP := $(shell mktemp -d))	
+	# mkdir /tmp/${RANDOM}
+	@echo $($@_TMP)
+	sudo chown 1089:1090 $($@_TMP)
+	docker run -it --rm -v $($@_TMP):/app --env-file=docker/.env.client.docker --network=host ${DOCKERID}/${PROJECTNAME}-client bash
+
+client-env:
+	$(eval $@_TMP := $(shell mktemp -d))	
+	# mkdir /tmp/${RANDOM}
+	@echo $($@_TMP)
+	cd $($@_TMP)
+
 
 .PHONY: docker-local
 docker-local:
@@ -122,10 +157,6 @@ publish:
 publish-test:
 	poetry publish --build -r test
 
-.PHONY: docker-env
-docker-env:
-	# docker run --rm -it --network host --env-file=.env.docker -v ${PWD}:/app ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:${VERSION} bash
-	docker run --rm -it --network host --env-file=.env.docker  -v /tmp/plasma:/tmp/plasma -v ${PWD}:/app ${DOCKERID}/${PROJECTNAME} bash
 .PHONY: redis-cli
 redis-cli:
 	docker-compose exec redis redis-cli

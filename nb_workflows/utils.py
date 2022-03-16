@@ -6,6 +6,7 @@ import re
 import resource
 import socket
 import subprocess
+import sys
 import unicodedata
 from datetime import datetime
 from functools import wraps
@@ -261,9 +262,9 @@ def open_yaml(filepath: str):
     return dict_
 
 
-def write_yaml(filepath: str, data):
+def write_yaml(filepath: str, data, *args, **kwargs):
     with open(filepath, "w") as f:
-        dict_ = yaml.dump(data)
+        dict_ = yaml.dump(data, *args, **kwargs)
         f.write(dict_)
 
 
@@ -312,3 +313,13 @@ def mkdir_p(fp):
     similar to mkdir -p in unix systems.
     """
     Path(fp).mkdir(parents=True, exist_ok=True)
+
+
+def parent_folder():
+    return str(Path("../").resolve())
+
+
+def under_virtualenv() -> bool:
+    if sys.prefix == sys.base_prefix:
+        return False
+    return True

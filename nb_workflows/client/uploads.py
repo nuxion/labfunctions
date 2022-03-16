@@ -26,7 +26,6 @@ def generate_dockerfile(root, docker_options: Dict[str, Any]):
 def write_secrets(root, private_key, nbvars_dict) -> str:
     _vars = secrets.encrypt_nbvars(private_key, nbvars_dict)
     newline = "\n"
-    breakpoint()
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
     outfile = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
     with open(outfile, "w") as f:
@@ -159,7 +158,6 @@ def manage_upload(
     change or at least we will provide to the user with the right mechanisms
     and documentation so that they can handle it manually if they want.
     """
-    breakpoint()
 
     secrets.nbvars["AGENT_TOKEN"] = creds.access_token
     secrets.nbvars["AGENT_REFRESH_TOKEN"] = creds.refresh_token
