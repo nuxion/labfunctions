@@ -41,15 +41,15 @@ def history(from_file, url_service, last, jobid):
     rsp = c.history_get_last(jobid, last)
     print("jobid | execid | status")
     for r in rsp:
-        status = "[OK]" if r.status else "[FAIL]"
+        status = "[OK]" if r.status == 0 else "[FAIL]"
         pid = r.result.projectid
-        if r.status:
+        if r.status == 0:
             uri = f"{r.result.output_dir}/{r.result.output_name}"
             mkdir_p(r.result.output_dir)
         else:
             uri = f"{r.result.error_dir}/{r.result.output_name}"
             mkdir_p(r.result.error_dir)
-        nb = httpx.get(f"http://localhost:4444/{pid}/{uri}")
+        nb = httpx.get(f"http://192.168.88.150:4444/{pid}/{uri}")
         with open(uri, "wb") as f:
             f.write(nb.content)
         print(f"{r.jobid} | {r.execid} | {status} | {uri}")

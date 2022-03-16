@@ -7,6 +7,7 @@ import click
 from nb_workflows import client, secrets
 from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import defaults, load_client
+from nb_workflows.utils import execute_cmd
 
 # from nb_workflows.uploads import manage_upload
 
@@ -98,4 +99,12 @@ def project(from_file, only_zip, env_file, current, url_service, all, action):
         c.projects_create()
 
 
+@projectcli.command()
+def jupyter():
+    sys.path.append(os.getcwd())
+    os.environ["NS_BASE_PATH"] = os.getcwd()
+    execute_cmd("jupyter lab")
+
+
 projectcli.add_command(project)
+projectcli.add_command(jupyter)

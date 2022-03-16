@@ -199,19 +199,3 @@ async def workflow_generate_ctx(request, projectid, jobid):
         )
     # job = await run_async(scheduler.dispatcher, projectid, jobid)
     return json(nb_ctx.dict(), 200)
-
-
-# @workflows_bp.post("/<projectid>/schedule/<jobid>/_run")
-# @openapi.parameter("projectid", str, "path")
-# @openapi.parameter("jobid", str, "path")
-# @openapi.response(202, dict(execid=str), "Execution id of the task")
-# @protected()
-# def schedule_run(request, projectid, jobid):
-#     """
-#     Manually execute a registered schedule task
-#     """
-#     Q = _get_q_executor()
-#
-#     job = Q.enqueue(scheduler_dispatcher, jobid)
-#
-#     return json(dict(execid=job.id), status=202)

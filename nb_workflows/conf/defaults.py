@@ -34,4 +34,5 @@ BASE_PATH_ENV = "NB_BASE_PATH"
 PROJECTID_LEN = 8  # 3 years 1% collision at 100 projects creations per hour
 JOBID_LEN = 11  # ~139 thousand years 1% collision at 1000 jobs creation per hour
 EXECID_LEN = 14  # ~20 years %1 collision at 1000 execs per second
+PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"

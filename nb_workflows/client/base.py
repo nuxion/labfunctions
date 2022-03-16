@@ -3,7 +3,7 @@ from typing import Callable, List, Optional
 
 import httpx
 
-from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
+from nb_workflows.types import NBTask, ProjectData, ScheduleData, SeqPipe, WorkflowData
 from nb_workflows.types.client import WorkflowsFile
 from nb_workflows.utils import open_yaml, write_yaml
 
@@ -51,6 +51,7 @@ class BaseClient:
         store_creds=False,
         project: Optional[ProjectData] = None,
         workflows: Optional[List[NBTask]] = None,
+        seqpipes: Optional[List[SeqPipe]] = None,
         version="0.1.0",
         http_init_func=get_http_client,
     ):
@@ -66,6 +67,7 @@ class BaseClient:
         self._http_creator = http_init_func
         self._http: httpx.Client = self._http_client_creator()
         self.auth_verify_or_refresh()
+        self._seqpipes = seqpipes
 
     def _http_client_creator(self) -> httpx.Client:
         """When token is updated the client MUST BE updated too."""
@@ -80,6 +82,7 @@ class BaseClient:
             project=self._project,
             # workflows={w.alias: w for w in self._workflows}
             workflows=self._workflows,
+            pipes=self._seqpipes,
         )
 
     def sync_file(self):
@@ -134,13 +137,13 @@ class BaseClient:
         data_dict = open_yaml(filepath)
 
         wf = WorkflowsFile(**data_dict)
-        if wf.project:
-            wf.project = ProjectData(**data_dict["project"])
-        if wf.workflows:
-            # _wfs = data_dict["workflows"]
-            # wf.workflows = {_wfs[k]["alias"]: NBTask(**_wfs[k])
-            #                for k in _wfs.keys()}
-            wf.workflows = [NBTask(**w) for w in data_dict["workflows"]]
+        # if wf.project:
+        #     wf.project = ProjectData(**data_dict["project"])
+        # if wf.workflows:
+        # _wfs = data_dict["workflows"]
+        # wf.workflows = {_wfs[k]["alias"]: NBTask(**_wfs[k])
+        #                for k in _wfs.keys()}
+        # wf.workflows = [NBTask(**w) for w in data_dict["workflows"]]
         return wf
 
     def workflows_list(self) -> List[WorkflowData]:

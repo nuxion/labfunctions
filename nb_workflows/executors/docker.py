@@ -111,6 +111,10 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
         ag_client.history_register(result)
 
 
+def seqpipe_exec():
+    pass
+
+
 # def docker_seq_pipe(jobsid):
 #     from nb_workflows.qworker import settings
 #     _started = time.time()
