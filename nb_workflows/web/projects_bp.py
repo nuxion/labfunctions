@@ -68,22 +68,11 @@ async def project_create(request, user: UserData):
     # pylint: disable=unused-argument
 
     dict_ = request.json
-    pd = ProjectReq(**dict_)
+    pr = ProjectReq(**dict_)
     session = request.ctx.session
-    r = await projects_mg.create(session, user.user_id, pd)
+    r = await projects_mg.create(session, user.user_id, pr)
     if r:
-        d_ = r.to_dict(
-            rules=(
-                "-id",
-                "-private_key",
-                "-created_at",
-                "-updated_at",
-                "-user",
-                "-user_id",
-                "-users",
-            )
-        )
-        return json(d_, 201)
+        return json(r.dict(), 201)
     return json(dict(msg="already exist"), 200)
 
 
@@ -99,7 +88,8 @@ async def project_create_or_update(request, user: UserData):
     dict_ = request.json
     pd = ProjectReq(**dict_)
     session = request.ctx.session
-    r = await projects_mg.create_or_update(session, user.user_id, pd)
+    async with session() as new_session:
+        r = await projects_mg.create_or_update(new_session, user.user_id, pd)
     return json(dict(msg="created"), 202)
 
 

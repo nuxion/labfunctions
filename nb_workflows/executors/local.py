@@ -32,25 +32,24 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     TODO: base executor class?
     """
     # Init
-    nb_client = client.nb_from_settings_agent()
-    logger = logging.getLogger(__name__)
+    c = client.agent_from_settings()
 
     # CTX creation
     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
 
     etask = ExecutionNBTask(**json.loads(ctx_str))
-    logger.info(f"jobdid:{etask.wfid} execid:{etask.execid} Starting")
+    c.logger.info(f"jobdid:{etask.wfid} execid:{etask.execid} Starting")
 
     # Execution
     result = notebook_executor(etask)
 
     # Registration
-    status = _simple_retry(nb_client.history_nb_output, (result,))
-    status_register = _simple_retry(nb_client.history_register, (result,))
+    status = _simple_retry(c.history_nb_output, (result,))
+    status_register = _simple_retry(c.history_register, (result,))
     if not status or not status_register:
-        logger.error(f"jobdid:{etask.wfid} execid:{etask.execid} Fail registration")
+        c.logger.error(f"jobdid:{etask.wfid} execid:{etask.execid} Fail registration")
 
-    logger.info(
+    c.logger.info(
         f"jobdid:{etask.wfid} execid:{etask.execid} Finish in {result.elapsed_secs} secs"
     )
     return result

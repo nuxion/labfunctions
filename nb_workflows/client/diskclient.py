@@ -22,6 +22,7 @@ from nb_workflows.types import (
 from nb_workflows.utils import parse_var_line
 
 from .base import BaseClient
+from .history_client import HistoryClient
 from .projects_client import ProjectsClient
 from .types import Credentials, ProjectZipFile, WFCreateRsp
 from .uploads import generate_dockerfile
@@ -50,7 +51,7 @@ def open_notebook(fp) -> Dict[str, Any]:
     return data
 
 
-class DiskClient(WorkflowsClient, ProjectsClient):
+class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
     """Is to be used as cli client because it has side effects on local disk"""
 
     def projects_private_key(self) -> str:
@@ -68,6 +69,30 @@ class DiskClient(WorkflowsClient, ProjectsClient):
         store_private_key(key, self.projectid)
         return key
 
+    def projects_create(self) -> Union[ProjectData, None]:
+        _key = secrets.generate_private_key()
+        pq = ProjectReq(
+            name=self.state.project.name,
+            private_key=_key,
+            projectid=self.state.project.projectid,
+            description=self.state.project.description,
+            repository=self.state.project.repository,
+        )
+        r = self._http.post(
+            f"/projects",
+            json=asdict(pq),
+        )
+        if r.status_code == 200:
+            print("Project already exist")
+        elif r.status_code == 201:
+            print("Project created")
+            pd = ProjectData(**r.json())
+            store_private_key(_key, pd.projectid)
+            return pd
+        else:
+            raise TypeError("Something went wrong creating the project %s", r.text)
+        return None
+
     def projects_generate_dockerfile(self, docker_opts):
         root = Path.cwd()
         generate_dockerfile(root, docker_opts)
@@ -80,53 +105,6 @@ class DiskClient(WorkflowsClient, ProjectsClient):
         if not key:
             return self.projects_private_key()
         return key
-
-    def history_register(self, exec_result: ExecutionResult) -> bool:
-
-        rsp = self._http.post(
-            f"/history",
-            json=exec_result.dict(),
-        )
-
-        if rsp.status_code == 201:
-            return True
-        return False
-
-    def history_get_last(self, wfid, last=1) -> List[HistoryResult]:
-        rsp = self._http.get(f"/history/{self.projectid}/{wfid}?lt={last}")
-        rows = []
-        for r in rsp.json()["rows"]:
-            h = HistoryResult(**r)
-            h.result = ExecutionResult(**r["result"])
-            rows.append(h)
-
-        return rows
-
-    def history_nb_output(self, exec_result: ExecutionResult) -> bool:
-        """Upload the notebook from the execution result
-        TODO: zip or compress notebook before upload.
-        :return: True if ok, False if something fails.
-        """
-        logger = logging.getLogger(__name__)
-
-        form_data = dict(output_name=exec_result.output_name)
-
-        file_dir = f"{exec_result.output_dir}/{exec_result.output_name}"
-        _addr = f"{self._addr}/history/{exec_result.projectid}/_output_ok"
-        logger.warning(_addr)
-        if exec_result.error:
-            _addr = f"{self._addr}/history/{exec_result.projectid}/_output_fail"
-            file_dir = f"{exec_result.error_dir}/{exec_result.output_name}"
-
-        files = {"file": open(file_dir)}
-        rsp = self._http.post(
-            _addr,
-            files=files,
-            data=form_data,
-        )
-        if rsp.status_code == 201:
-            return True
-        return False
 
     @staticmethod
     def notebook_template(fp):

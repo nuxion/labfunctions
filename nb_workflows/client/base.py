@@ -11,7 +11,7 @@ from nb_workflows.utils import open_yaml, write_yaml
 
 from .state import WorkflowsState
 from .types import Credentials
-from .utils import store_credentials_disk, validate_credentials_local
+from .utils import store_credentials_disk
 
 
 def get_http_client(**kwargs) -> httpx.Client:
@@ -32,8 +32,8 @@ class AuthFlow(httpx.Auth):
         request.headers["Authorization"] = f"Bearer {self.access_token}"
         response = yield request
 
-        is_valid = validate_credentials_local(self.access_token)
-        if response.status_code == 401 or not is_valid:
+        # is_valid = validate_credentials_local(self.access_token)
+        if response.status_code == 401:
             # If the server issues a 401 response, then issue a request to
             # refresh tokens, and resend the request.
             refresh_response = yield self.build_refresh_request()

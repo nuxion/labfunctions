@@ -34,54 +34,6 @@ def normalize_name(name: str) -> str:
     return evaluate
 
 
-def ask_project_name() -> str:
-    parent = get_parent_folder()
-    _default = normalize_name(parent)
-    project_name = str(
-        input(f"Write a name for this project (default: {_default}): ") or _default
-    )
-    name = normalize_name(project_name)
-    print("The final name for the project will be: ", name)
-    return name
-
-
-def init(url_service, example=True, version="0.2.0") -> DiskClient:
-
-    settings = load_client()
-    tasks = None
-    if example:
-        task = _example_task()
-        tasks = {task.alias: task}
-
-    creds = login_cli(url_service)
-
-    projectid = settings.PROJECTID
-    name = settings.PROJECT_NAME
-
-    if not projectid:
-        name = ask_project_name()
-        rsp = httpx.get(f"{settings.WORKFLOW_SERVICE}/projects/_generateid")
-        projectid = rsp.json()["projectid"]
-
-    pd = ProjectData(name=name, projectid=projectid)
-    wf_state = WorkflowsState(pd, workflows=tasks, version=version)
-
-    _client = DiskClient(
-        url_service,
-        projectid=projectid,
-        creds=creds,
-        wf_state=wf_state,
-        version=version,
-    )
-
-    create = str(input("Create project in the server? (Y/n): ") or "y")
-    if create.lower() == "y":
-        _client.projects_create()
-    _client.write()
-
-    return _client
-
-
 def nb_from_settings() -> NBClient:
     settings = load_client()
     tasks = None
@@ -100,7 +52,7 @@ def nb_from_settings() -> NBClient:
     )
 
 
-def nb_from_settings_agent() -> NBClient:
+def agent_from_settings() -> NBClient:
     tasks = None
     settings = load_client()
     creds = Credentials(
@@ -140,9 +92,7 @@ def from_file(
     )
 
 
-def minimal_client(
-    url_service, token, refresh, projectid, store_creds=False
-) -> NBClient:
+def minimal_client(url_service, token, refresh, projectid) -> NBClient:
     """A shortcut to intialize :class:`nb_workflows.client.NBClient`
 
     Usually, it is used in each machine running a agent (data plane),
@@ -173,10 +123,10 @@ def minimal_client(
     )
 
 
-def agent_client(
+def agent_from_env(
     url_service, token, refresh, projectid, store_creds=False
 ) -> AgentClient:
-    """A shortcut to intialize :class:`nb_workflows.client.NBClient`
+    """A shortcut to intialize :class:`nb_workflows.client.agent_client.AgentClient`
 
     Usually, it is used in each machine running a agent (data plane),
     and is used to communicates with server for workflows task

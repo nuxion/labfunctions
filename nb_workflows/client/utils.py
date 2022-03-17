@@ -9,6 +9,7 @@ import jwt
 
 from nb_workflows.conf import defaults
 from nb_workflows.types import NBTask, ScheduleData
+from nb_workflows.utils import get_parent_folder, secure_filename
 
 from .types import Credentials
 
@@ -16,7 +17,6 @@ from .types import Credentials
 def _example_task() -> NBTask:
     t = NBTask(
         nb_name="test_workflow",
-        alias="notebook.example",
         description="An example of how to configure a specific workflow",
         params=dict(TIMEOUT=5),
         schedule=ScheduleData(
@@ -25,6 +25,14 @@ def _example_task() -> NBTask:
         ),
     )
     return t
+
+
+def normalize_name(name: str) -> str:
+    """used mostly for projects"""
+    evaluate = name.lower()
+    evaluate = evaluate.replace(" ", "_")
+    evaluate = secure_filename(name)
+    return evaluate
 
 
 def store_credentials_disk(creds: Credentials, home_dir=defaults.CLIENT_HOME_DIR):
@@ -76,7 +84,7 @@ def login_cli(
 ) -> Union[Credentials, None]:
     print(f"Your are connecting to {with_server}")
     u = input("User: ")
-    p = getpass.getpass()
+    p = getpass.getpass("Password: ")
     rsp = httpx.post(f"{with_server}/auth", json=dict(username=u, password=p))
     try:
         creds = Credentials(**rsp.json())

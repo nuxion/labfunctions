@@ -29,74 +29,46 @@ from .utils import get_private_key, store_credentials_disk, store_private_key
 class ProjectsClient(BaseClient):
     """Is to be used as cli client because it has side effects on local disk"""
 
-    def workflows_create(self, wd: WorkflowDataWeb) -> WFCreateRsp:
+    def projects_create(self) -> Union[ProjectData, None]:
+        raise IndexError()
+        _key = secrets.generate_private_key()
+        pq = ProjectReq(
+            name=self.state.project.name,
+            private_key=_key,
+            projectid=self.state.project.projectid,
+            description=self.state.project.description,
+            repository=self.state.project.repository,
+        )
         r = self._http.post(
-            f"/workflows/{self.projectid}",
-            json=wd.dict(),
+            f"/projects",
+            json=asdict(pq),
         )
+        if r.status_code == 200:
+            print("Project already exist")
+        elif r.status_code == 201:
+            print("Project created")
+            pd = ProjectData(**r.json())
+            store_private_key(_key, pd.projectid)
+            return pd
+        else:
+            raise TypeError("Something went wrong creating the project %s", r.text)
+        return None
 
-        return WFCreateRsp(
-            status_code=r.status_code,
-            msg=r.json().get("msg"),
-            wfid=r.json().get("wfid"),
-        )
+    def projects_get(self) -> Union[ProjectData, None]:
+        r = self._http.get(f"/projects/{self.projectid}")
+        if r.status_code == 200:
+            return ProjectData(**r.json())
+        return None
 
-    def workflows_update(self, wd: WorkflowDataWeb) -> WFCreateRsp:
-        r = self._http.put(
-            f"/workflows/{self.projectid}",
-            json=wd.dict(),
-        )
+    def projects_upload(self, zfile: ProjectZipFile):
+        files = {"file": open(zfile.filepath, "rb")}
+        r = self._http.post(f"/projects/{self.projectid}/_upload", files=files)
+        print(r.status_code)
 
-        return WFCreateRsp(
-            status_code=r.status_code,
-            msg=r.json().get("msg"),
-            wfid=r.json().get("wfid"),
-        )
-
-    def workflows_push(self, refresh_workflows=True, update=False):
-        _workflows = self.state.snapshot()
-        for _, wd in _workflows.workflows.items():
-            if update:
-                r = self.workflows_update(wd)
-            else:
-                if not wd.wfid:
-                    r = self.workflows_create(wd)
-                    if r.status_code == 200:
-                        print(f"Workflow {wd.alias} already exist")
-                    elif r.status_code == 201:
-                        print(f"Workflow {wd.alias} created. Jobid: {r.wfid}")
-                        if refresh_workflows:
-                            wd.wfid = r.wfid
-                            self.state.add_workflow(wd)
-
-        # self._workflows = _workflows
-        if refresh_workflows:
-            self.write()
-
-    def workflows_list(self) -> List[WorkflowData]:
-        r = self._http.get(f"/workflows/{self.projectid}")
-
-        return [WorkflowData(**r) for r in r.json()["rows"]]
-
-    def workflows_get(self, wfid) -> Union[WorkflowData, None]:
-        r = self._http.get(f"/workflows/{self.projectid}/{wfid}")
+    def projects_agent_token(self) -> Union[Credentials, None]:
+        r = self._http.post(f"/projects/{self.projectid}/_agent_token")
 
         if r.status_code == 200:
-            return WorkflowData(**r.json())
-        if r.status_code == 404:
-            return None
-        if r.status_code == 401:
-            raise KeyError("Invalid auth")
-        raise TypeError("Something went wrong %s", r.text)
+            return Credentials(**r.json())
 
-    def workflows_delete(self, wfid) -> int:
-        r = self._http.delete(f"/workflows/{self.projectid}/{wfid}")
-        if r.status_code == 200:
-            # self.sync_file()
-            pass
-        return r.status_code
-
-    def workflows_enqueue(self, wfid) -> str:
-        r = self._http.post(f"/workflows/{self.projectid}/queue/{wfid}")
-        if r.status_code == 202:
-            return r.json()["execid"]
+        return None

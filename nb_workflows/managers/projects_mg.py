@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
-from sqlalchemy import delete, exc, select
+from sqlalchemy import delete, exc
+from sqlalchemy import insert as sqlinsert
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
@@ -27,6 +29,21 @@ def _model2projectdata(obj: ProjectModel) -> ProjectData:
         respository=obj.repository,
     )
     return pd
+
+
+def _insert(user_id, pq: ProjectReq, projectid):
+
+    table = ProjectModel.__table__
+    name = normalize_name(pq.name)
+    stmt = sqlinsert(table).values(
+        name=name,
+        private_key=pq.private_key.encode("utf-8"),
+        projectid=projectid,
+        description=pq.description,
+        repository=pq.repository,
+        user_id=user_id,
+    )
+    return stmt
 
 
 def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
@@ -64,26 +81,24 @@ def generate_projectid() -> str:
     return generate_random(settings.PROJECTID_LEN)
 
 
-async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectModel, None]:
-    name = normalize_name(pq.name)
+async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, None]:
 
-    # _key = secrets.generate_private_key()
     projectid = pq.projectid or generate_projectid()
-    pm = ProjectModel(
-        name=name,
-        private_key=pq.private_key.encode("utf-8"),
+    stmt = _insert(user_id, pq, projectid)
+    # session.add(pm)
+    try:
+        await session.execute(stmt)
+        await session.commit()
+    except exc.IntegrityError as e:
+        # await session.rollback()
+        return None
+
+    return ProjectData(
+        name=pq.name,
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
-        user_id=user_id,
     )
-    session.add(pm)
-    try:
-        await session.commit()
-    except exc.IntegrityError:
-        await session.rollback()
-        return None
-    return pm
 
 
 async def create_or_update(session, user_id: int, pq: ProjectReq):
