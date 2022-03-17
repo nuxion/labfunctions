@@ -22,20 +22,20 @@ history_bp = Blueprint("history", url_prefix="history")
 #     request.ctx.user = await extract_user_from_request(request)
 
 
-@history_bp.get("/<projectid>/<jobid>")
+@history_bp.get("/<projectid>/<wfid>")
 @openapi.parameter("projectid", str, "path")
-@openapi.parameter("jobid", str, "path")
+@openapi.parameter("wfid", str, "path")
 @openapi.response(200, "Found")
 @openapi.response(404, dict(msg=str), "Not Found")
 @openapi.parameter("lt", int, "lt")
 @protected()
-async def history_last_job(request, jobid, projectid):
+async def history_last_job(request, wfid, projectid):
     """Get the status of the last job executed"""
     # pylint: disable=unused-argument
     lt = get_query_param(request, "lt", 1)
     session = request.ctx.session
     async with session.begin():
-        h = await history_mg.get_last(session, projectid, jobid, limit=lt)
+        h = await history_mg.get_last(session, projectid, wfid, limit=lt)
         if h:
             return json(asdict(h), 200)
 
@@ -104,11 +104,11 @@ async def history_output_fail(request, projectid):
     return json(dict(msg="OK"), 201)
 
 
-# @history_bp.get("/<projectid>/<jobid>/_get_output")
+# @history_bp.get("/<projectid>/<wfid>/_get_output")
 # @openapi.parameter("projectid", str, "path")
-# @openapi.parameter("jobid", str, "path")
+# @openapi.parameter("wfid", str, "path")
 # @protected()
-# async def history_get_output(request, projectid, jobid):
+# async def history_get_output(request, projectid, wfid):
 #     """
 #     Upload a workflow project
 #     """
@@ -119,7 +119,7 @@ async def history_output_fail(request, projectid):
 #
 #     session = request.ctx.session
 #     async with session.begin():
-#         h = await history_mg.get_last(session, projectid, jobid, limit=lt)
+#         h = await history_mg.get_last(session, projectid, wfid, limit=lt)
 #         if h:
 #             return json(asdict(h), 200)
 #

@@ -56,17 +56,17 @@ async def workflows_list(request, projectid):
     return json(dict(rows=data), 200)
 
 
-@workflows_bp.delete("/<projectid>/<jobid>")
+@workflows_bp.delete("/<projectid>/<wfid>")
 @openapi.parameter("projectid", str, "path")
-@openapi.parameter("jobid", str, "path")
+@openapi.parameter("wfid", str, "path")
 @protected()
-async def workflow_delete(request, projectid, jobid):
+async def workflow_delete(request, projectid, wfid):
     """Delete from db and queue a workflow"""
     # pylint: disable=unused-argument
     session = request.ctx.session
     scheduler = get_scheduler()
     async with session.begin():
-        await scheduler.delete_workflow(session, projectid, jobid)
+        await scheduler.delete_workflow(session, projectid, wfid)
         await session.commit()
 
     return json(dict(msg="done"), 200)
@@ -76,7 +76,7 @@ async def workflow_delete(request, projectid, jobid):
 @openapi.body({"application/json": NBTask})
 @openapi.parameter("projectid", str, "path")
 @openapi.response(200, {"msg": str}, "Notebook Workflow already exist")
-@openapi.response(201, {"jobid": str}, "Notebook Workflow registered")
+@openapi.response(201, {"wfid": str}, "Notebook Workflow registered")
 @openapi.response(400, {"msg": str}, description="wrong params")
 @openapi.response(404, {"msg": str}, description="project not found")
 @protected()
@@ -97,21 +97,21 @@ async def workflow_create(request, projectid):
 
     async with session.begin():
         try:
-            jobid = await workflows_mg.register(session, projectid, nb_task)
+            wfid = await workflows_mg.register(session, projectid, nb_task)
             # if nb_task.schedule and nb_task.enabled:
-            #     await scheduler.schedule(projectid, jobid, nb_task)
+            #     await scheduler.schedule(projectid, wfid, nb_task)
         except KeyError as e:
             return json(dict(msg="workflow already exist"), status=200)
         except AttributeError as e:
             return json(dict(msg="project not found"), status=404)
 
-        return json(dict(jobid=jobid), status=201)
+        return json(dict(wfid=wfid), status=201)
 
 
 @workflows_bp.put("/<projectid>")
 @openapi.body({"application/json": NBTask})
 @openapi.parameter("projectid", str, "path")
-@openapi.response(200, {"jobid": str}, "Notebook Workflow accepted")
+@openapi.response(200, {"wfid": str}, "Notebook Workflow accepted")
 @openapi.response(400, {"msg": str}, description="wrong params")
 @openapi.response(503, {"msg": str}, description="Error persiting the job")
 @protected()
@@ -131,61 +131,59 @@ async def workflow_update(request, projectid):
 
     async with session.begin():
         try:
-            jobid = await workflows_mg.register(
-                session, projectid, nb_task, update=True
-            )
-            # await scheduler.cancel_job_async(jobid)
+            wfid = await workflows_mg.register(session, projectid, nb_task, update=True)
+            # await scheduler.cancel_job_async(wfid)
             # if nb_task.enabled and nb_task.schedule:
-            #    await scheduler.schedule(projectid, jobid, nb_task)
+            #    await scheduler.schedule(projectid, wfid, nb_task)
         except KeyError as e:
             return json(dict(msg="workflow already exist"), status=200)
         except AttributeError:
             return json(dict(msg="project not found"), status=404)
 
-        return json(dict(jobid=jobid), status=201)
+        return json(dict(wfid=wfid), status=201)
 
 
-@workflows_bp.get("/<projectid>/<jobid>")
+@workflows_bp.get("/<projectid>/<wfid>")
 @openapi.parameter("projectid", str, "path")
-@openapi.parameter("jobid", str, "path")
+@openapi.parameter("wfid", str, "path")
 @openapi.response(200, WorkflowData)
 @openapi.response(404, {"msg": str}, description="Job not found")
 @protected()
-async def workflow_get(request, projectid, jobid):
+async def workflow_get(request, projectid, wfid):
     """Get a workflow by projectid"""
     # pylint: disable=unused-argument
     session = request.ctx.session
     async with session.begin():
-        wd = await workflows_mg.get_by_jobid_prj(session, projectid, jobid)
+        wd = await workflows_mg.get_by_wfid_prj(session, projectid, wfid)
 
     if wd:
         return json(wd.dict(), 200)
     return json(dict(msg="Not found"), 404)
 
 
-@workflows_bp.post("/<projectid>/queue/<jobid>")
+@workflows_bp.post("/<projectid>/queue/<wfid>")
 @openapi.parameter("projectid", str, "path")
-@openapi.parameter("jobid", str, "path")
+@openapi.parameter("wfid", str, "path")
 @openapi.response(202, dict(execid=str))
 @protected()
-async def workflow_enqueue(request, projectid, jobid):
+async def workflow_enqueue(request, projectid, wfid):
     """Get a workflow by projectid"""
     # pylint: disable=unused-argument
     sche = get_scheduler()
     execid = ExecID()
     signed = execid.firm("web")
-    job = await run_async(sche.dispatcher, projectid, jobid, signed)
+    job = await run_async(sche.dispatcher, projectid, wfid, signed)
 
     return json(dict(execid=job.id), 202)
 
 
-@workflows_bp.post("/<projectid>/_ctx/<jobid>")
+@workflows_bp.post("/<projectid>/_ctx/<wfid>")
 @openapi.parameter("projectid", str, "path")
-@openapi.parameter("jobid", str, "path")
+@openapi.parameter("wfid", str, "path")
 @openapi.response(200)
 @openapi.response(404, {"msg": str}, description="Job not found")
 @protected()
-async def workflow_generate_ctx(request, projectid, jobid):
+async def workflow_generate_ctx(request, projectid, wfid):
     """Enqueue a workflow on demand"""
     # pylint: disable=unused-argument
     execid = ExecID()
@@ -193,7 +191,7 @@ async def workflow_generate_ctx(request, projectid, jobid):
     session = request.ctx.session
     async with session.begin():
         nb_ctx = await workflows_mg.prepare_notebook_job_async(
-            session, projectid, jobid, signed
+            session, projectid, wfid, signed
         )
-    # job = await run_async(scheduler.dispatcher, projectid, jobid)
+    # job = await run_async(scheduler.dispatcher, projectid, wfid)
     return json(nb_ctx.dict(), 200)

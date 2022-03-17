@@ -199,7 +199,7 @@ def agent_client(
     )
 
 
-def create_ctx(jobid=None) -> ExecutionNBTask:
+def create_ctx(wfid=None) -> ExecutionNBTask:
     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
     if ctx_str:
         exec_ctx = ExecutionNBTask(**json.loads(ctx_str))
@@ -209,9 +209,9 @@ def create_ctx(jobid=None) -> ExecutionNBTask:
         pd = wf.project
         pd.username = "dummy"
         wf_data = None
-        if jobid:
+        if wfid:
             for w in wf.workflows:
-                if w.jobid == jobid:
+                if w.wfid == wfid:
                     wf_data = w
         else:
             # TODO: dumy nb_name

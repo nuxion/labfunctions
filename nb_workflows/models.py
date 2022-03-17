@@ -48,7 +48,7 @@ class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
     """
     Register each execution of a workflow.
 
-    :param jobid: Is the workflow jobid
+    :param wfid: Is the workflow wfid
     :param taskid: is random id generated for each execution of the workflow
     :param name: the filename of the notebook executed
     :param result: is the result of the task. TaskResult
@@ -60,7 +60,7 @@ class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(BigInteger, primary_key=True)
-    jobid = Column(String(24))
+    wfid = Column(String(24))
     execid = Column(String(24))  # should be execution id
     nb_name = Column(String(), nullable=False)
     result = Column(JSONB(), nullable=False)
@@ -76,7 +76,7 @@ class ProjectModel(Base, SerializerMixin):
     """
     Register each execution of a workflow.
 
-    :param jobid: Is the workflow jobid
+    :param wfid: Is the workflow wfid
     :param taskid: is random id generated for each execution of the workflow
     :param name: the filename of the notebook executed
     :param result: is the result of the task. TaskResult
@@ -120,10 +120,10 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     """
     Configuration for each workflow.
 
-    :param jobid: an unique identifier for this workflow
+    :param wfid: an unique identifier for this workflow
     :param alias: because the filename could be shared between different
     workflows, an alias was added to identify each instance, and is more
-    friendly than jobid.
+    friendly than wfid.
     :param name: name of the notebook file.
     :param description: A friendly description of the purpose of this workflow
     :param job_detail: details of the execution. It is composed by two nested
@@ -139,7 +139,7 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(Integer, primary_key=True)
-    jobid = Column(String(24), index=True, unique=True)
+    wfid = Column(String(24), index=True, unique=True)
     alias = Column(String(33), index=True, nullable=False)
     nb_name = Column(String(), nullable=False)
     job_detail = Column(JSONB(), nullable=False)
@@ -153,10 +153,10 @@ class SeqPipeModel(Base, SerializerMixin, ProjectRelationMixin):
     """
     Configuration for each workflow.
 
-    :param jobid: an unique identifier for this workflow
+    :param wfid: an unique identifier for this workflow
     :param alias: because the filename could be shared between different
     workflows, an alias was added to identify each instance, and is more
-    friendly than jobid.
+    friendly than wfid.
     :param name: name of the notebook file.
     :param description: A friendly description of the purpose of this workflow
     :param job_detail: details of the execution. It is composed by two nested

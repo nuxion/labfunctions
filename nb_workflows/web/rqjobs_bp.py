@@ -61,13 +61,13 @@ def list_workflows():
 
 @dataclass
 class JobResponse:
-    jobid: str
+    wfid: str
     workflow: NBTask
 
 
 @dataclass
 class JobDetail:
-    jobid: str
+    wfid: str
     func_name: str
     # workflow: NBTask
     created_at: str
@@ -88,15 +88,15 @@ def list_scheduled_redis(request):
     return json(jobs, 200)
 
 
-@rqjobs_bp.delete("/_cancel/<jobid>")
-@openapi.parameter("jobid", str, "path")
+@rqjobs_bp.delete("/_cancel/<wfid>")
+@openapi.parameter("wfid", str, "path")
 @protected()
-async def cancel_job(request, jobid):
+async def cancel_job(request, wfid):
     """delete a scheduler job from redis"""
     # pylint: disable=unused-argument
 
     scheduler = _get_scheduler()
-    await run_async(scheduler.cancel_job, jobid)
+    await run_async(scheduler.cancel_job, wfid)
     return json(dict(msg="done"), 200)
 
 
@@ -113,20 +113,20 @@ async def schedule_cancel_all(request):
     return json(dict(msg="done"), 200)
 
 
-@rqjobs_bp.get("/<jobid>")
-@openapi.parameter("jobid", str, "path")
+@rqjobs_bp.get("/<wfid>")
+@openapi.parameter("wfid", str, "path")
 @protected()
-def get_job_result(request, jobid):
+def get_job_result(request, wfid):
     """Get job result from the queue"""
     Q = _get_q_executor()
-    job = Q.fetch_job(jobid)
+    job = Q.fetch_job(wfid)
     result = job.result
     if result:
         result = asdict(result)
 
     return json(
         dict(
-            jobid=job.id,
+            wfid=job.id,
             status=job.get_status(),
             result=result,
             position=job.get_position(),

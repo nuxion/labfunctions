@@ -69,7 +69,7 @@ class BaseClient:
     If a method calls to an API's endpoint, it should use the name
     of the endpoint at first. For instance:
 
-        GET /workflows/<projectid>/<jobid>
+        GET /workflows/<projectid>/<wfid>
     The method name for that endpoint could be: `workflows_get_one()`
 
 

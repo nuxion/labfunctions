@@ -29,7 +29,7 @@ def history_factory(session):
             sqlalchemy_session = session
 
         id = factory.Sequence(lambda n: n)
-        jobid = factory.Faker("text", max_nb_chars=24)
+        wfid = factory.Faker("text", max_nb_chars=24)
         execid = factory.Faker("text", max_nb_chars=24)
         nb_name = factory.Faker("text", max_nb_chars=24)
         result = dict()
@@ -48,7 +48,7 @@ def workflow_factory(session):
             sqlalchemy_session = session
 
         id = factory.Sequence(lambda n: n)
-        jobid = factory.Faker("text", max_nb_chars=24)
+        wfid = factory.Faker("text", max_nb_chars=24)
         alias = factory.Faker("text", max_nb_chars=24)
         nb_name = factory.Faker("text", max_nb_chars=24)
         job_detail = {}
@@ -86,7 +86,7 @@ class NBTaskFactory(factory.Factory):
     class Meta:
         model = NBTask
 
-    jobid = factory.LazyAttribute(lambda n: generate_random(24))
+    wfid = factory.LazyAttribute(lambda n: generate_random(24))
     alias = factory.Sequence(lambda n: "nb-alias%d" % n)
     nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
     params = {"TEST": True, "TIMEOUT": 5}
@@ -97,7 +97,7 @@ class ExecutionNBTaskFactory(factory.Factory):
         model = ExecutionNBTask
 
     projectid = factory.LazyAttribute(lambda n: generate_random(10))
-    jobid = factory.LazyAttribute(lambda n: generate_random(10))
+    wfid = factory.LazyAttribute(lambda n: generate_random(10))
     execid = factory.LazyAttribute(lambda n: generate_random(10))
     nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
     params = {"TEST": True, "TIMEOUT": 5}

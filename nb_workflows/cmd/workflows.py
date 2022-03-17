@@ -34,12 +34,12 @@ def workflowscli():
     default=load_client().WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
-@click.option("--jobid", "-J", default=None, help="Execution history of jobid")
+@click.option("--wfid", "-w", default=None, help="Execution history of workflow id")
 @click.option("--last", "-l", default=1, help="The last executions")
-def history(from_file, url_service, last, jobid):
+def history(from_file, url_service, last, wfid):
     c = client.nb_from_file(from_file, url_service=url_service)
-    rsp = c.history_get_last(jobid, last)
-    print("jobid | execid | status")
+    rsp = c.history_get_last(wfid, last)
+    print("wfid | execid | status")
     for r in rsp:
         status = "[OK]" if r.status == 0 else "[FAIL]"
         pid = r.result.projectid
@@ -52,7 +52,7 @@ def history(from_file, url_service, last, jobid):
         nb = httpx.get(f"http://192.168.88.150:4444/{pid}/{uri}")
         with open(uri, "wb") as f:
             f.write(nb.content)
-        print(f"{r.jobid} | {r.execid} | {status} | {uri}")
+        print(f"{r.wfid} | {r.execid} | {status} | {uri}")
 
 
 @click.command()
@@ -69,7 +69,7 @@ def history(from_file, url_service, last, jobid):
     default=load_client().WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
-@click.option("--jobid", "-J", default=None, help="Jobid to execute")
+@click.option("--wfid", "-w", default=None, help="wfid to execute")
 @click.option(
     "--update",
     "-u",
@@ -82,7 +82,7 @@ def history(from_file, url_service, last, jobid):
     "action",
     type=click.Choice(["init", "push", "sync", "list", "exec", "dev-exec", "delete"]),
 )
-def wf(from_file, url_service, remote, update, example, action, jobid):
+def wf(from_file, url_service, remote, update, example, action, wfid):
     """Manage workflows"""
 
     if action == "init":
@@ -96,13 +96,13 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
     elif action == "list":
         c = client.nb_from_file(from_file, url_service=url_service)
         data = c.workflows_list()
-        print("\nnb_name | jobid | alias | is_enabled\n")
+        print("\nnb_name | wfid | alias | is_enabled\n")
         for d in data:
-            print(f"{d.nb_name} | {d.jobid} | {d.alias} | [{d.enabled}]")
+            print(f"{d.nb_name} | {d.wfid} | {d.alias} | [{d.enabled}]")
 
     elif action == "exec":
         c = client.nb_from_file(from_file, url_service=url_service)
-        rsp = c.workflows_enqueue(jobid)
+        rsp = c.workflows_enqueue(wfid)
         if rsp:
             click.echo(f"Executed: {rsp} on the server {url_service}")
         else:
@@ -110,9 +110,9 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
 
     elif action == "dev-exec":
         c = client.nb_from_file(from_file, url_service=url_service)
-        rsp = local_dev_exec(jobid)
+        rsp = local_dev_exec(wfid)
         if rsp:
-            click.echo(f"Jobid: {rsp.jobid} locally executed")
+            click.echo(f"Wfid: {rsp.wfid} locally executed")
             click.echo(f"Executionid: {rsp.execid}")
             status = "OK"
             if rsp.error:
@@ -121,8 +121,8 @@ def wf(from_file, url_service, remote, update, example, action, jobid):
 
     elif action == "delete":
         c = client.nb_from_file(from_file, url_service=url_service)
-        rsp = c.workflows_delete(jobid)
-        print(f"Jobid: {jobid}, deleted. Code {rsp}")
+        rsp = c.workflows_delete(wfid)
+        print(f"Wfid: {wfid}, deleted. Code {rsp}")
 
     elif action == "sync":
         c = client.nb_from_file(from_file, url_service=url_service)

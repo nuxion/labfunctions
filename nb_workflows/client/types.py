@@ -24,7 +24,7 @@ class Credentials(BaseModel):
 class WFCreateRsp:
     status_code: int
     msg: Optional[str] = None
-    jobid: Optional[str] = None
+    wfid: Optional[str] = None
 
 
 @dataclass
@@ -37,7 +37,7 @@ class ScheduleExecRsp:
 @dataclass
 class ScheduleListRsp:
     nb_name: str
-    jobid: str
+    wfid: str
     enabled: bool
     description: Optional[str] = None
 

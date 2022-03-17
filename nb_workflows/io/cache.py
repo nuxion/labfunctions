@@ -29,29 +29,29 @@ class CacheConfig:
 
 
 def build_ctx_global(globals_dict) -> SimpleExecCtx:
-    jobid = globals_dict.get("JOBID")
+    wfid = globals_dict.get("WFID")
     execid = globals_dict.get("EXECUTIONID")
     _now = datetime.utcnow().isoformat()
     now = globals_dict.get("NOW", _now)
     return SimpleExecCtx(
-        jobid=jobid,
+        wfid=wfid,
         execid=execid,
         execution_dt=now,
     )
 
 
-def build_ctx(jobid, execid, now=None) -> SimpleExecCtx:
+def build_ctx(wfid, execid, now=None) -> SimpleExecCtx:
     _now = now or datetime.utcnow().isoformat()
     return SimpleExecCtx(
-        jobid=jobid,
+        wfid=wfid,
         execid=execid,
         execution_dt=_now,
     )
 
 
 def _write_pickle(name, data, ctx: SimpleExecCtx):
-    fpath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.pickle"
-    metapath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.json"
+    fpath = f"/tmp/{ctx.wfid}.{ctx.execid}.{name}.pickle"
+    metapath = f"/tmp/{ctx.wfid}.{ctx.execid}.{name}.json"
     with open(fpath, "wb") as f:
         f.write(cloudpickle.dumps(data))
         logger.debug("CACHE: Wrote to %s", fpath)
@@ -60,8 +60,8 @@ def _write_pickle(name, data, ctx: SimpleExecCtx):
 
 
 def _restore_pickle(name, ctx: SimpleExecCtx):
-    fpath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.pickle"
-    metapath = f"/tmp/{ctx.jobid}.{ctx.execid}.{name}.json"
+    fpath = f"/tmp/{ctx.wfid}.{ctx.execid}.{name}.pickle"
+    metapath = f"/tmp/{ctx.wfid}.{ctx.execid}.{name}.json"
     try:
         with open(fpath, "rb") as f:
             data = cloudpickle.load(f)
@@ -78,8 +78,8 @@ def _restore_pickle(name, ctx: SimpleExecCtx):
 
 
 def _write_fileserver(name, data, ctx: SimpleExecCtx):
-    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}"
-    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}.json"
+    urlpath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}"
+    metapath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}.json"
     blob = cloudpickle.dumps(data)
     rsp = httpx.put(urlpath, content=blob)
     rsp2 = httpx.put(metapath, json=asdict(ctx))
@@ -90,8 +90,8 @@ def _write_fileserver(name, data, ctx: SimpleExecCtx):
 
 
 def _restore_fileserver(name, ctx: SimpleExecCtx):
-    urlpath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}"
-    metapath = f"{settings.FILESERVER}/cache/{ctx.jobid}.{ctx.execid}.{name}.json"
+    urlpath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}"
+    metapath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}.json"
     data = None
     meta = None
 
@@ -117,9 +117,9 @@ def is_valid_date(cache_dt: str, valid_for_min: int) -> bool:
 
 
 def cache_manager_write(data, conf: CacheConfig):
-    if conf.strategy == "local" and conf.ctx.jobid:
+    if conf.strategy == "local" and conf.ctx.wfid:
         _write_pickle(conf.name, data, conf.ctx)
-    elif conf.strategy == "fileserver" and conf.ctx.jobid:
+    elif conf.strategy == "fileserver" and conf.ctx.wfid:
         _write_fileserver(conf.name, data, conf.ctx)
     else:
         logger.warning("CACHE: Invalid caching strategy %s", conf.strategy)
@@ -128,9 +128,9 @@ def cache_manager_write(data, conf: CacheConfig):
 def cache_manager_read(conf: CacheConfig):
     data = None
     meta = None
-    if conf.strategy == "local" and conf.ctx.jobid:
+    if conf.strategy == "local" and conf.ctx.wfid:
         data, meta = _restore_pickle(conf.name, conf.ctx)
-    elif conf.strategy == "fileserver" and conf.ctx.jobid:
+    elif conf.strategy == "fileserver" and conf.ctx.wfid:
         data, meta = _restore_fileserver(conf.name, conf.ctx)
     else:
         logger.warning("CACHE: Invalid caching strategy %s", conf.strategy)
@@ -139,20 +139,20 @@ def cache_manager_read(conf: CacheConfig):
 
 def frozen_result(
     name=None,
-    jobid=None,
+    wfid=None,
     execid=None,
     valid_for_min=60,
     strategy="local",
     from_global: Optional[Dict[str, Any]] = None,
 ):
 
-    if not jobid and not from_global:
-        raise TypeError("jobid or global should be provided")
+    if not wfid and not from_global:
+        raise TypeError("wfid or global should be provided")
 
     if from_global:
         ctx = build_ctx_global(from_global)
     else:
-        ctx = build_ctx(jobid, execid)
+        ctx = build_ctx(wfid, execid)
 
     cache_conf = CacheConfig(
         name=name, ctx=ctx, valid_for_min=valid_for_min, strategy=strategy
@@ -180,9 +180,7 @@ def frozen_result(
 
 if __name__ == "__main__":
 
-    @frozen_result(
-        jobid="test", execid="test_t", strategy="fileserver", valid_for_min=5
-    )
+    @frozen_result(wfid="test", execid="test_t", strategy="fileserver", valid_for_min=5)
     def my_func(msg):
         print(msg)
         return msg * 2

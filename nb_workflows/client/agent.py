@@ -15,8 +15,8 @@ class AgentClient(BaseClient):
     preparations.
     """
 
-    def workflows_get(self, jobid) -> Union[WorkflowData, None]:
-        r = self._http.get(f"/workflows/{self.projectid}/{jobid}")
+    def workflows_get(self, wfid) -> Union[WorkflowData, None]:
+        r = self._http.get(f"/workflows/{self.projectid}/{wfid}")
 
         if r.status_code == 200:
             return WorkflowData(**r.json())

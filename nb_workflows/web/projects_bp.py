@@ -194,7 +194,7 @@ async def project_upload(request, projectid):
     # async with aiofiles.open(fp, "wb") as f:
     #    await f.write(file_body)
 
-    return json(dict(msg="ok", jobid=job.id), 201)
+    return json(dict(msg="ok", wfid=job.id), 201)
 
 
 @projects_bp.post("/<projectid:str>/_register_exec")

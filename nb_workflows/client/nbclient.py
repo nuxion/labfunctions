@@ -34,7 +34,7 @@ class NBClient(BaseClient):
         return WFCreateRsp(
             status_code=r.status_code,
             msg=r.json().get("msg"),
-            jobid=r.json().get("jobid"),
+            wfid=r.json().get("wfid"),
         )
 
     def workflows_update(self, t: NBTask) -> WFCreateRsp:
@@ -46,7 +46,7 @@ class NBClient(BaseClient):
         return WFCreateRsp(
             status_code=r.status_code,
             msg=r.json().get("msg"),
-            jobid=r.json().get("jobid"),
+            wfid=r.json().get("wfid"),
         )
 
     def workflows_push(self, refresh_workflows=True, update=False):
@@ -55,14 +55,14 @@ class NBClient(BaseClient):
             if update:
                 r = self.workflows_update(task)
             else:
-                if not task.jobid:
+                if not task.wfid:
                     r = self.workflows_create(task)
                     if r.status_code == 200:
                         print(f"Workflow {task.alias} already exist")
                     elif r.status_code == 201:
-                        print(f"Workflow {task.alias} created. Jobid: {r.jobid}")
+                        print(f"Workflow {task.alias} created. Jobid: {r.wfid}")
                         if refresh_workflows:
-                            task.jobid = r.jobid
+                            task.wfid = r.wfid
 
         # self._workflows = _workflows
         if refresh_workflows:
@@ -74,8 +74,8 @@ class NBClient(BaseClient):
 
         return [WorkflowData(**r) for r in r.json()["rows"]]
 
-    def workflows_get(self, jobid) -> Union[WorkflowData, None]:
-        r = self._http.get(f"/workflows/{self.projectid}/{jobid}")
+    def workflows_get(self, wfid) -> Union[WorkflowData, None]:
+        r = self._http.get(f"/workflows/{self.projectid}/{wfid}")
 
         if r.status_code == 200:
             return WorkflowData(**r.json())
@@ -85,15 +85,15 @@ class NBClient(BaseClient):
             raise KeyError("Invalid auth")
         raise TypeError("Something went wrong %s", r.text)
 
-    def workflows_delete(self, jobid) -> int:
-        r = self._http.delete(f"/workflows/{self.projectid}/{jobid}")
+    def workflows_delete(self, wfid) -> int:
+        r = self._http.delete(f"/workflows/{self.projectid}/{wfid}")
         if r.status_code == 200:
             # self.sync_file()
             pass
         return r.status_code
 
-    def workflows_enqueue(self, jobid) -> str:
-        r = self._http.post(f"/workflows/{self.projectid}/queue/{jobid}")
+    def workflows_enqueue(self, wfid) -> str:
+        r = self._http.post(f"/workflows/{self.projectid}/queue/{wfid}")
         if r.status_code == 202:
             return r.json()["execid"]
 
@@ -179,8 +179,8 @@ class NBClient(BaseClient):
             return True
         return False
 
-    def history_get_last(self, jobid, last=1) -> List[HistoryResult]:
-        rsp = self._http.get(f"/history/{self.projectid}/{jobid}?lt={last}")
+    def history_get_last(self, wfid, last=1) -> List[HistoryResult]:
+        rsp = self._http.get(f"/history/{self.projectid}/{wfid}?lt={last}")
         rows = []
         for r in rsp.json()["rows"]:
             h = HistoryResult(**r)

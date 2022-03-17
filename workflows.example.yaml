@@ -1,7 +1,7 @@
 version: 0.2.0
 project:
   name: pd-name0
-  projectid: hK5FjnCVmI
+  projectid: _1kuooeugp
   username: user0
   description: test
   repository: null
@@ -16,7 +16,7 @@ workflows:
     enabled: true
     alias: nb-alias0
     description: null
-    jobid: JwkzF9J9hQjKmV55YFiH7I1G
+    wfid: Wv9_F7h_C2reUUSQPtQ4QI0a
     timeout: 10800
     notifications_ok: null
     notifications_fail: null
@@ -31,7 +31,22 @@ workflows:
     enabled: true
     alias: nb-alias1
     description: null
-    jobid: WQ1RiFxIGJFwiNveZLvkfrat
+    wfid: oh1O8gDrMx53-NI5TeyR87PG
+    timeout: 10800
+    notifications_ok: null
+    notifications_fail: null
+    schedule: null
+  nb-alias2:
+    nb_name: nb-name2
+    params:
+      TEST: true
+      TIMEOUT: 5
+    machine: default
+    docker_version: latest
+    enabled: true
+    alias: nb-alias2
+    description: null
+    wfid: AMc0rcX3k3FLG-PkCzrtAyKc
     timeout: 10800
     notifications_ok: null
     notifications_fail: null

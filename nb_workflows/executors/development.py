@@ -12,22 +12,22 @@ from .context import ExecID, create_notebook_ctx, generate_execid
 from .local import notebook_executor
 
 
-def local_dev_exec(jobid) -> Union[ExecutionResult, None]:
+def local_dev_exec(wfid) -> Union[ExecutionResult, None]:
     """Without server interaction
-    jobid will be searched in the workflows file
+    wfid will be searched in the workflows file
     """
     logger = set_logger("local_exec", level=settings.LOGLEVEL)
-    logger.info(f"Runing {jobid}")
+    logger.info(f"Runing {wfid}")
     # nb_client = client.nb_from_file("workflows.yaml")
 
     wf = client.NBClient.read("workflows.yaml")
     for w in wf.workflows:
-        if w.jobid == jobid:
+        if w.wfid == wfid:
             _execid = generate_execid(4)
             ctx = create_notebook_ctx(wf.project, w, _execid)
 
             exec_res = notebook_executor(ctx)
             # nb_client.register_history(exec_res, task)
             return exec_res
-    print(f"{jobid} not found in workflows.yaml")
+    print(f"{wfid} not found in workflows.yaml")
     return None

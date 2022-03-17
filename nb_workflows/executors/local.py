@@ -39,7 +39,7 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
 
     etask = ExecutionNBTask(**json.loads(ctx_str))
-    logger.info(f"jobdid:{etask.jobid} execid:{etask.execid} Starting")
+    logger.info(f"jobdid:{etask.wfid} execid:{etask.execid} Starting")
 
     # Execution
     result = notebook_executor(etask)
@@ -48,10 +48,10 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     status = _simple_retry(nb_client.history_nb_output, (result,))
     status_register = _simple_retry(nb_client.history_register, (result,))
     if not status or not status_register:
-        logger.error(f"jobdid:{etask.jobid} execid:{etask.execid} Fail registration")
+        logger.error(f"jobdid:{etask.wfid} execid:{etask.execid} Fail registration")
 
     logger.info(
-        f"jobdid:{etask.jobid} execid:{etask.execid} Finish in {result.elapsed_secs} secs"
+        f"jobdid:{etask.wfid} execid:{etask.execid} Finish in {result.elapsed_secs} secs"
     )
     return result
 
@@ -67,13 +67,13 @@ def notebook_executor(etask: ExecutionNBTask) -> ExecutionResult:
     try:
         pm.execute_notebook(etask.pm_input, etask.pm_output, parameters=etask.params)
     except pm.exceptions.PapermillExecutionError as e:
-        logger.error(f"jobdid:{etask.jobid} execid:{etask.execid} failed {e}")
+        logger.error(f"jobdid:{etask.wfid} execid:{etask.execid} failed {e}")
         _error = True
         error_handler(etask)
 
     elapsed = time.time() - _started
     return ExecutionResult(
-        jobid=etask.jobid,
+        wfid=etask.wfid,
         execid=etask.execid,
         projectid=etask.projectid,
         name=etask.nb_name,

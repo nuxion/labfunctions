@@ -104,7 +104,7 @@ def create_notebook_ctx(pd: ProjectData, task: NBTask, execid) -> ExecutionNBTas
     _execid = pure_execid(execid)
 
     _params = task.params.copy()
-    _params["JOBID"] = task.jobid
+    _params["WFID"] = task.wfid
     _params["EXECUTIONID"] = _execid
     _params["NOW"] = _now
 
@@ -121,7 +121,7 @@ def create_notebook_ctx(pd: ProjectData, task: NBTask, execid) -> ExecutionNBTas
 
     return ExecutionNBTask(
         projectid=pd.projectid,
-        jobid=task.jobid,
+        wfid=task.wfid,
         execid=_execid,
         nb_name=task.nb_name,
         machine=task.machine,
@@ -140,7 +140,7 @@ def create_notebook_ctx(pd: ProjectData, task: NBTask, execid) -> ExecutionNBTas
 
 def make_error_result(ctx, elapsed) -> ExecutionResult:
     result = ExecutionResult(
-        jobid=ctx.jobid,
+        wfid=ctx.wfid,
         execid=ctx.execid,
         projectid=ctx.projectid,
         name=ctx.nb_name,

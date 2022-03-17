@@ -1,10 +1,9 @@
-from nb_workflows.client import workflows_file as wf
+from nb_workflows.client import state as wf
 from tests.factories import NBTaskFactory, ProjectDataFactory
 
 pd = ProjectDataFactory()
-t = NBTaskFactory()
-t2 = NBTaskFactory()
-t3 = NBTaskFactory()
+tasks = NBTaskFactory.create_batch(3)
+tasks_dict = wf.WorkflowsState.listworkflows2dict(tasks)
 
-ws = wf.WorkflowsState(project=pd, workflows=[t, t2, t3])
+ws = wf.WorkflowsState(project=pd, workflows=tasks_dict)
 ws.write("workflows.example.yaml")
