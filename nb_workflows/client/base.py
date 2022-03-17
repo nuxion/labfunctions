@@ -1,3 +1,4 @@
+import logging
 from dataclasses import asdict
 from typing import Callable, List, Optional
 
@@ -102,7 +103,7 @@ class BaseClient:
             creds.refresh_token,
             f"{url_service}{defaults.REFRESH_TOKEN_PATH}",
         )
-
+        self.logger = logging.getLogger(__name__)
         self.state = wf_state
         self._version = version
         self._timeout = timeout

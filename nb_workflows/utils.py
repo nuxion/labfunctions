@@ -345,3 +345,13 @@ def get_version(rel_path):
             return line.split(delim)[1]
     else:
         raise RuntimeError("Unable to find version string.")
+
+
+def parse_var_line(line):
+    """
+    This regex works only if spaces are not used
+     ^(\w*)=?*(['|"].*?['|"|])$
+    """
+    k = line.split("=", maxsplit=1)[0].strip()
+    v = line.split("=", maxsplit=1)[1].replace('"', "").strip("\n").strip()
+    return k, v

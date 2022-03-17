@@ -1,7 +1,7 @@
 version: 0.2.0
 project:
   name: pd-name0
-  projectid: _1kuooeugp
+  projectid: WzP49tISi1
   username: user0
   description: test
   repository: null
@@ -16,11 +16,10 @@ workflows:
     enabled: true
     alias: nb-alias0
     description: null
-    wfid: Wv9_F7h_C2reUUSQPtQ4QI0a
+    wfid: 43ncKBffmqPkjpuonR27LE0u
     timeout: 10800
     notifications_ok: null
     notifications_fail: null
-    schedule: null
   nb-alias1:
     nb_name: nb-name1
     params:
@@ -31,11 +30,10 @@ workflows:
     enabled: true
     alias: nb-alias1
     description: null
-    wfid: oh1O8gDrMx53-NI5TeyR87PG
+    wfid: 5prBvMMeSbnFzDVfFxqrOlMD
     timeout: 10800
     notifications_ok: null
     notifications_fail: null
-    schedule: null
   nb-alias2:
     nb_name: nb-name2
     params:
@@ -46,10 +44,9 @@ workflows:
     enabled: true
     alias: nb-alias2
     description: null
-    wfid: AMc0rcX3k3FLG-PkCzrtAyKc
+    wfid: 1FVcQDc_eZj8-ir3rYawetOd
     timeout: 10800
     notifications_ok: null
     notifications_fail: null
-    schedule: null
 pipelines:
   sequences: []

@@ -1,9 +1,12 @@
+import json
 import logging
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from nb_workflows import errors, secrets
+from nb_workflows.conf import defaults
+from nb_workflows.conf.jtemplates import render_to_file
 from nb_workflows.types import (
     ExecutionResult,
     HistoryRequest,
@@ -15,11 +18,33 @@ from nb_workflows.types import (
     WorkflowData,
     WorkflowsList,
 )
+from nb_workflows.utils import parse_var_line
 
 from .base import BaseClient
 from .types import Credentials, ProjectZipFile, WFCreateRsp
 from .uploads import generate_dockerfile
 from .utils import get_private_key, store_credentials_disk, store_private_key
+
+
+def get_params_from_nb(nb_dict):
+    params = {}
+    for cell in nb_dict["cells"]:
+        if cell["cell_type"] == "code":
+            if cell["metadata"].get("tags"):
+                _params = cell["source"]
+                for p in _params:
+                    try:
+                        k, v = parse_var_line(p)
+                        params.update({k: v})
+                    except IndexError:
+                        pass
+    return params
+
+
+def open_notebook(fp) -> Dict[str, Any]:
+    with open(fp, "r", encoding="utf-8") as f:
+        data = json.loads(f.read())
+    return data
 
 
 class DiskClient(BaseClient):
@@ -214,3 +239,24 @@ class DiskClient(BaseClient):
         if rsp.status_code == 201:
             return True
         return False
+
+    @staticmethod
+    def notebook_template(fp):
+        render_to_file("test_workflow.ipynb.j2", fp)
+
+    def create_workflow(self, nb_fullpath, alias):
+        p = Path(nb_fullpath)
+        if p.is_file():
+            nb_dict = open_notebook(p)
+            params = get_params_from_nb(nb_dict)
+            if not params:
+                self.logger.warning(f"Params not found for {nb_fullpath}")
+        else:
+            self.logger.warning(f"Notebook {nb_fullpath} not found, I will create one")
+            self.notebook_template(nb_fullpath)
+
+        nb_name = nb_fullpath.rsplit("/", maxsplit=1)[1].split(".")[0]
+
+        wd = NBTask(nb_name=nb_name, alias=alias, params=params)
+        self.state.add_workflow(wd)
+        self.write()

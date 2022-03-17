@@ -6,6 +6,7 @@ Q_NS = QueuesNS(control="ctrl", machine="mch", build="bui")
 
 REFRESH_TOKEN_PATH = "/auth/refresh"
 
+NOTEBOOKS_DIR = "notebooks/"
 
 # Builder
 ZIP_GIT_PREFIX = "src/"

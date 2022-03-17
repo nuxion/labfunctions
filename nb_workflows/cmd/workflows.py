@@ -50,11 +50,13 @@ def init(ctx):
 @click.option(
     "--notebook",
     "-n",
+    required=True,
     help="Fullpath to the notebook file",
 )
 @click.option(
     "--alias",
     "-a",
+    required=True,
     help="An alias for this workflow",
 )
 @click.pass_context
@@ -63,8 +65,10 @@ def create(ctx, notebook, alias):
     if the notebook file doesn't exist, it will be created.
     (Changes aren't pushed to the server until a nb wf push
     is executed)."""
-
-    click.echo(ctx.obj["URL"])
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+    c = client.nb_from_file(from_file, url_service=url_service)
+    c.create_workflow(notebook, alias)
 
 
 @workflowscli.command()
