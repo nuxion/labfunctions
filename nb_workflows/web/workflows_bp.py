@@ -11,7 +11,13 @@ from sanic_jwt import protected
 from nb_workflows.executors.context import ExecID
 from nb_workflows.managers import workflows_mg
 from nb_workflows.scheduler import SchedulerExecutor, scheduler_dispatcher
-from nb_workflows.types import NBTask, ScheduleData, WorkflowData, WorkflowsList
+from nb_workflows.types import (
+    NBTask,
+    ScheduleData,
+    WorkflowData,
+    WorkflowDataWeb,
+    WorkflowsList,
+)
 from nb_workflows.utils import (
     get_query_param,
     parse_page_limit,
@@ -73,7 +79,7 @@ async def workflow_delete(request, projectid, wfid):
 
 
 @workflows_bp.post("/<projectid>")
-@openapi.body({"application/json": NBTask})
+@openapi.body({"application/json": WorkflowDataWeb})
 @openapi.parameter("projectid", str, "path")
 @openapi.response(200, {"msg": str}, "Notebook Workflow already exist")
 @openapi.response(201, {"wfid": str}, "Notebook Workflow registered")
@@ -85,10 +91,7 @@ async def workflow_create(request, projectid):
     Register a notebook workflow and schedule it
     """
     try:
-        nb_task = NBTask(**request.json)
-        if nb_task.schedule:
-            # return json(dict(msg="schedule information is needed"), 400)
-            nb_task.schedule = ScheduleData(**request.json["schedule"])
+        wfd = WorkflowDataWeb(**request.json)
     except TypeError:
         return json(dict(msg="wrong params"), 400)
 
@@ -97,7 +100,7 @@ async def workflow_create(request, projectid):
 
     async with session.begin():
         try:
-            wfid = await workflows_mg.register(session, projectid, nb_task)
+            wfid = await workflows_mg.register(session, projectid, wfd)
             # if nb_task.schedule and nb_task.enabled:
             #     await scheduler.schedule(projectid, wfid, nb_task)
         except KeyError as e:

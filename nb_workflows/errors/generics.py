@@ -15,6 +15,15 @@ class WorkflowNotFound(Exception):
         super().__init__(_msg)
 
 
+class WorkflowRegisterError(Exception):
+    def __init__(self, project, alias, e):
+        if "_nb_workflow__project_alias" in str(e):
+            _msg = f"Alias {alias} for {project} already exist"
+        else:
+            _msg = f"Error registering {alias} for project {project}"
+        super().__init__(_msg)
+
+
 class ProjectNotFound(Exception):
     def __init__(self, message):
         super().__init__(message)

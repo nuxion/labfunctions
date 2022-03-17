@@ -126,8 +126,8 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     friendly than wfid.
     :param name: name of the notebook file.
     :param description: A friendly description of the purpose of this workflow
-    :param job_detail: details of the execution. It is composed by two nested
-    entities: ScheduleData and NBTask.
+    :param nbtask: details to execute a notebook with specific parameters.
+    :param schedule: when should be executed.
     :param enabled: if the task should run or not.
     """
 
@@ -142,7 +142,8 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     wfid = Column(String(24), index=True, unique=True)
     alias = Column(String(33), index=True, nullable=False)
     nb_name = Column(String(), nullable=False)
-    job_detail = Column(JSONB(), nullable=False)
+    nbtask = Column(JSONB(), nullable=False)
+    schedule = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
 
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)

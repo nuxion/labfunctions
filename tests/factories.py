@@ -16,46 +16,10 @@ from nb_workflows.types import (
     ProjectData,
     ScheduleData,
     SeqPipe,
+    WorkflowDataWeb,
 )
 from nb_workflows.types.core import SeqPipeSpec
 from nb_workflows.utils import run_sync
-
-
-def history_factory(session):
-    class HistoryFactory(SQLAlchemyModelFactory):
-        class Meta:
-            model = HistoryModel
-            sqlalchemy_session_persistence = "commit"
-            sqlalchemy_session = session
-
-        id = factory.Sequence(lambda n: n)
-        wfid = factory.Faker("text", max_nb_chars=24)
-        execid = factory.Faker("text", max_nb_chars=24)
-        nb_name = factory.Faker("text", max_nb_chars=24)
-        result = dict()
-        # project_id = "Az"
-        elapsed_secs = float(5)
-        status = 0
-
-    return HistoryFactory
-
-
-def workflow_factory(session):
-    class WorkflowFactory(SQLAlchemyModelFactory):
-        class Meta:
-            model = WorkflowModel
-            sqlalchemy_session_persistence = "commit"
-            sqlalchemy_session = session
-
-        id = factory.Sequence(lambda n: n)
-        wfid = factory.Faker("text", max_nb_chars=24)
-        alias = factory.Faker("text", max_nb_chars=24)
-        nb_name = factory.Faker("text", max_nb_chars=24)
-        job_detail = {}
-        # project_id = "Az"
-        enabled = True
-
-    return WorkflowFactory
 
 
 class ProjectDataFactory(factory.Factory):
@@ -148,6 +112,17 @@ class UserFactory(factory.Factory):
     projects = None
 
 
+class WorkflowDataWebFactory(factory.Factory):
+    class Meta:
+        model = WorkflowDataWeb
+
+    nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
+    alias = factory.Faker("text", max_nb_chars=24)
+    nbtask = factory.LazyAttribute(lambda n: NBTaskFactory())
+    wfid = factory.Faker("text", max_nb_chars=24)
+    schedule = factory.LazyAttribute(lambda n: ScheduleDataFactory())
+
+
 def create_user_model(*args, **kwargs) -> UserModel:
     uf = UserFactory(*args, **kwargs)
     pm = password_manager()
@@ -175,6 +150,19 @@ def create_project_model(user: UserModel, *args, **kwargs) -> ProjectModel:
         user=user,
     )
     return pm
+
+
+def create_workflow_model(project: ProjectModel, *args, **kwargs) -> WorkflowModel:
+    wd = WorkflowDataWebFactory(*args, **kwargs)
+    wm = WorkflowModel(
+        wfid=wd.wfid,
+        alias=wd.alias,
+        nb_name=wd.nb_name,
+        nbtask=wd.nbtask.dict(),
+        schedule=wd.schedule.dict(),
+        project=project,
+    )
+    return wm
 
 
 def token_generator(auth, user=None, *args, **kwargs):

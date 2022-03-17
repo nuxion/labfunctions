@@ -1,14 +1,16 @@
 from datetime import datetime
 from typing import Any, Dict, List, Union
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from nb_workflows import errors
+from nb_workflows.conf import defaults
+from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.executors import context as ctx
-from nb_workflows.hashes import Hash96
+from nb_workflows.hashes import generate_random
 from nb_workflows.managers import projects_mg
 from nb_workflows.models import WorkflowModel
 from nb_workflows.types import (
@@ -17,35 +19,64 @@ from nb_workflows.types import (
     ProjectData,
     ScheduleData,
     WorkflowData,
+    WorkflowDataWeb,
     WorkflowsList,
 )
 
 WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
 
 
-def _create_or_update_workflow(wfid: str, projectid: str, task: NBTask):
-    task_dict = task.dict()
-    task_dict["schedule"] = task.schedule.dict()
+def _create_or_update_workflow(wfid: str, projectid: str, wfd: WorkflowDataWeb):
+    task_dict = wfd.nbtask.dict()
+    schedule = None
+    if wfd.schedule:
+        schedule = wfd.schedule.dict()
 
     stmt = insert(WorkflowModel.__table__).values(
         wfid=wfid,
-        nb_name=task.nb_name,
-        alias=task.alias,
-        job_detail=task_dict,
+        nb_name=wfd.nb_name,
+        alias=wfd.alias,
+        nbtask=task_dict,
+        schedule=schedule,
         project_id=projectid,
-        enabled=task.enabled,
+        enabled=wfd.enabled,
     )
     stmt = stmt.on_conflict_do_update(
         # constraint="crawlers_page_bucket_id_fkey",
         index_elements=["wfid"],
         set_=dict(
-            job_detail=task_dict,
-            alias=task.alias,
-            enabled=task.enabled,
+            nb_name=wfd.nb_name,
+            nbtask=task_dict,
+            schedule=schedule,
+            alias=wfd.alias,
+            enabled=wfd.enabled,
             updated_at=datetime.utcnow(),
         ),
     )
 
+    return stmt
+
+
+def _update(wfid: str, projectid: str, wfd: WorkflowDataWeb):
+
+    task_dict = wfd.nbtask.dict()
+    schedule = None
+    if wfd.schedule:
+        schedule = wfd.schedule.dict()
+
+    wm_table = WorkflowModel.__table__
+    stmt = (
+        update(wm_table)
+        .where(wm_table.c.wfid == wfid)
+        .values(
+            nb_name=wfd.nb_name,
+            nbtask=task_dict,
+            schedule=schedule,
+            alias=wfd.alias,
+            enabled=wfd.enabled,
+            updated_at=datetime.utcnow(),
+        )
+    )
     return stmt
 
 
@@ -54,10 +85,10 @@ def select_workflow():
     return stmt
 
 
-def generate_wfid():
+def generate_wfid(size=defaults.WFID_LEN) -> str:
     """wfid refers to the workflow id, this is only defined once, when the
     workflow is created, and should to be unique."""
-    return Hash96.time_random_string().id_hex
+    return generate_random(size)
 
 
 def get_job_from_db(session, wfid) -> Union[WorkflowModel, None]:
@@ -121,46 +152,38 @@ async def get_all(session, project_id=None) -> List[WorkflowData]:
     return wfs
 
 
-async def get_by_alias(session, alias) -> Union[Dict[str, Any], None]:
-    if alias:
-        stmt = select_workflow().where(WorkflowModel.alias == alias).limit(1)
-        result = await session.execute(stmt)
-        row = result.scalar()
-        return row
-    return None
+async def get_by_alias(session, alias) -> Union[WorkflowModel, None]:
+    stmt = select_workflow().where(WorkflowModel.alias == alias).limit(1)
+    result = await session.execute(stmt)
+    row = result.scalar_one_or_none()
+    return row
 
 
-async def register(session, projectid: str, task: NBTask, update=False) -> str:
+async def register(session, projectid: str, wfd: WorkflowDataWeb, update=False) -> str:
     """Register workflows"""
     wfid = generate_wfid()
-    data_dict = task.dict()
-
-    pm = await projects_mg.get_by_projectid_model(session, projectid)
-    if not pm:
-        raise AttributeError("Projectid not found %s", projectid)
 
     if update:
-        wf = await get_by_wfid(session, task.wfid)
-        if wf:
-            wfid = wf.wfid
-
-        stmt = _create_or_update_workflow(wfid, projectid, task)
+        stmt = _update(wfd.wfid, projectid, wfd)
         await session.execute(stmt)
-    else:
-        data_dict["wfid"] = wfid
-        obj = WorkflowModel(
-            wfid=wfid,
-            nb_name=task.nb_name,
-            alias=task.alias,
-            job_detail=data_dict,
-            project_id=projectid,
-        )
-        session.add(obj)
-        try:
-            await session.commit()
-        except IntegrityError:
-            await session.rollback()
-            raise KeyError("Integrity error")
+        return wfd.wfid
+
+    data_dict = wfd.dict()
+    data_dict["wfid"] = wfid
+    obj = WorkflowModel(
+        wfid=wfid,
+        nb_name=wfd.nb_name,
+        alias=wfd.alias,
+        nbtask=data_dict,
+        schedule=data_dict.get("schedule"),
+        project_id=projectid,
+    )
+    session.add(obj)
+    try:
+        await session.flush()
+    except IntegrityError as e:
+        await session.rollback()
+        raise WorkflowRegisterError(projectid, wfd.alias, e)
     return wfid
 
 
@@ -180,9 +203,7 @@ def prepare_notebook_job(
     wm = get_by_prj_and_wfid_sync(session, projectid, wfid)
     if wm and wm.enabled:
         pm = projects_mg.get_by_projectid_model_sync(session, projectid)
-        task = NBTask(**wm.job_detail)
-        # if task.schedule:
-        #    task.schedule = ScheduleData(**wm.job_detail["schedule"])
+        task = NBTask(**wm.nbtask)
 
         pd = ProjectData.from_orm(pm)
         pd.username = pm.user.username
@@ -202,9 +223,7 @@ async def prepare_notebook_job_async(
     wm = await get_by_wfid_prj(session, projectid, wfid)
     if wm and wm.enabled:
         pm = await projects_mg.get_by_projectid_model(session, projectid)
-        task = NBTask(**wm.job_detail)
-        # if task.schedule:
-        #    task.schedule = ScheduleData(**wm.job_detail["schedule"])
+        task = NBTask(**wm.task)
 
         pd = ProjectData.from_orm(pm)
         pd.username = pm.user.username

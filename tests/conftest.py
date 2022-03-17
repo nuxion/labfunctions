@@ -15,7 +15,7 @@ from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
 from nb_workflows.models import HistoryModel, WorkflowModel
 
-from .factories import create_project_model, create_user_model
+from .factories import create_project_model, create_user_model, create_workflow_model
 from .resources import app_init
 
 # SQL_URI = os.getenv("SQLTEST")
@@ -43,9 +43,11 @@ def setupdb(connection):
     s = Session(bind=connection)
     um = create_user_model(username="admin_test", password="meolvide")
     pm = create_project_model(um, projectid="test", name="test")
+    wm = create_workflow_model(pm, wfid="wfid-test", alias="alias_test")
 
     s.add(um)
     s.add(pm)
+    s.add(wm)
     s.commit()
 
 

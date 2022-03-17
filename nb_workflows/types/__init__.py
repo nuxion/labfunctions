@@ -11,5 +11,6 @@ from .core import (
     SeqPipe,
     SimpleExecCtx,
     WorkflowData,
+    WorkflowDataWeb,
     WorkflowsList,
 )

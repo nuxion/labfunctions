@@ -45,7 +45,7 @@ class NBTask(BaseModel):
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
-    schedule: Optional[ScheduleData] = None
+    # schedule: Optional[ScheduleData] = None
 
 
 class SeqPipeSpec(BaseModel):
@@ -164,10 +164,20 @@ class ProjectWebRsp:
 
 class WorkflowData(BaseModel):
     wfid: str
+    alias: str
     nb_name: str
-    job_detail: Dict[str, Any]
-    enabled: bool
-    alias: Optional[str] = None
+    nbtask: Dict[str, Any]
+    enabled: bool = True
+    schedule: Optional[ScheduleData] = None
+
+
+class WorkflowDataWeb(BaseModel):
+    nb_name: str
+    alias: str
+    nbtask: NBTask
+    enabled: bool = True
+    wfid: Optional[str] = None
+    schedule: Optional[ScheduleData] = None
 
 
 @dataclass

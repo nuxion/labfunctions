@@ -476,3 +476,4 @@ scripts/todeploy/*
 .env.dev.docker
 nb_app/
 docker/.env.client.docker
+.env.dev.dockerclient
