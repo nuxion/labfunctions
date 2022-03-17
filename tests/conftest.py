@@ -139,7 +139,7 @@ async def sanic_app(async_conn):
     await app.asgi_client.aclose()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def auth_helper():
     auth = initialize("testing")
-    return auth
+    yield auth

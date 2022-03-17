@@ -39,9 +39,7 @@ class NBTask(BaseModel):
     docker_version: Optional[str] = "latest"
 
     enabled: bool = True
-    alias: Optional[str] = None
     description: Optional[str] = None
-    wfid: Optional[str] = None
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
@@ -165,14 +163,12 @@ class ProjectWebRsp:
 class WorkflowData(BaseModel):
     wfid: str
     alias: str
-    nb_name: str
     nbtask: Dict[str, Any]
     enabled: bool = True
     schedule: Optional[ScheduleData] = None
 
 
 class WorkflowDataWeb(BaseModel):
-    nb_name: str
     alias: str
     nbtask: NBTask
     enabled: bool = True

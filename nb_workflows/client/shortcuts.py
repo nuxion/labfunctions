@@ -16,7 +16,8 @@ from nb_workflows.utils import get_parent_folder, secure_filename
 from .agent import AgentClient
 from .diskclient import DiskClient
 from .nbclient import NBClient
-from .state import WorkflowsState, from_file
+from .state import WorkflowsState
+from .state import from_file as ws_from_file
 from .types import Credentials
 from .utils import (
     _example_task,
@@ -118,13 +119,18 @@ def nb_from_settings_agent() -> NBClient:
     )
 
 
-def nb_from_file(filepath, url_service=None) -> DiskClient:
+def from_file(
+    filepath, url_service=None, home_dir=defaults.CLIENT_HOME_DIR
+) -> DiskClient:
+    """intialize a py:class:`nb_workflows.client.diskclient.DiskClient`
+    using data from local like workflows.yaml.
+    """
 
     settings = load_client()
-    wf_state = from_file(filepath)
-    creds = get_credentials_disk()
+    wf_state = ws_from_file(filepath)
+    creds = get_credentials_disk(home_dir)
     if not creds:
-        creds = login_cli(url_service)
+        creds = login_cli(url_service, home_dir)
 
     return DiskClient(
         url_service=settings.WORKFLOW_SERVICE,

@@ -1,52 +1,73 @@
 version: 0.2.0
 project:
   name: pd-name0
-  projectid: WzP49tISi1
+  projectid: FoZMvN_4qP
   username: user0
-  description: test
+  description: Paper society certain.
   repository: null
 workflows:
   nb-alias0:
-    nb_name: nb-name0
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
-    enabled: true
     alias: nb-alias0
-    description: null
-    wfid: 43ncKBffmqPkjpuonR27LE0u
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
+    nbtask:
+      nb_name: nb-name0
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: KtLjWGTahAvOrhQ0WszWqaMV
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
   nb-alias1:
-    nb_name: nb-name1
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
-    enabled: true
     alias: nb-alias1
-    description: null
-    wfid: 5prBvMMeSbnFzDVfFxqrOlMD
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
-  nb-alias2:
-    nb_name: nb-name2
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
+    nbtask:
+      nb_name: nb-name1
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
     enabled: true
+    wfid: RzJqGnuDTGtFYKfvydgFRpT6
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
+  nb-alias2:
     alias: nb-alias2
-    description: null
-    wfid: 1FVcQDc_eZj8-ir3rYawetOd
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
+    nbtask:
+      nb_name: nb-name2
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: Rw09-WYZ7Ewne2Ipu1JGrlWQ
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
 pipelines:
   sequences: []

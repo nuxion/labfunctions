@@ -49,7 +49,7 @@ def exec(from_file, url_service, dev, wfid):
                 status = "ERROR"
             click.echo(f"Status: {status}")
     else:
-        c = client.nb_from_file(from_file, url_service=url_service)
+        c = client.from_file(from_file, url_service=url_service)
         rsp = local_dev_exec(wfid)
         if rsp:
             click.echo(f"Jobid: {rsp.wfid} locally executed")

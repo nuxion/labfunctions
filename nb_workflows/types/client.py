@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
-from .core import NBTask, ProjectData, SeqPipe
+from .core import NBTask, ProjectData, SeqPipe, WorkflowDataWeb
 
 
 class Pipelines(BaseModel):
@@ -12,5 +12,5 @@ class Pipelines(BaseModel):
 class WorkflowsFile(BaseModel):
     project: ProjectData
     version: str = "0.2"
-    workflows: Optional[Dict[str, NBTask]] = {}
+    workflows: Optional[Dict[str, WorkflowDataWeb]] = {}
     pipelines: Optional[Pipelines] = Pipelines()

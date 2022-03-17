@@ -1,40 +1,73 @@
 version: 0.2.0
 project:
-  name: test
-  projectid: hK5FjnCVmI
+  name: pd-name0
+  projectid: vtTrK-C51D
   username: user0
-  description: test
+  description: Usually significant.
   repository: null
 workflows:
   nb-alias0:
-    nb_name: nb-name0
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
-    enabled: true
     alias: nb-alias0
-    description: null
-    jobid: JwkzF9J9hQjKmV55YFiH7I1G
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
-    schedule: null
-  nb-alias1:
-    nb_name: nb-name1
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
+    nbtask:
+      nb_name: nb-name0
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
     enabled: true
+    wfid: e4kAdY2zD_1HRPnXnOkg-Yl2
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
+  nb-alias1:
     alias: nb-alias1
-    description: null
-    jobid: WQ1RiFxIGJFwiNveZLvkfrat
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
-    schedule: null
+    nbtask:
+      nb_name: nb-name1
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: FLbrbp1wbccugyb7VQ2wumDa
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
+  nb-alias2:
+    alias: nb-alias2
+    nbtask:
+      nb_name: nb-name2
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: 1oBLgSXM7wX06tJWfs6MY4wn
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
 pipelines:
   sequences: []

@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 import yaml
 
-from nb_workflows.types import NBTask, ProjectData, SeqPipe
+from nb_workflows.types import NBTask, ProjectData, SeqPipe, WorkflowDataWeb
 from nb_workflows.types.client import Pipelines, WorkflowsFile
 from nb_workflows.utils import Singleton, open_yaml, write_yaml
 
@@ -32,11 +32,13 @@ class WorkflowsState:
         self.snapshots: List[WorkflowsFile] = []
 
     @staticmethod
-    def listworkflows2dict(workflows: List[NBTask]) -> Dict[str, NBTask]:
+    def listworkflows2dict(
+        workflows: List[WorkflowDataWeb],
+    ) -> Dict[str, WorkflowDataWeb]:
         _workflows = {w.alias: w for w in workflows}
         return _workflows
 
-    def add_workflow(self, wf: NBTask):
+    def add_workflow(self, wf: WorkflowDataWeb):
         self._workflows.update({wf.alias: wf})
 
     def delete_workflow(self, alias):
@@ -60,17 +62,19 @@ class WorkflowsState:
         )
 
     @property
-    def workflows(self) -> Dict[str, NBTask]:
+    def workflows(self) -> Dict[str, WorkflowDataWeb]:
         return self._workflows
 
     @property
     def project(self) -> ProjectData:
         return self._project
 
-    def take_snapshot(self) -> WorkflowsFile:
+    def snapshot(self) -> WorkflowsFile:
+        """
+        It makes a deep copy of the workfile"
+        """
         wf = self.file.copy(deep=True)
 
-        breakpoint()
         # self.snapshots.append(wf)
         return wf
 
@@ -83,15 +87,19 @@ class WorkflowsState:
         return wf
 
     def write(self, fp="workflows.yaml"):
-        """Order to be dumped to a yaml file"""
-        wf = self.file
+        """
+        Writes the state to workflows.yaml (by default)
+        Also perfoms some serializations
+        """
+        wf = self.snapshot()
         wf_dict = wf.dict()
-        pipes = wf_dict.get("pipelines")
         _dict = OrderedDict()
         _dict["version"] = wf.version
         _dict["project"] = wf.project.dict()
-        _dict["workflows"] = wf_dict.get("workflows")
-        _dict["pipelines"] = wf_dict.get("pipelines")
+        if wf_dict.get("workflows"):
+            _dict["workflows"] = {k: v.dict() for k, v in wf.workflows.items()}
+        if wf_dict.get("pipelines"):
+            _dict["pipelines"] = wf.pipelines.dict()
         write_yaml(
             fp, dict(_dict), Dumper=WFDumper, default_flow_style=False, sort_keys=False
         )

@@ -68,7 +68,7 @@ def projectcli():
 )
 def upload(from_file, only_zip, env_file, current, url_service, all, action):
     """Prepare and push your porject information to the server"""
-    c = client.nb_from_file(from_file, url_service)
+    c = client.from_file(from_file, url_service)
     if action == "upload":
 
         # prepare secrets

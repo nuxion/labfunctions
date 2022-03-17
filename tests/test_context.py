@@ -32,15 +32,16 @@ def test_context_docker_name():
 
 def test_context_create_notebook():
     pd = factories.ProjectDataFactory()
-    task = factories.NBTaskFactory()
+    # task = factories.NBTaskFactory()
+    wd = factories.WorkflowDataWebFactory()
 
     id_ = ctx.generate_execid()
     pure = ctx.pure_execid(id_)
     execid = ctx.move_step_execid(ctx.steps.docker, id_)
 
-    r = ctx.create_notebook_ctx(pd, task, execid=execid)
+    r = ctx.create_notebook_ctx(pd, wd, execid=execid)
 
     assert r.params.get("WFID")
     assert r.params.get("EXECUTIONID")
     assert r.params.get("NOW")
-    assert r.output_name == f"{task.nb_name}.{pure}.ipynb"
+    assert r.output_name == f"{wd.nbtask.nb_name}.{pure}.ipynb"

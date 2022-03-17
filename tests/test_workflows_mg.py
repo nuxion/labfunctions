@@ -72,7 +72,7 @@ async def test_workflows_mg_register(async_session):
     wd = await workflows_mg.get_by_wfid(async_session, wfid)
 
     assert wfid == wd.wfid
-    assert wfd.nb_name == wd.nb_name
+    assert wfd.alias == wd.alias
 
 
 @pytest.mark.asyncio
@@ -85,13 +85,13 @@ async def test_workflows_mg_register_update(async_session):
     # wd.nb_name = "test_changed"
 
     wfd.wfid = "wfid-test"
-    wfd.nbtask.wfid = "wfid-test"
+    # wfd.nbtask.wfid = "wfid-test"
 
     wfid = await workflows_mg.register(async_session, "test", wfd, update=True)
 
     wd = await workflows_mg.get_by_wfid(async_session, wfd.wfid)
 
-    assert wfd.nb_name == wd.nb_name
+    assert wfd.alias == wd.alias
     assert wd.nbtask["params"]["daft_punk"] == "alive"
 
 

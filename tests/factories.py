@@ -8,6 +8,7 @@ from nb_workflows import utils
 from nb_workflows.auth.models import GroupModel, UserModel
 from nb_workflows.auth.types import GroupData, UserData
 from nb_workflows.auth.users import password_manager
+from nb_workflows.client.types import Credentials
 from nb_workflows.hashes import generate_random
 from nb_workflows.models import HistoryModel, ProjectModel, WorkflowModel
 from nb_workflows.types import (
@@ -29,7 +30,7 @@ class ProjectDataFactory(factory.Factory):
     name = factory.Sequence(lambda n: "pd-name%d" % n)
     projectid = factory.LazyAttribute(lambda n: generate_random(10))
     username = factory.Sequence(lambda n: "user%d" % n)
-    description = "test"
+    description = factory.Faker("text", max_nb_chars=24)
     # projectid = factory.
 
 
@@ -116,10 +117,10 @@ class WorkflowDataWebFactory(factory.Factory):
     class Meta:
         model = WorkflowDataWeb
 
-    nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
-    alias = factory.Faker("text", max_nb_chars=24)
+    # nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
+    alias = factory.Sequence(lambda n: "nb-alias%d" % n)
     nbtask = factory.LazyAttribute(lambda n: NBTaskFactory())
-    wfid = factory.Faker("text", max_nb_chars=24)
+    wfid = factory.LazyAttribute(lambda n: generate_random(24))
     schedule = factory.LazyAttribute(lambda n: ScheduleDataFactory())
 
 
@@ -157,7 +158,7 @@ def create_workflow_model(project: ProjectModel, *args, **kwargs) -> WorkflowMod
     wm = WorkflowModel(
         wfid=wd.wfid,
         alias=wd.alias,
-        nb_name=wd.nb_name,
+        # nb_name=wd.nb_name,
         nbtask=wd.nbtask.dict(),
         schedule=wd.schedule.dict(),
         project=project,
@@ -169,3 +170,9 @@ def token_generator(auth, user=None, *args, **kwargs):
     _user = user or create_user_model(*args, **kwargs)
     tkn = run_sync(auth.generate_access_token, _user)
     return tkn
+
+
+def credentials_generator(auth, user=None, *args, **kwargs):
+    _user = user or create_user_model(*args, **kwargs)
+    tkn = run_sync(auth.generate_access_token, _user)
+    return Credentials(access_token=tkn, refresh_token="12345")

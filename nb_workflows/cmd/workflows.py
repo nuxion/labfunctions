@@ -67,7 +67,7 @@ def create(ctx, notebook, alias):
     is executed)."""
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
-    c = client.nb_from_file(from_file, url_service=url_service)
+    c = client.from_file(from_file, url_service=url_service)
     c.create_workflow(notebook, alias)
 
 
@@ -84,7 +84,7 @@ def push(ctx, update):
     """Push workflows definitions to the server"""
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
-    c = client.nb_from_file(from_file, url_service=url_service)
+    c = client.from_file(from_file, url_service=url_service)
     c.workflows_push(update=update)
 
 
@@ -95,7 +95,7 @@ def list_wf(ctx):
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
 
-    c = client.nb_from_file(from_file, url_service=url_service)
+    c = client.from_file(from_file, url_service=url_service)
     data = c.workflows_list()
     print("\nnb_name | wfid | alias | is_enabled\n")
     for d in data:
@@ -112,7 +112,7 @@ def exec(ctx, local, wfid):
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
     if not local:
-        c = client.nb_from_file(from_file, url_service=url_service)
+        c = client.from_file(from_file, url_service=url_service)
         rsp = c.workflows_enqueue(wfid)
         if rsp:
             click.echo(f"Executed: {rsp} on the server {url_service}")
@@ -134,12 +134,12 @@ def exec(ctx, local, wfid):
 @click.pass_context
 def delete(ctx, wfid):
     """Delete a workflow definition from server"""
-    c = client.nb_from_file(from_file, url_service=url_service)
+    c = client.from_file(from_file, url_service=url_service)
     rsp = c.workflows_delete(wfid)
     print(f"Wfid: {wfid}, deleted. Code {rsp}")
 
     # elif action == "sync":
-    #     c = client.nb_from_file(from_file, url_service=url_service)
+    #     c = client.from_file(from_file, url_service=url_service)
     #     c.sync_file()
     #     click.echo(f"{from_file} sync")
 

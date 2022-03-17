@@ -34,7 +34,6 @@ def _create_or_update_workflow(wfid: str, projectid: str, wfd: WorkflowDataWeb):
 
     stmt = insert(WorkflowModel.__table__).values(
         wfid=wfid,
-        nb_name=wfd.nb_name,
         alias=wfd.alias,
         nbtask=task_dict,
         schedule=schedule,
@@ -45,7 +44,6 @@ def _create_or_update_workflow(wfid: str, projectid: str, wfd: WorkflowDataWeb):
         # constraint="crawlers_page_bucket_id_fkey",
         index_elements=["wfid"],
         set_=dict(
-            nb_name=wfd.nb_name,
             nbtask=task_dict,
             schedule=schedule,
             alias=wfd.alias,
@@ -69,7 +67,6 @@ def _update(wfid: str, projectid: str, wfd: WorkflowDataWeb):
         update(wm_table)
         .where(wm_table.c.wfid == wfid)
         .values(
-            nb_name=wfd.nb_name,
             nbtask=task_dict,
             schedule=schedule,
             alias=wfd.alias,
@@ -172,7 +169,6 @@ async def register(session, projectid: str, wfd: WorkflowDataWeb, update=False) 
     data_dict["wfid"] = wfid
     obj = WorkflowModel(
         wfid=wfid,
-        nb_name=wfd.nb_name,
         alias=wfd.alias,
         nbtask=data_dict,
         schedule=data_dict.get("schedule"),

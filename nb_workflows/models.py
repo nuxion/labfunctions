@@ -141,7 +141,7 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     id = Column(Integer, primary_key=True)
     wfid = Column(String(24), index=True, unique=True)
     alias = Column(String(33), index=True, nullable=False)
-    nb_name = Column(String(), nullable=False)
+    # nb_name = Column(String(), nullable=False)
     nbtask = Column(JSONB(), nullable=False)
     schedule = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)

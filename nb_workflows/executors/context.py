@@ -11,6 +11,7 @@ from nb_workflows.types import (
     NBTask,
     ProjectData,
     ScheduleData,
+    WorkflowDataWeb,
 )
 from nb_workflows.utils import today_string
 
@@ -95,16 +96,22 @@ def generate_docker_name(pd: ProjectData, docker_version: str):
     return f"{pd.username}/{pd.name}:{docker_version}"
 
 
-def create_notebook_ctx(pd: ProjectData, task: NBTask, execid) -> ExecutionNBTask:
+def create_notebook_ctx(
+    pd: ProjectData, wd: WorkflowDataWeb, execid
+) -> ExecutionNBTask:
+    """It creates the execution context of a notebook based on project and workflow data"""
     # root = Path.cwd()
     root = Path(defaults.WORKFLOWS_FOLDER_NAME)
     today = today_string(format_="day")
     _now = datetime.utcnow().isoformat()
+    wfid = wd.wfid
+
+    task = wd.nbtask
 
     _execid = pure_execid(execid)
 
-    _params = task.params.copy()
-    _params["WFID"] = task.wfid
+    _params = wd.nbtask.params.copy()
+    _params["WFID"] = wfid
     _params["EXECUTIONID"] = _execid
     _params["NOW"] = _now
 
@@ -121,7 +128,7 @@ def create_notebook_ctx(pd: ProjectData, task: NBTask, execid) -> ExecutionNBTas
 
     return ExecutionNBTask(
         projectid=pd.projectid,
-        wfid=task.wfid,
+        wfid=wfid,
         execid=_execid,
         nb_name=task.nb_name,
         machine=task.machine,

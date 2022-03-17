@@ -18,7 +18,7 @@ def local_dev_exec(wfid) -> Union[ExecutionResult, None]:
     """
     logger = set_logger("local_exec", level=settings.LOGLEVEL)
     logger.info(f"Runing {wfid}")
-    # nb_client = client.nb_from_file("workflows.yaml")
+    # nb_client = client.from_file("workflows.yaml")
 
     wf = client.NBClient.read("workflows.yaml")
     for w in wf.workflows:
