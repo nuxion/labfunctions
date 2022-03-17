@@ -40,7 +40,7 @@ def test_context_create_notebook():
 
     r = ctx.create_notebook_ctx(pd, task, execid=execid)
 
-    assert r.params.get("JOBID")
+    assert r.params.get("WFID")
     assert r.params.get("EXECUTIONID")
     assert r.params.get("NOW")
     assert r.output_name == f"{task.nb_name}.{pure}.ipynb"

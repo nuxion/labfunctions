@@ -40,20 +40,20 @@ def machine_q(name) -> str:
     return f"{df.Q_NS.machine}.{name}"
 
 
-def scheduler_dispatcher(projectid: str, jobid: str, execid: str) -> Union[Job, None]:
+def scheduler_dispatcher(projectid: str, wfid: str, execid: str) -> Union[Job, None]:
     """
     This is the entrypoint of any workflow or job to be executed by RQ and it
     will be executed by :class:`nb_workflows.scheduler.SchedulerExecutor`
     in the RQWorker of the control plane.
 
-    This function receive the projectid and jobid as reference of the task to
+    This function receive the projectid and wfid as reference of the task to
     be completed. It will use this references to get information about the job
     to execute. In the future, it could act as a router, or each kind of action
     could have their own dispatcher.
 
     Because rq-scheduler has some limitations:
        1. Doesn't always follow the same functions firms of RQ
-       2. jobid is inmutable.
+       2. wfid is inmutable.
        3. job params are inmutable.
        4. Slow official releases in pypi
 
@@ -68,7 +68,7 @@ def scheduler_dispatcher(projectid: str, jobid: str, execid: str) -> Union[Job, 
     ----------
     :param projectid: is the id of project, from ProjectModel
     :type str:
-    :param jobid: jobid from WorkflowModel
+    :param wfid: wfid from WorkflowModel
     :type str:
 
     :return: a Job instance from RQ a or None if the Job or the project is not found
@@ -88,7 +88,7 @@ def scheduler_dispatcher(projectid: str, jobid: str, execid: str) -> Union[Job, 
             next_step = context.move_step_execid(context.steps.docker, execid)
 
             exec_nb_ctx = workflows_mg.prepare_notebook_job(
-                session, projectid, jobid, next_step
+                session, projectid, wfid, next_step
             )
             scheduler.enqueue_notebook(exec_nb_ctx, qname=exec_nb_ctx.machine)
 
@@ -97,7 +97,7 @@ def scheduler_dispatcher(projectid: str, jobid: str, execid: str) -> Union[Job, 
             logger.error(e)
         except errors.WorkflowDisabled as e:
             logger.warning(e)
-            scheduler.cancel_job(jobid)
+            scheduler.cancel_job(wfid)
 
 
 class SchedulerExecutor:
@@ -121,7 +121,7 @@ class SchedulerExecutor:
         self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
         self.is_async = is_async
 
-    def dispatcher(self, projectid, jobid, execid=None) -> Job:
+    def dispatcher(self, projectid, wfid, execid=None) -> Job:
         """
         Entrypoint of a task execution. Beacause it is a dispatcher it only needs
         the references of job to execute. It will dispatch a job to
@@ -140,9 +140,7 @@ class SchedulerExecutor:
         """
         execid = execid or context.ExecID().firm("dispatcher")
 
-        j = self.Q.enqueue(
-            scheduler_dispatcher, projectid, jobid, execid, job_id=execid
-        )
+        j = self.Q.enqueue(scheduler_dispatcher, projectid, wfid, execid, job_id=execid)
         return j
 
     def enqueue_notebook(self, nb_job_ctx: ExecutionNBTask, qname: str) -> Job:
@@ -204,42 +202,42 @@ class SchedulerExecutor:
 
         return job
 
-    async def schedule(self, project_id, jobid, task: NBTask) -> str:
+    async def schedule(self, project_id, wfid, task: NBTask) -> str:
         """Put in RQ-Scheduler a workflows previously created"""
         # schedule_data = data_dict["schedule"]
         # task = NBTask(**data_dict)
         # task.schedule = ScheduleData(**schedule_data)
-        # jobid = await workflows_mg.register(session, project_id, task, update=update)
+        # wfid = await workflows_mg.register(session, project_id, task, update=update)
 
         if task.schedule.cron:
-            await run_async(self._cron2redis, project_id, jobid, task)
+            await run_async(self._cron2redis, project_id, wfid, task)
         else:
-            await run_async(self._interval2redis, project_id, jobid, task)
+            await run_async(self._interval2redis, project_id, wfid, task)
 
-        return jobid
+        return wfid
 
-    def _interval2redis(self, projectid: str, jobid: str, task: NBTask):
+    def _interval2redis(self, projectid: str, wfid: str, task: NBTask):
         interval = task.schedule
         start_in_dt = datetime.utcnow() + timedelta(minutes=interval.start_in_min)
 
         self.scheduler.schedule(
-            id=jobid,
+            id=wfid,
             scheduled_time=start_in_dt,
             func=scheduler_dispatcher,
-            args=[projectid, jobid],
+            args=[projectid, wfid],
             interval=interval.interval,
             repeat=interval.repeat,
             queue_name=self.qname,
             timeout=_DEFAULT_SCH_TASK_TO,
         )
 
-    def _cron2redis(self, projectid: str, jobid: str, task: NBTask):
+    def _cron2redis(self, projectid: str, wfid: str, task: NBTask):
         cron = task.schedule
         self.scheduler.cron(
             cron.cron,
-            id=jobid,
+            id=wfid,
             func=scheduler_dispatcher,
-            args=[projectid, jobid],
+            args=[projectid, wfid],
             repeat=cron.repeat,
             queue_name=self.qname,
         )
@@ -250,7 +248,7 @@ class SchedulerExecutor:
         for x in self.scheduler.get_jobs():
             jobs.append(
                 dict(
-                    jobid=x.id,
+                    wfid=x.id,
                     func_name=x.func_name,
                     created_at=x.created_at.isoformat(),
                 )
@@ -262,15 +260,15 @@ class SchedulerExecutor:
         for j in self.scheduler.get_jobs():
             self.scheduler.cancel(j)
 
-    def cancel_job(self, jobid):
+    def cancel_job(self, wfid):
         """Cancel job from redis"""
-        self.scheduler.cancel(jobid)
+        self.scheduler.cancel(wfid)
 
-    async def cancle_job_async(self, jobid):
-        await run_async(self.scheduler.cancel, jobid)
+    async def cancle_job_async(self, wfid):
+        await run_async(self.scheduler.cancel, wfid)
 
-    async def delete_workflow(self, session, projectid, jobid: str):
+    async def delete_workflow(self, session, projectid, wfid: str):
         """Delete job from redis and db"""
 
-        await run_async(self.cancel_job, jobid)
-        await workflows_mg.delete_wf(session, projectid, jobid)
+        await run_async(self.cancel_job, wfid)
+        await workflows_mg.delete_wf(session, projectid, wfid)

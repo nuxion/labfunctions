@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseSettings
 
-from .defaults import EXECID_LEN, JOBID_LEN, PROJECTID_LEN
+from .defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
 
 
 class ServerSettings(BaseSettings):
@@ -35,7 +35,7 @@ class ServerSettings(BaseSettings):
     RQ_CONTROL_QUEUE: str = "control"
     EXECID_LEN: int = EXECID_LEN
     PROJECTID_LEN: int = PROJECTID_LEN
-    JOBID_LEN: int = JOBID_LEN
+    WFID_LEN: int = WFID_LEN
 
     # Logs:
     LOGLEVEL: str = "INFO"

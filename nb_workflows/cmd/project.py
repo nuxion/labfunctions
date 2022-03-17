@@ -14,10 +14,11 @@ from nb_workflows.utils import execute_cmd
 settings = load_client()
 
 
-@click.group()
+@click.group(name="project")
 def projectcli():
     """
-    wrapper
+    Synchronize project with the server
+
     """
     pass
 
@@ -65,8 +66,8 @@ def projectcli():
 @click.argument(
     "action", type=click.Choice(["upload", "dockerfile", "agent-token", "recreate"])
 )
-def project(from_file, only_zip, env_file, current, url_service, all, action):
-    """Manage project settings"""
+def upload(from_file, only_zip, env_file, current, url_service, all, action):
+    """Prepare and push your porject information to the server"""
     c = client.nb_from_file(from_file, url_service)
     if action == "upload":
 
@@ -101,10 +102,11 @@ def project(from_file, only_zip, env_file, current, url_service, all, action):
 
 @projectcli.command()
 def jupyter():
+    """Run a jupyter instance"""
     sys.path.append(os.getcwd())
     os.environ["NS_BASE_PATH"] = os.getcwd()
     execute_cmd("jupyter lab")
 
 
-projectcli.add_command(project)
+projectcli.add_command(upload)
 projectcli.add_command(jupyter)

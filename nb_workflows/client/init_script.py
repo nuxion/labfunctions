@@ -4,7 +4,7 @@ from typing import Tuple
 
 from nb_workflows import client
 from nb_workflows.client.uploads import generate_dockerfile
-from nb_workflows.conf import load_client
+from nb_workflows.conf import defaults, load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 
 
@@ -50,8 +50,6 @@ def create_dirs(base_path):
 
 
 def workflow_init(base_path):
-
-    # settings = load_client(settings_module="nb_app.settings")
     settings = load_client()
     nb_client = client.init(settings.WORKFLOW_SERVICE, example=True)
     # w_conf.write(str(root / "workflows.example.toml"))
@@ -71,7 +69,7 @@ def init(base_path, init_dirs=True):
     init_client_dir_app(
         base_path,
         projectid=nb_client.projectid,
-        project_name=nb_client.wf_file.project.name,
+        project_name=nb_client.state.project.name,
     )
 
     generate_files(base_path)

@@ -66,7 +66,7 @@ def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
         status = -1
 
     row = HistoryModel(
-        jobid=nb_task.jobid,
+        wfid=nb_task.wfid,
         execid=execution_result.execid,
         elapsed_secs=execution_result.elapsed_secs,
         nb_name=execution_result.name,
@@ -83,7 +83,7 @@ def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
             send_ok(
                 medium,
                 (
-                    f"{nb_task.jobid} Executed OK in "
+                    f"{nb_task.wfid} Executed OK in "
                     f"{execution_result.elapsed_secs} secs. "
                     f"NB: {execution_result.name} "
                     f"Alias: {nb_task.alias}."
@@ -95,7 +95,7 @@ def job_history_register(execution_result: ExecutionResult, nb_task: NBTask):
             send_fail(
                 medium,
                 (
-                    f"{nb_task.jobid} FAILED in "
+                    f"{nb_task.wfid} FAILED in "
                     f"{execution_result.elapsed_secs} secs. "
                     f"NB: {execution_result.name} "
                     f"Alias: {nb_task.alias}."
@@ -114,7 +114,7 @@ async def register_history_db(
             send_ok(
                 medium,
                 (
-                    f"{nb_task.jobid} Executed OK in "
+                    f"{nb_task.wfid} Executed OK in "
                     f"{execution_result.elapsed_secs} secs. "
                     f"NB: {execution_result.name} "
                     f"Alias: {nb_task.alias}."
@@ -126,7 +126,7 @@ async def register_history_db(
             send_fail(
                 medium,
                 (
-                    f"{nb_task.jobid} FAILED in "
+                    f"{nb_task.wfid} FAILED in "
                     f"{execution_result.elapsed_secs} secs. "
                     f"NB: {execution_result.name} "
                     f"Alias: {nb_task.alias}."

@@ -20,11 +20,11 @@ def select_history():
 
 
 async def get_last(
-    session, projectid: str, jobid: str, limit=1
+    session, projectid: str, wfid: str, limit=1
 ) -> Union[HistoryLastResponse, None]:
     stmt = (
         select(HistoryModel)
-        .where(HistoryModel.jobid == jobid)
+        .where(HistoryModel.wfid == wfid)
         .where(HistoryModel.project_id == projectid)
         .order_by(HistoryModel.created_at.desc())
         .limit(limit)
@@ -38,7 +38,7 @@ async def get_last(
     for r in results:
         rsp.append(
             HistoryResult(
-                jobid=jobid,
+                wfid=wfid,
                 execid=r.execid,
                 status=r.status,
                 result=r.result,
@@ -65,7 +65,7 @@ async def create(session, execution_result: ExecutionResult) -> HistoryModel:
         status = -1
 
     row = HistoryModel(
-        jobid=execution_result.jobid,
+        wfid=execution_result.wfid,
         execid=execution_result.execid,
         project_id=execution_result.projectid,
         elapsed_secs=execution_result.elapsed_secs,

@@ -13,10 +13,10 @@ from nb_workflows.db.sync import SQL
 settings = load_server()
 
 
-@click.group(chain=True)
+@click.group(name="manager")
 def managercli():
     """
-    wrapper
+    Managment tasks like user creation and db init
     """
     pass
 
@@ -98,5 +98,5 @@ def users(sql, superuser, username, action):
         click.echo("Wrong param...")
 
 
-managercli.add_command(db)
-managercli.add_command(users)
+# managercli.add_command(db)
+# managercli.add_command(users)

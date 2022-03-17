@@ -55,7 +55,7 @@ def builder_executor(projectid, project_zip_route):
 
 def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
     """
-    It will get a jobid from the control plane.
+    It will get a wfid from the control plane.
     This function runs in RQ Worker from a data plane machine.
 
     Maybe a polemic design decision here is passing task execution information
@@ -82,14 +82,14 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
 
     priv_key = ag_client.projects_private_key()
     if not priv_key:
-        logger.error(f"jobdid:{exec_ctx.jobid} private key not found")
+        logger.error(f"jobdid:{exec_ctx.wfid} private key not found")
         elapsed = time.time() - _started
         result = context.make_error_result(exec_ctx, elapsed)
         ag_client.history_register(result)
         return
 
     logger.info(
-        f"jobdid:{exec_ctx.jobid} execid:{exec_ctx.execid} "
+        f"jobdid:{exec_ctx.wfid} execid:{exec_ctx.execid} "
         f"Sending to docker: {exec_ctx.docker_name}"
     )
     try:

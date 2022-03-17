@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -12,5 +12,5 @@ class Pipelines(BaseModel):
 class WorkflowsFile(BaseModel):
     project: ProjectData
     version: str = "0.2"
-    workflows: Optional[List[NBTask]] = []
+    workflows: Optional[Dict[str, NBTask]] = {}
     pipelines: Optional[Pipelines] = Pipelines()

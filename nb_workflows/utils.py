@@ -1,4 +1,5 @@
 import asyncio
+import codecs
 import logging
 import os
 import pickle
@@ -66,6 +67,12 @@ def check_port(ip: str, port: int) -> bool:
 async def run_async(func, *args, **kwargs):
     loop = asyncio.get_running_loop()
     rsp = await loop.run_in_executor(None, func, *args, **kwargs)
+    return rsp
+
+
+def run_sync(func, *args, **kwargs):
+    loop = asyncio.get_event_loop()
+    rsp = loop.run_until_complete(func(*args, **kwargs))
     return rsp
 
 
@@ -323,3 +330,28 @@ def under_virtualenv() -> bool:
     if sys.prefix == sys.base_prefix:
         return False
     return True
+
+
+def read(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    with codecs.open(os.path.join(here, rel_path), "r") as fp:
+        return fp.read()
+
+
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith("__version__"):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError("Unable to find version string.")
+
+
+def parse_var_line(line):
+    """
+    This regex works only if spaces are not used
+     ^(\w*)=?*(['|"].*?['|"|])$
+    """
+    k = line.split("=", maxsplit=1)[0].strip()
+    v = line.split("=", maxsplit=1)[1].replace('"', "").strip("\n").strip()
+    return k, v

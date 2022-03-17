@@ -6,15 +6,7 @@ from nb_workflows.utils import init_blueprints
 settings = load_server()
 
 
-@click.group()
-def servicescli():
-    """
-    wrapper
-    """
-    pass
-
-
-@servicescli.command()
+@click.command(name="web")
 @click.option("--host", "-H", default="0.0.0.0", help="Listening Host")
 @click.option("--port", "-p", default="8000", help="Listening Port")
 @click.option("--workers", "-w", default=1, help="How many workers start?")
@@ -31,8 +23,8 @@ def servicescli():
     "--access-log", "-L", default=False, is_flag=True, help="Enable access_log"
 )
 @click.option("--debug", "-D", default=False, is_flag=True, help="Enable Auto reload")
-def web(host, port, workers, apps, auto_reload, access_log, debug):
-    """Run web server"""
+def webcli(host, port, workers, apps, auto_reload, access_log, debug):
+    """Run API Web Server"""
     # pylint: disable=import-outside-toplevel
     from nb_workflows.server import app
 
@@ -50,7 +42,7 @@ def web(host, port, workers, apps, auto_reload, access_log, debug):
     )
 
 
-@servicescli.command()
+@click.command(name="rqscheduler")
 @click.option("--host", "-H", default=settings.RQ_REDIS_HOST, help="Redis host")
 @click.option("--port", "-p", default=settings.RQ_REDIS_PORT, help="Redis port")
 @click.option("--db", "-d", default=settings.RQ_REDIS_DB, help="Redis DB")
@@ -58,7 +50,7 @@ def web(host, port, workers, apps, auto_reload, access_log, debug):
     "--interval", "-i", default=60, help="How often the scheduler checks for work"
 )
 @click.option("--log-level", "-L", default="INFO")
-def rqscheduler(host, port, db, interval, log_level):
+def rqschedulercli(host, port, db, interval, log_level):
     """Run RQ scheduler"""
     # pylint: disable=import-outside-toplevel
     from redis import Redis
@@ -71,7 +63,7 @@ def rqscheduler(host, port, db, interval, log_level):
     scheduler.run()
 
 
-@servicescli.command()
+@click.command(name="rqworker")
 @click.option("--workers", "-w", default=2, help="How many workers spawn")
 @click.option(
     "--qnames",
@@ -79,7 +71,7 @@ def rqscheduler(host, port, db, interval, log_level):
     default="default",
     help="Comma separated list of queues to listen to",
 )
-def rqworker(workers, qnames):
+def rqworkercli(workers, qnames):
     """Run RQ worker"""
     # pylint: disable=import-outside-toplevel
     from nb_workflows.qworker import run_workers
@@ -88,9 +80,3 @@ def rqworker(workers, qnames):
     # queues = [defaults. for q in qnames.split(",")]
 
     run_workers(qnames.split(","), workers)
-
-
-# servicescli.add_command(manager)
-servicescli.add_command(web)
-servicescli.add_command(rqscheduler)
-servicescli.add_command(rqworker)

@@ -22,7 +22,7 @@ class NBTask(BaseModel):
     :param nb_name: is the name of the notebook to run
     :param params: a dict with the params to run the specific notebook,
     wrapper around papermill.
-    :param jobid: jobid from WorkflowModel
+    :param wfid: wfid from WorkflowModel
     :param timeout: time in secs to wait from the start of the task
     to mark the task as failed.
     :param notifications_ok: If ok send a notification to discord or slack.
@@ -41,11 +41,11 @@ class NBTask(BaseModel):
     enabled: bool = True
     alias: Optional[str] = None
     description: Optional[str] = None
-    jobid: Optional[str] = None
+    wfid: Optional[str] = None
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
-    schedule: Optional[ScheduleData] = None
+    # schedule: Optional[ScheduleData] = None
 
 
 class SeqPipeSpec(BaseModel):
@@ -71,7 +71,7 @@ class ExecutionNBTask(BaseModel):
     """
 
     projectid: str
-    jobid: str
+    wfid: str
     execid: str
     nb_name: str
     params: Dict[str, Any]
@@ -97,7 +97,7 @@ class ExecutionResult(BaseModel):
 
     projectid: str
     execid: str
-    jobid: str
+    wfid: str
     name: str
     params: Dict[str, Any]
     input_: str
@@ -111,14 +111,14 @@ class ExecutionResult(BaseModel):
 
 @dataclass
 class SimpleExecCtx:
-    jobid: str
+    wfid: str
     execid: str
     execution_dt: str
 
 
 @dataclass
 class HistoryResult:
-    jobid: str
+    wfid: str
     # posible status: queued, started, deferred,
     # finished, stopped, scheduled, canceled, failed.
     status: int
@@ -163,11 +163,21 @@ class ProjectWebRsp:
 
 
 class WorkflowData(BaseModel):
-    jobid: str
+    wfid: str
+    alias: str
     nb_name: str
-    job_detail: Dict[str, Any]
-    enabled: bool
-    alias: Optional[str] = None
+    nbtask: Dict[str, Any]
+    enabled: bool = True
+    schedule: Optional[ScheduleData] = None
+
+
+class WorkflowDataWeb(BaseModel):
+    nb_name: str
+    alias: str
+    nbtask: NBTask
+    enabled: bool = True
+    wfid: Optional[str] = None
+    schedule: Optional[ScheduleData] = None
 
 
 @dataclass
