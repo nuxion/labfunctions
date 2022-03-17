@@ -101,3 +101,10 @@ async def test_utils_run_async():
 
     rsp = await utils.run_async(sync_function, "hello")
     assert rsp == "hello" * 2
+
+
+def test_utils_get_version():
+
+    ver = utils.get_version("__version__.py")
+    py_dict = utils.open_toml("pyproject.toml")
+    assert ver == py_dict["tool"]["poetry"]["version"]

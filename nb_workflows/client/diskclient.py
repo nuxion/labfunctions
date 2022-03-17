@@ -50,15 +50,13 @@ class DiskClient(BaseClient):
         )
 
     def workflows_push(self, refresh_workflows=True, update=False):
-        breakpoint()
         _workflows = self.state.take_snapshot()
-        for _, task in _workflows:
+        for _, task in _workflows.workflows.items():
             if update:
                 r = self.workflows_update(task)
             else:
                 if not task.wfid:
                     r = self.workflows_create(task)
-                    breakpoint()
                     if r.status_code == 200:
                         print(f"Workflow {task.alias} already exist")
                     elif r.status_code == 201:

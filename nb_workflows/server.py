@@ -11,6 +11,9 @@ from nb_workflows.auth import authenticate, users
 from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
+from nb_workflows.utils import get_version
+
+version = get_version("__version__.py")
 
 
 def create_db_instance(url=settings.ASQL) -> AsyncSQL:
@@ -91,7 +94,8 @@ def app_init(
 
     @_app.get("/status")
     async def status_handler(request):
-        return json(dict(msg="We are ok"))
+
+        return json(dict(msg="We are ok", version=version))
 
     return _app
 

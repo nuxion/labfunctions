@@ -69,6 +69,8 @@ class WorkflowsState:
 
     def take_snapshot(self) -> WorkflowsFile:
         wf = self.file.copy(deep=True)
+
+        breakpoint()
         # self.snapshots.append(wf)
         return wf
 

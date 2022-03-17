@@ -112,7 +112,9 @@ class BaseClient:
     def _http_client_creator(self) -> httpx.Client:
         """When token is updated the client MUST BE updated too."""
         # _headers = {"Authorization": f"Bearer {self.creds.access_token}"}
-        return self._http_creator(base_url=self._addr, timeout=self._timeout)
+        return self._http_creator(
+            base_url=self._addr, timeout=self._timeout, auth=self._auth
+        )
 
     @property
     def creds(self) -> Credentials:
