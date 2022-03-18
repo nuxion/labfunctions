@@ -3,11 +3,13 @@ import pathlib
 from datetime import datetime
 from typing import List, Optional
 
+from pydantic.error_wrappers import ValidationError
 from sanic import Blueprint, Sanic
 from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
+from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.executors.context import ExecID
 from nb_workflows.managers import workflows_mg
 from nb_workflows.scheduler import SchedulerExecutor, scheduler_dispatcher
@@ -92,7 +94,7 @@ async def workflow_create(request, projectid):
     """
     try:
         wfd = WorkflowDataWeb(**request.json)
-    except TypeError:
+    except ValidationError:
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
@@ -112,7 +114,7 @@ async def workflow_create(request, projectid):
 
 
 @workflows_bp.put("/<projectid>")
-@openapi.body({"application/json": NBTask})
+@openapi.body({"application/json": WorkflowDataWeb})
 @openapi.parameter("projectid", str, "path")
 @openapi.response(200, {"wfid": str}, "Notebook Workflow accepted")
 @openapi.response(400, {"msg": str}, description="wrong params")
@@ -123,10 +125,8 @@ async def workflow_update(request, projectid):
     Register a notebook workflow and schedule it
     """
     try:
-        nb_task = NBTask(**request.json)
-        if nb_task.schedule:
-            nb_task.schedule = ScheduleData(**request.json["schedule"])
-    except TypeError:
+        wfd = WorkflowDataWeb(**request.json)
+    except ValidationError:
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
@@ -134,14 +134,12 @@ async def workflow_update(request, projectid):
 
     async with session.begin():
         try:
-            wfid = await workflows_mg.register(session, projectid, nb_task, update=True)
+            wfid = await workflows_mg.register(session, projectid, wfd, update=True)
             # await scheduler.cancel_job_async(wfid)
             # if nb_task.enabled and nb_task.schedule:
             #    await scheduler.schedule(projectid, wfid, nb_task)
-        except KeyError as e:
-            return json(dict(msg="workflow already exist"), status=200)
-        except AttributeError:
-            return json(dict(msg="project not found"), status=404)
+        except WorkflowRegisterError as e:
+            return json(dict(msg=str(e)), status=503)
 
         return json(dict(wfid=wfid), status=201)
 

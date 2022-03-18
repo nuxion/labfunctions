@@ -7,33 +7,9 @@ from sanic_ext import Extend
 from sanic_jwt import Initialize
 
 from nb_workflows.auth import authenticate, users
+from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
-
-nb_task_simple = NBTask(
-    nb_name="test_workflow",
-    params={"TIMEOUT": 1},
-)
-
-schedule_data = ScheduleData(start_in_min=0, repeat=None, interval="5")
-
-nb_task_schedule = NBTask(
-    nb_name="test_workflow",
-    params={"TIMEOUT": 1},
-    wfid="test_id",
-    schedule=schedule_data,
-)
-
-
-wd = WorkflowData(
-    wfid="test_id",
-    nb_name="test_workflows",
-    alias="test",
-    nbtask=nb_task_schedule.dict(),
-    enabled=True,
-)
-
-pd = ProjectData(name="test", projectid="asd", username="test")
 
 
 def app_init(db, web_redis, rq_redis=None, app_name="test"):

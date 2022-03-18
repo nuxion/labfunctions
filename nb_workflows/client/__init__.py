@@ -1,8 +1,8 @@
 from .nbclient import NBClient
 from .shortcuts import (
     agent_from_settings,
+    from_env,
     from_file,
-    login_cli,
     minimal_client,
     nb_from_settings,
 )

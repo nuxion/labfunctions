@@ -6,6 +6,7 @@ import click
 # from nb_workflows.io.fileserver import FileFileserver
 import httpx
 from rich.console import Console
+from rich.panel import Panel
 
 from nb_workflows import client
 from nb_workflows.client import init_script
@@ -26,10 +27,9 @@ service = os.getenv("NS_WORKFLOW_SERVICE", "http://localhost:8000")
 )
 def login(url_service):
     """Login to NB Workflows service"""
-    click.echo(f"\nLogin to NB Workflows services {url_service}\n")
-    creds = client.login_cli(url_service)
-    if not creds:
-        click.echo(f"Error auth, try again")
+    # click.echo(f"\nLogin to NB Workflows services {url_service}\n")
+    c = client.from_file(url_service=url_service)
+    c.logincli()
 
 
 @click.command()
@@ -52,11 +52,16 @@ def startproject(url_service, create_dirs, base_path):
 
     root = Path(base_path)
     console = Console()
-    console.print("=" * 80, style="magenta")
-    console.print(
-        f"\n Starting project at [blue underline]{root.resolve()}[/blue underline]\n"
+    p = Panel.fit(
+        "[bold magenta]:smile_cat: Hello and welcome to "
+        " NB Workflows [/bold magenta]",
+        border_style="red",
     )
-    console.print("=" * 80, style="magenta")
+    console.print(p)
+    console.print(
+        f"\n Starting project at [bold blue underline]{root.resolve()}[/bold blue underline]\n"
+    )
+    # console.print("=" * 80, style="magenta")
     console.print()
 
     init_script.init(
@@ -64,8 +69,9 @@ def startproject(url_service, create_dirs, base_path):
         create_dirs,
         url_service,
     )
-    print("\n Next steps: ")
-    print("\n\t1. init a git repository")
-    print("\t2. create a workflow inside of the workflows folder")
-    print("\t3. publish your work")
-    print()
+
+    console.print("\n [bold underline magenta]Next steps:[/]")
+    console.print("\n\t1. init a git repository")
+    console.print("\t2. create a notebook inside of the notebook folder")
+    console.print("\t3. generate a workflow for that notebook")
+    console.print("\t4. and finally publish your work\n")

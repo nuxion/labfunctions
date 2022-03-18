@@ -4,6 +4,8 @@ import click
 
 # from nb_workflows.io.fileserver import FileFileserver
 import httpx
+from rich.console import Console
+from rich.table import Table
 
 from nb_workflows import client
 from nb_workflows.client import init_script
@@ -11,6 +13,8 @@ from nb_workflows.conf import load_client
 from nb_workflows.executors.development import local_dev_exec
 from nb_workflows.executors.local import local_exec_env
 from nb_workflows.utils import mkdir_p
+
+console = Console()
 
 
 @click.group(name="wf")
@@ -82,10 +86,18 @@ def create(ctx, notebook, alias):
 @click.pass_context
 def push(ctx, update):
     """Push workflows definitions to the server"""
+    action = "updated" if update else "created"
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
-    c.workflows_push(update=update)
+    rsp = c.workflows_push(update=update)
+    for r in rsp.errors:
+        console.print(f"[bold red]{r.alias} failed[/]")
+    for r in rsp.created:
+        console.print(f"[bold green]{r.alias} {action} with id: {r.wfid}[/]")
+
+    if not rsp.created and not rsp.errors:
+        console.print(f"[bold yellow]No changes[/]")
 
 
 @workflowscli.command(name="list")
@@ -97,9 +109,16 @@ def list_wf(ctx):
 
     c = client.from_file(from_file, url_service=url_service)
     data = c.workflows_list()
-    print("\nnb_name | wfid | alias | is_enabled\n")
+
+    table = Table(title="Workflows definitions")
+    table.add_column("alias", style="cyan", no_wrap=True, justify="center")
+    table.add_column("wfid", style="cyan", justify="center")
+    table.add_column("is_enabled", justify="right")
     for d in data:
-        print(f"{d.nb_name} | {d.wfid} | {d.alias} | [{d.enabled}]")
+        enabled = "[bold green]yes[/]" if d.enabled else "[bold red]no[/]"
+        table.add_row(d.alias, d.wfid, enabled)
+
+    console.print(table)
 
 
 @workflowscli.command()
@@ -134,6 +153,8 @@ def exec(ctx, local, wfid):
 @click.pass_context
 def delete(ctx, wfid):
     """Delete a workflow definition from server"""
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
     rsp = c.workflows_delete(wfid)
     print(f"Wfid: {wfid}, deleted. Code {rsp}")

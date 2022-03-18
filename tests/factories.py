@@ -17,6 +17,7 @@ from nb_workflows.types import (
     ProjectData,
     ScheduleData,
     SeqPipe,
+    WorkflowData,
     WorkflowDataWeb,
 )
 from nb_workflows.types.core import SeqPipeSpec
@@ -116,6 +117,17 @@ class UserFactory(factory.Factory):
 class WorkflowDataWebFactory(factory.Factory):
     class Meta:
         model = WorkflowDataWeb
+
+    # nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
+    alias = factory.Sequence(lambda n: "nb-alias%d" % n)
+    nbtask = factory.LazyAttribute(lambda n: NBTaskFactory())
+    wfid = factory.LazyAttribute(lambda n: generate_random(24))
+    schedule = factory.LazyAttribute(lambda n: ScheduleDataFactory())
+
+
+class WorkflowDataFactory(factory.Factory):
+    class Meta:
+        model = WorkflowData
 
     # nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
     alias = factory.Sequence(lambda n: "nb-alias%d" % n)

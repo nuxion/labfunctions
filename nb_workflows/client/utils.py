@@ -79,23 +79,6 @@ def get_private_key(projectid, home_dir=defaults.CLIENT_HOME_DIR) -> str:
         return None
 
 
-def login_cli(
-    with_server: str, home_dir=defaults.CLIENT_HOME_DIR
-) -> Union[Credentials, None]:
-    print(f"Your are connecting to {with_server}")
-    u = input("User: ")
-    p = getpass.getpass("Password: ")
-    rsp = httpx.post(f"{with_server}/auth", json=dict(username=u, password=p))
-    try:
-        creds = Credentials(**rsp.json())
-        store_credentials_disk(creds, home_dir)
-        return creds
-    except KeyError:
-        return None
-    except TypeError:
-        return None
-
-
 def validate_credentials_local(token) -> bool:
     """Validates locally against the jwt signature
     If exp is not bigger than now, then is valid.

@@ -4,6 +4,7 @@ from typing import Tuple
 
 import httpx
 from rich.console import Console
+from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 
 from nb_workflows import client
@@ -12,10 +13,11 @@ from nb_workflows.client.state import WorkflowsState
 from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import defaults, load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
+from nb_workflows.hashes import generate_random
 from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowDataWeb
 from nb_workflows.utils import get_parent_folder
 
-from .utils import login_cli, normalize_name
+from .utils import normalize_name
 
 console = Console()
 
@@ -52,12 +54,14 @@ def _ask_project_name() -> str:
     parent = get_parent_folder()
     _default = normalize_name(parent)
     project_name = Prompt.ask(
-        f"Write a name for this project, [red]please, avoid spaces and capital "
-        "letters[/red]: ",
+        f"Write a name for this project, [yellow]please, avoid spaces and capital "
+        "letters[/yellow]: ",
         default=_default,
     )
     name = normalize_name(project_name)
-    console.print("The final name for the project is: ", name)
+    console.print(
+        f"The final name for the project is: [bold magenta]{name}[/bold magenta]"
+    )
     return name
 
 
@@ -95,43 +99,36 @@ def create_dirs(base_path):
     )
 
 
-def client_workflow_init(url_service):
-    settings = load_client()
-    url = url_service or settings.WORKFLOW_SERVICE
+def workflow_state_init(settings) -> WorkflowsState:
 
     wd = _example_workflow()
     wd_dict = {wd.alias: wd}
-
-    creds = login_cli(url)
 
     projectid = settings.PROJECTID
     name = settings.PROJECT_NAME
 
     if not projectid:
         name = _ask_project_name()
-        rsp = httpx.get(f"{url_service}/projects/_generateid")
-        projectid = rsp.json()["projectid"]
+        # rsp = httpx.get(f"{url_service}/projects/_generateid")
+        # projectid = rsp.json()["projectid"]
+        projectid = generate_random(defaults.PROJECTID_LEN)
 
     pd = ProjectData(name=name, projectid=projectid)
     wf_state = WorkflowsState(pd, workflows=wd_dict, version="0.2.0")
-
-    _client = DiskClient(
-        url_service,
-        projectid=projectid,
-        creds=creds,
-        wf_state=wf_state,
-        version="0.2.0",
-    )
-
-    _client.write()
-    # w_conf.write(str(root / "workflows.example.toml"))
-    return _client
+    wf_state.write()
+    return wf_state
 
 
-def create_on_the_server(nbclient: DiskClient):
+def create_on_the_server(dc: DiskClient):
     create = Confirm.ask("Create project in the server?", default=True)
     if create:
-        nbclient.projects_create()
+        dc.logincli()
+        dc.projects_create()
+    p = Panel.fit(
+        "[bold magenta]:smile_cat: Congrats!!!" " Project created[/bold magenta]",
+        border_style="red",
+    )
+    console.print(p)
 
 
 def verify_pre_existent(root) -> bool:
@@ -145,26 +142,27 @@ def verify_pre_existent(root) -> bool:
 
 
 def init(root, init_dirs=True, url_service=None):
+    settings = load_client()
+    url = url_service or settings.WORKFLOW_SERVICE
 
-    create = True
+    i_should_create = True
     if verify_pre_existent(root):
-        create = Confirm.ask(
-            "It seems that a project already exist, do you want to continue?",
+        i_should_create = Confirm.ask(
+            "[yellow]It seems that a project already exist, do you want to continue?[/yellow]",
             default=False,
         )
-    if create:
+    if i_should_create:
         _empty_file(root / "local.nbvars")
-        nb_client = client_workflow_init(url_service)
-        create_on_the_server(nb_client)
+        state = workflow_state_init(settings)
+        dc = DiskClient(url_service, wf_state=state)
+        create_on_the_server(dc)
 
         init_client_dir_app(
             root,
-            projectid=nb_client.projectid,
-            project_name=nb_client.state.project.name,
+            projectid=dc.projectid,
+            project_name=dc.project_name,
         )
 
         generate_files(root)
         if init_dirs:
             create_dirs(root)
-
-    # workflow_init(base_path, projectid, name)

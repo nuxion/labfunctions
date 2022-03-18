@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import yaml
 
@@ -30,6 +30,18 @@ class WorkflowsState:
         self._workflows = workflows or {}
 
         self.snapshots: List[WorkflowsFile] = []
+
+    @property
+    def projectid(self) -> Union[str, None]:
+        if self.project:
+            return self.project.projectid
+        return None
+
+    @property
+    def project_name(self) -> Union[str, None]:
+        if self.project:
+            return self.project.name
+        return None
 
     @staticmethod
     def listworkflows2dict(

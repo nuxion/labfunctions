@@ -19,12 +19,7 @@ from .nbclient import NBClient
 from .state import WorkflowsState
 from .state import from_file as ws_from_file
 from .types import Credentials
-from .utils import (
-    _example_task,
-    get_credentials_disk,
-    login_cli,
-    validate_credentials_local,
-)
+from .utils import _example_task, get_credentials_disk, validate_credentials_local
 
 
 def normalize_name(name: str) -> str:
@@ -47,7 +42,6 @@ def nb_from_settings() -> NBClient:
     return NBClient(
         url_service=settings.WORKFLOW_SERVICE,
         creds=creds,
-        projectid=settings.PROJECTID,
         wf_state=wf_state,
     )
 
@@ -72,7 +66,7 @@ def agent_from_settings() -> NBClient:
 
 
 def from_file(
-    filepath, url_service=None, home_dir=defaults.CLIENT_HOME_DIR
+    filepath="workflows.yaml", url_service=None, home_dir=defaults.CLIENT_HOME_DIR
 ) -> DiskClient:
     """intialize a py:class:`nb_workflows.client.diskclient.DiskClient`
     using data from local like workflows.yaml.
@@ -80,13 +74,29 @@ def from_file(
 
     settings = load_client()
     wf_state = ws_from_file(filepath)
-    creds = get_credentials_disk(home_dir)
-    if not creds:
-        creds = login_cli(url_service, home_dir)
-
-    return DiskClient(
+    # creds = get_credentials_disk(home_dir)
+    # if not creds:
+    #    creds = login_cli(url_service, home_dir)
+    dc = DiskClient(
         url_service=settings.WORKFLOW_SERVICE,
-        projectid=wf_state.project.projectid,
+        wf_state=wf_state,
+    )
+    dc.logincli()
+    return dc
+
+
+def from_env() -> NBClient:
+    settings = load_client()
+    tasks = None
+    creds = Credentials(
+        access_token=settings.CLIENT_TOKEN,
+        refresh_token=settings.CLIENT_REFRESH_TOKEN,
+    )
+    pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
+
+    wf_state = WorkflowsState(pd)
+    return NBClient(
+        url_service=settings.WORKFLOW_SERVICE,
         creds=creds,
         wf_state=wf_state,
     )
@@ -151,7 +161,6 @@ def agent_from_env(
     return AgentClient(
         url_service=url_service,
         creds=creds,
-        projectid=projectid,
     )
 
 

@@ -4,9 +4,19 @@ from pytest_mock import MockerFixture
 
 from nb_workflows.client import diskclient as dc
 from nb_workflows.client import shortcuts
+from nb_workflows.client.base import AuthFlow
 from nb_workflows.client.diskclient import DiskClient
+from nb_workflows.client.types import Credentials
 
 from .factories import credentials_generator
+
+
+class MockLoginRsp:
+    status_code = 200
+
+    @staticmethod
+    def json():
+        return dict(access_token="token_test", refresh_token="refresh")
 
 
 def test_client_diskclient_mro():
@@ -63,7 +73,7 @@ def test_client_diskclient_from_file_none(monkeypatch, auth_helper):
         return None
 
     monkeypatch.setattr(shortcuts, "get_credentials_disk", mock_creds)
-    monkeypatch.setattr(shortcuts, "login_cli", mock_login)
+    monkeypatch.setattr(DiskClient, "logincli", mock_login)
 
     # mocker.patch(
     #     "nb_workflows.client.utils.get_credentials_disk", return_value=5)
@@ -73,3 +83,24 @@ def test_client_diskclient_from_file_none(monkeypatch, auth_helper):
 
     assert client._addr == "http://localhost:8000"
     assert isinstance(client, DiskClient)
+
+
+def test_client_diskclient_login(monkeypatch, tempdir):
+    import httpx
+
+    def mock_post(*args, **kwargs):
+        return MockLoginRsp()
+
+    monkeypatch.setattr(httpx, "post", mock_post)
+
+    c = DiskClient(url_service="http://localhost:8000")
+    # c.creds = Credentials(access_token="test_token", refresh_token="refresh")
+    c.login("test", "test_pass", home_dir=tempdir)
+
+    with open(f"{tempdir}/credentials.json", "r") as f:
+        data = json.loads(f.read())
+
+    assert data["access_token"] == "token_test"
+    assert c._creds.access_token == "token_test"
+    assert c._creds.refresh_token == "refresh"
+    assert isinstance(c._http.auth, AuthFlow)

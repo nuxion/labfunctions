@@ -19,6 +19,9 @@ class Credentials(BaseModel):
     access_token: str
     refresh_token: Optional[str] = None
 
+    class Config:
+        extra = "forbid"
+
 
 @dataclass
 class WFCreateRsp:

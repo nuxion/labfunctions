@@ -173,6 +173,7 @@ async def register(session, projectid: str, wfd: WorkflowDataWeb, update=False) 
         nbtask=data_dict,
         schedule=data_dict.get("schedule"),
         project_id=projectid,
+        enabled=wfd.enabled,
     )
     session.add(obj)
     try:

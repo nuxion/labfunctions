@@ -24,6 +24,12 @@ class WorkflowRegisterError(Exception):
         super().__init__(_msg)
 
 
+class WorkflowRegisterClientError(Exception):
+    def __init__(self, project, wfid):
+        _msg = f"Registration error for workflow {wfid} in {project}"
+        super().__init__(_msg)
+
+
 class ProjectNotFound(Exception):
     def __init__(self, message):
         super().__init__(message)

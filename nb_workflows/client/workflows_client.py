@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from nb_workflows import errors, secrets
 from nb_workflows.conf import defaults
+from nb_workflows.errors.generics import WorkflowRegisterClientError
 from nb_workflows.types import (
     ExecutionResult,
     HistoryRequest,
@@ -18,10 +19,11 @@ from nb_workflows.types import (
     WorkflowDataWeb,
     WorkflowsList,
 )
+from nb_workflows.types.workflows import WFCreateRsp, WFPushRsp
 from nb_workflows.utils import parse_var_line
 
 from .base import BaseClient
-from .types import Credentials, ProjectZipFile, WFCreateRsp
+from .types import Credentials, ProjectZipFile
 from .uploads import generate_dockerfile
 from .utils import get_private_key, store_credentials_disk, store_private_key
 
@@ -34,9 +36,15 @@ class WorkflowsClient(BaseClient):
             f"/workflows/{self.projectid}",
             json=wd.dict(),
         )
+        code = r.status_code
+        if code == 200:
+            self.logger.warning(f"Workflow {wd.wfid} already exist")
+        if code == 400 or code == 503:
+            raise WorkflowRegisterClientError(wd.wfid, self.projectid)
 
         return WFCreateRsp(
             status_code=r.status_code,
+            alias=wd.alias,
             msg=r.json().get("msg"),
             wfid=r.json().get("wfid"),
         )
@@ -46,48 +54,59 @@ class WorkflowsClient(BaseClient):
             f"/workflows/{self.projectid}",
             json=wd.dict(),
         )
+        code = r.status_code
+        if code == 400 or code == 503:
+            raise WorkflowRegisterClientError(wd.wfid, self.projectid)
 
         return WFCreateRsp(
             status_code=r.status_code,
+            alias=wd.alias,
             msg=r.json().get("msg"),
             wfid=r.json().get("wfid"),
         )
 
-    def workflows_push(self, refresh_workflows=True, update=False):
+    def workflows_push(self, refresh_workflows=True, update=False) -> WFPushRsp:
         _workflows = self.state.snapshot()
+        errors = []
+        created = []
         for _, wd in _workflows.workflows.items():
-            if update:
-                r = self.workflows_update(wd)
-            else:
-                if not wd.wfid:
-                    r = self.workflows_create(wd)
-                    if r.status_code == 200:
-                        print(f"Workflow {wd.alias} already exist")
-                    elif r.status_code == 201:
-                        print(f"Workflow {wd.alias} created. Jobid: {r.wfid}")
-                        if refresh_workflows:
-                            wd.wfid = r.wfid
-                            self.state.add_workflow(wd)
+            try:
+                if update:
+                    wr = self.workflows_update(wd)
+                    created.append(wr)
+                else:
+                    if not wd.wfid:
+                        wr = self.workflows_create(wd)
+                        if wr.status_code == 200:
+                            self.logger.warning(f"Workflow {wd.alias} already exist")
+                        elif wr.status_code == 201:
+                            created.append(wd)
+                            if refresh_workflows:
+                                wd.wfid = wr.wfid
+                                self.state.add_workflow(wd)
+            except WorkflowRegisterClientError as e:
+                self.logger.error(e)
+                errors.append(
+                    WFCreateRsp(wfid=wd.wfid, alias=wd.alias, status_code=503)
+                )
 
         # self._workflows = _workflows
         if refresh_workflows:
             self.write()
+        return WFPushRsp(created=created, errors=errors)
 
     def workflows_list(self) -> List[WorkflowData]:
         r = self._http.get(f"/workflows/{self.projectid}")
 
         return [WorkflowData(**r) for r in r.json()["rows"]]
 
-    def workflows_get(self, wfid) -> Union[WorkflowData, None]:
+    def workflows_get(self, wfid) -> Union[WorkflowDataWeb, None]:
         r = self._http.get(f"/workflows/{self.projectid}/{wfid}")
 
         if r.status_code == 200:
-            return WorkflowData(**r.json())
+            return WorkflowDataWeb(**r.json())
         if r.status_code == 404:
             return None
-        if r.status_code == 401:
-            raise KeyError("Invalid auth")
-        raise TypeError("Something went wrong %s", r.text)
 
     def workflows_delete(self, wfid) -> int:
         r = self._http.delete(f"/workflows/{self.projectid}/{wfid}")

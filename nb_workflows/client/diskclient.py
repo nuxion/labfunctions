@@ -1,8 +1,12 @@
+import getpass
 import json
 import logging
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+
+from rich.console import Console
+from rich.panel import Panel
 
 from nb_workflows import errors, secrets
 from nb_workflows.conf import defaults
@@ -26,7 +30,12 @@ from .history_client import HistoryClient
 from .projects_client import ProjectsClient
 from .types import Credentials, ProjectZipFile, WFCreateRsp
 from .uploads import generate_dockerfile
-from .utils import get_private_key, store_credentials_disk, store_private_key
+from .utils import (
+    get_credentials_disk,
+    get_private_key,
+    store_credentials_disk,
+    store_private_key,
+)
 from .workflows_client import WorkflowsClient
 
 
@@ -53,6 +62,24 @@ def open_notebook(fp) -> Dict[str, Any]:
 
 class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
     """Is to be used as cli client because it has side effects on local disk"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.console = Console()
+
+    def login(self, u: str, p: str, home_dir=defaults.CLIENT_HOME_DIR):
+        super().login(u, p)
+        store_credentials_disk(self.creds, home_dir)
+
+    def logincli(self, home_dir=defaults.CLIENT_HOME_DIR):
+        creds = get_credentials_disk(home_dir)
+        if creds:
+            self.creds = creds
+        else:
+            self.console.print(f"You are connecting to [magenta]{self._addr}[/magenta]")
+            u = input("User: ")
+            p = getpass.getpass("Password: ")
+            self.login(u, p)
 
     def projects_private_key(self) -> str:
         """Gets private key to be shared to the docker container of a
@@ -83,9 +110,9 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
             json=asdict(pq),
         )
         if r.status_code == 200:
-            print("Project already exist")
+            self.console.print("[bold yellow] Project already exist [/bold yellow]")
         elif r.status_code == 201:
-            print("Project created")
+            # self.console.print(p)
             pd = ProjectData(**r.json())
             store_private_key(_key, pd.projectid)
             return pd
@@ -126,3 +153,8 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
         wd = NBTask(nb_name=nb_name, alias=alias, params=params)
         self.state.add_workflow(wd)
         self.write()
+
+    def info(self):
+        self.console.print(f"[bold]Project ID: [magenta]{self.projectid}[/][/]")
+        self.console.print(f"[bold]Project Name: [blue]{self.project_name}[/][/]")
+        # self.console.print(table)

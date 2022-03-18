@@ -101,7 +101,7 @@ def create_notebook_ctx(
 ) -> ExecutionNBTask:
     """It creates the execution context of a notebook based on project and workflow data"""
     # root = Path.cwd()
-    root = Path(defaults.WORKFLOWS_FOLDER_NAME)
+    root = Path(defaults.NOTEBOOKS_DIR)
     today = today_string(format_="day")
     _now = datetime.utcnow().isoformat()
     wfid = wd.wfid

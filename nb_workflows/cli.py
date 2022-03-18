@@ -45,9 +45,7 @@ def init_cli():
         from nb_workflows.utils import get_version
 
         ver = get_version("__version__.py")
-        console.print(
-            f"Hello, actual version is [bold magenta]{ver}[/bold magenta]!", ":smiley:"
-        )
+        console.print(f"[bold magenta]{ver}[/bold magenta]")
 
     if os.environ.get("NB_SERVER", False):
         load_server_cli(cli)
