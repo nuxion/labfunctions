@@ -133,7 +133,9 @@ class HistoryRequest(BaseModel):
 class ProjectData(BaseModel):
     name: str
     projectid: str
-    username: Optional[str] = None
+    # username: Optional[str] = None
+    owner: Optional[str] = None
+    users: Optional[List[str]] = None
     description: Optional[str] = None
     repository: Optional[str] = None
 

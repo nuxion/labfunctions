@@ -10,7 +10,6 @@ from sanic_ext import openapi
 from sanic_jwt import inject_user, protected
 
 from nb_workflows.auth import get_auth
-from nb_workflows.auth.types import UserData
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
@@ -18,6 +17,7 @@ from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg
 from nb_workflows.scheduler import SchedulerExecutor
 from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
+from nb_workflows.types.users import UserData
 from nb_workflows.utils import run_async, secure_filename
 
 projects_bp = Blueprint("projects", url_prefix="projects")

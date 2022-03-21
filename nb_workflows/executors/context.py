@@ -93,7 +93,7 @@ def execid_for_build(size=defaults.EXECID_LEN):
 
 
 def generate_docker_name(pd: ProjectData, docker_version: str):
-    return f"{pd.username}/{pd.name}:{docker_version}"
+    return f"{pd.owner}/{pd.name}:{docker_version}"
 
 
 def create_notebook_ctx(

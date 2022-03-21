@@ -5,22 +5,22 @@ from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from nb_workflows import utils
-from nb_workflows.auth.models import GroupModel, UserModel
-from nb_workflows.auth.types import GroupData, UserData
-from nb_workflows.auth.users import password_manager
 from nb_workflows.client.types import Credentials
 from nb_workflows.hashes import generate_random
-from nb_workflows.models import HistoryModel, ProjectModel, WorkflowModel
+from nb_workflows.managers.users_mg import password_manager
+from nb_workflows.models import HistoryModel, ProjectModel, UserModel, WorkflowModel
 from nb_workflows.types import (
     ExecutionNBTask,
     NBTask,
     ProjectData,
+    ProjectReq,
     ScheduleData,
     SeqPipe,
     WorkflowData,
     WorkflowDataWeb,
 )
 from nb_workflows.types.core import SeqPipeSpec
+from nb_workflows.types.users import UserData
 from nb_workflows.utils import run_sync
 
 
@@ -31,6 +31,18 @@ class ProjectDataFactory(factory.Factory):
     name = factory.Sequence(lambda n: "pd-name%d" % n)
     projectid = factory.LazyAttribute(lambda n: generate_random(10))
     username = factory.Sequence(lambda n: "user%d" % n)
+    owner = factory.Sequence(lambda n: "user%d" % n)
+    description = factory.Faker("text", max_nb_chars=24)
+    # projectid = factory.
+
+
+class ProjectReqFactory(factory.Factory):
+    class Meta:
+        model = ProjectReq
+
+    name = factory.Sequence(lambda n: "pd-name%d" % n)
+    projectid = factory.LazyAttribute(lambda n: generate_random(10))
+    private_key = factory.Faker("text", max_nb_chars=16)
     description = factory.Faker("text", max_nb_chars=24)
     # projectid = factory.
 
@@ -95,13 +107,6 @@ class SeqPipeFactory(factory.Factory):
     alias = factory.Sequence(lambda n: "alias-%d" % n)
 
 
-class GroupFactory(factory.Factory):
-    class Meta:
-        model = GroupData
-
-    name = factory.Sequence(lambda n: "g-name%d" % n)
-
-
 class UserFactory(factory.Factory):
     class Meta:
         model = UserData
@@ -110,7 +115,7 @@ class UserFactory(factory.Factory):
     username = factory.Sequence(lambda n: "u-name%d" % n)
     is_superuser = False
     is_active = True
-    groups = None
+    scopes = ["tester"]
     projects = None
 
 
@@ -142,10 +147,12 @@ def create_user_model(*args, **kwargs) -> UserModel:
     _pass = kwargs.get("password", "meolvide")
     key = pm.encrypt(_pass)
     user = UserModel(
+        id=uf.user_id,
         username=uf.username,
         password=key,
         is_superuser=uf.is_superuser,
         is_active=uf.is_active,
+        scopes="tester"
         # groups=uf.groups,
         # projects=uf.projects
     )
@@ -160,7 +167,7 @@ def create_project_model(user: UserModel, *args, **kwargs) -> ProjectModel:
         private_key=b"key",
         description=pd.description,
         repository=pd.repository,
-        user=user,
+        owner=user,
     )
     return pm
 
@@ -180,11 +187,12 @@ def create_workflow_model(project: ProjectModel, *args, **kwargs) -> WorkflowMod
 
 def token_generator(auth, user=None, *args, **kwargs):
     _user = user or create_user_model(*args, **kwargs)
-    tkn = run_sync(auth.generate_access_token, _user)
+    tkn = run_sync(auth.generate_access_token, UserData.from_model(_user))
     return tkn
 
 
 def credentials_generator(auth, user=None, *args, **kwargs):
     _user = user or create_user_model(*args, **kwargs)
-    tkn = run_sync(auth.generate_access_token, _user)
+    obj = UserData.from_model(_user)
+    tkn = run_sync(auth.generate_access_token, obj)
     return Credentials(access_token=tkn, refresh_token="12345")

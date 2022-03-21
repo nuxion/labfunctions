@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import BYTEA, JSONB
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 from sqlalchemy.schema import Table
+from sqlalchemy.sql import functions
 from sqlalchemy_serializer import SerializerMixin
 
 from nb_workflows.db.common import Base
@@ -22,7 +23,7 @@ from nb_workflows.db.common import Base
 assoc_projects_users = Table(
     "nb_projects_users",
     Base.metadata,
-    Column("project_id", ForeignKey("nb_project.id")),
+    Column("project_id", ForeignKey("nb_project.projectid")),
     Column("user_id", ForeignKey("nb_auth_user.id")),
 )
 
@@ -93,14 +94,14 @@ class ProjectModel(Base, SerializerMixin):
     private_key = Column(BYTEA(), nullable=False)
     description = Column(String())
     repository = Column(String(2048), nullable=True)
-    user_id = Column(
+    owner_id = Column(
         BigInteger,
         ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
         nullable=False,
     )
-    user = relationship("nb_workflows.auth.models.UserModel")
+    owner = relationship("nb_workflows.models.UserModel")
     users = relationship(
-        "nb_workflows.auth.models.UserModel",
+        "nb_workflows.models.UserModel",
         secondary=assoc_projects_users,
         back_populates="projects",
     )
@@ -181,3 +182,32 @@ class SeqPipeModel(Base, SerializerMixin, ProjectRelationMixin):
 
     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
     updated_at = Column(DateTime(), default=datetime.utcnow())
+
+
+class UserModel(Base):
+
+    __tablename__ = "nb_auth_user"
+    __mapper_args__ = {"eager_defaults": True}
+
+    id = Column(BigInteger, primary_key=True)
+    username = Column(String(), index=True, unique=True, nullable=False)
+    password = Column(BYTEA, nullable=True)
+    is_superuser = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    scopes = Column(String(), default="user", nullable=False)
+
+    projects = relationship(
+        "ProjectModel", secondary=assoc_projects_users, back_populates="users"
+    )
+    created_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        default=datetime.utcnow(),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        default=datetime.utcnow(),
+        nullable=False,
+    )

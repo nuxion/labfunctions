@@ -1,7 +1,13 @@
 from nb_workflows.models import ProjectModel
 from nb_workflows.types import NBTask, ProjectData, ScheduleData
+from nb_workflows.types.users import UserData
 
-from .factories import NBTaskFactory, ScheduleDataFactory, WorkflowDataWebFactory
+from .factories import (
+    NBTaskFactory,
+    ScheduleDataFactory,
+    WorkflowDataWebFactory,
+    create_user_model,
+)
 
 
 def test_types_projectmodel2data():
@@ -11,7 +17,7 @@ def test_types_projectmodel2data():
         private_key="private",
         description="desc",
         repository="http://test",
-        user_id=1,
+        owner_id=1,
     )
     pd = ProjectData.from_orm(pm)
     assert isinstance(pd, ProjectData)
@@ -21,6 +27,13 @@ def test_types_workflow_serialization():
     wfd = WorkflowDataWebFactory()
     dict_ = wfd.dict()
     assert dict_["schedule"]["repeat"]
+
+
+def test_types_user_serialization():
+
+    um = create_user_model()
+    ud = UserData.from_model(um)
+    assert ud.username == um.username
 
 
 # def test_types_nbtask_deserialization():

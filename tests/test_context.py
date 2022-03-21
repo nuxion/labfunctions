@@ -25,7 +25,7 @@ def test_context_move_step_execid():
 
 
 def test_context_docker_name():
-    pd = ProjectData(name="test", projectid="testid", username="tester")
+    pd = ProjectData(name="test", projectid="testid", owner="tester")
     dn = ctx.generate_docker_name(pd, "1.0")
     assert dn == "tester/test:1.0"
 

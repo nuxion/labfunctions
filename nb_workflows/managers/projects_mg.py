@@ -10,13 +10,16 @@ from sqlalchemy.orm import selectinload
 from nb_workflows import secrets
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import generate_random
-from nb_workflows.models import ProjectModel
+from nb_workflows.managers import users_mg
+from nb_workflows.models import ProjectModel, assoc_projects_users
 from nb_workflows.types import ProjectData, ProjectReq
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 
 def select_project():
-    stmt = select(ProjectModel).options(selectinload(ProjectModel.user))
+    stmt = select(ProjectModel).options(
+        selectinload(ProjectModel.owner), selectinload(ProjectModel.users)
+    )
     return stmt
 
 
@@ -24,7 +27,8 @@ def _model2projectdata(obj: ProjectModel) -> ProjectData:
     pd = ProjectData(
         name=obj.name,
         projectid=obj.projectid,
-        username=obj.user.username,
+        owner=obj.owner.username,
+        users=[u.username for u in obj.users],
         description=obj.description,
         respository=obj.repository,
     )
@@ -41,7 +45,14 @@ def _insert(user_id, pq: ProjectReq, projectid):
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
-        user_id=user_id,
+        owner_id=user_id,
+    )
+    return stmt
+
+
+def _insert_relation_project(user_id, project_id):
+    stmt = sqlinsert(assoc_projects_users).values(
+        project_id=project_id, user_id=user_id
     )
     return stmt
 
@@ -55,7 +66,7 @@ def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
-        user_id=user_id,
+        owner_id=user_id,
     )
     stmt = stmt.on_conflict_do_update(
         # constraint="crawlers_page_bucket_id_fkey",
@@ -85,9 +96,11 @@ async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, No
 
     projectid = pq.projectid or generate_projectid()
     stmt = _insert(user_id, pq, projectid)
+    project = _insert_relation_project(user_id, projectid)
     # session.add(pm)
     try:
         await session.execute(stmt)
+        await session.execute(project)
         await session.commit()
     except exc.IntegrityError as e:
         # await session.rollback()
@@ -99,6 +112,20 @@ async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, No
         description=pq.description,
         repository=pq.repository,
     )
+
+
+async def assign_project(session, user_id: int, projectid):
+    """
+    Assign a user to a project.
+    """
+    um = await users_mg.get_userid_async(session, user_id)
+    if um:
+        # projects = [p.projectid for p in um.projects]
+        # if projectid in projects:
+        stmt = _insert_relation_project(user_id, projectid)
+        await session.execute(stmt)
+        return True
+    return False
 
 
 async def create_or_update(session, user_id: int, pq: ProjectReq):

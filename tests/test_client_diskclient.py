@@ -3,7 +3,7 @@ import json
 from pytest_mock import MockerFixture
 
 from nb_workflows.client import diskclient as dc
-from nb_workflows.client import shortcuts
+from nb_workflows.client import shortcuts, utils
 from nb_workflows.client.base import AuthFlow
 from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.client.types import Credentials
@@ -53,9 +53,9 @@ def test_client_diskclient_from_file(monkeypatch, auth_helper):
         creds = credentials_generator(auth_helper)
         return creds
 
-    monkeypatch.setattr(shortcuts, "get_credentials_disk", mock_creds)
-    # mocker.patch(
-    #     "nb_workflows.client.utils.get_credentials_disk", return_value=5)
+    monkeypatch.setattr(
+        "nb_workflows.client.diskclient.get_credentials_disk", mock_creds
+    )
     client = shortcuts.from_file(
         "tests/workflows_test.yaml", "http://localhost:8000", ".test"
     )
@@ -72,7 +72,9 @@ def test_client_diskclient_from_file_none(monkeypatch, auth_helper):
     def mock_creds(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(shortcuts, "get_credentials_disk", mock_creds)
+    monkeypatch.setattr(
+        "nb_workflows.client.diskclient.get_credentials_disk", mock_creds
+    )
     monkeypatch.setattr(DiskClient, "logincli", mock_login)
 
     # mocker.patch(

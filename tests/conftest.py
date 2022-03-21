@@ -8,12 +8,11 @@ import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.auth.authenticate import initialize
-from nb_workflows.auth.models import GroupModel, UserModel
+from nb_workflows.auth import initialize
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
-from nb_workflows.models import HistoryModel, WorkflowModel
+from nb_workflows.models import HistoryModel, UserModel, WorkflowModel
 
 from .factories import create_project_model, create_user_model, create_workflow_model
 from .resources import app_init
