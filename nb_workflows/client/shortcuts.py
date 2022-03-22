@@ -29,42 +29,6 @@ def normalize_name(name: str) -> str:
     return evaluate
 
 
-def nb_from_settings() -> NBClient:
-    settings = load_client()
-    tasks = None
-    creds = Credentials(
-        access_token=settings.CLIENT_TOKEN,
-        refresh_token=settings.CLIENT_REFRESH_TOKEN,
-    )
-    pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
-
-    wf_state = WorkflowsState(pd)
-    return NBClient(
-        url_service=settings.WORKFLOW_SERVICE,
-        creds=creds,
-        wf_state=wf_state,
-    )
-
-
-def agent_from_settings() -> NBClient:
-    tasks = None
-    settings = load_client()
-    creds = Credentials(
-        access_token=settings.AGENT_TOKEN,
-        refresh_token=settings.AGENT_REFRESH_TOKEN,
-    )
-    pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
-
-    wf_state = WorkflowsState(pd)
-
-    return NBClient(
-        url_service=settings.WORKFLOW_SERVICE,
-        creds=creds,
-        projectid=settings.PROJECTID,
-        wf_state=wf_state,
-    )
-
-
 def from_file(
     filepath="workflows.yaml", url_service=None, home_dir=defaults.CLIENT_HOME_DIR
 ) -> DiskClient:
@@ -85,12 +49,12 @@ def from_file(
     return dc
 
 
-def from_env() -> NBClient:
-    settings = load_client()
+def from_env(settings=load_client()) -> NBClient:
+    """Creates a client using env variables"""
     tasks = None
     creds = Credentials(
-        access_token=settings.CLIENT_TOKEN,
-        refresh_token=settings.CLIENT_REFRESH_TOKEN,
+        access_token=settings.AGENT_TOKEN,
+        refresh_token=settings.AGENT_REFRESH_TOKEN,
     )
     pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
 
@@ -129,13 +93,10 @@ def minimal_client(url_service, token, refresh, projectid) -> NBClient:
         url_service=url_service,
         creds=creds,
         # store_creds=store_creds,
-        projectid=projectid,
     )
 
 
-def agent_from_env(
-    url_service, token, refresh, projectid, store_creds=False
-) -> AgentClient:
+def agent(url_service, token, refresh, projectid) -> NBClient:
     """A shortcut to intialize :class:`nb_workflows.client.agent_client.AgentClient`
 
     Usually, it is used in each machine running a agent (data plane),
@@ -157,30 +118,28 @@ def agent_from_env(
     :param refresh: refresh_token
     :param projectid: projectid
     """
+    wf = WorkflowsState(ProjectData(name="", projectid=projectid))
     creds = Credentials(access_token=token, refresh_token=refresh)
-    return AgentClient(
-        url_service=url_service,
-        creds=creds,
-    )
+    return NBClient(url_service=url_service, creds=creds, wf_state=wf)
 
 
-def create_ctx(wfid=None) -> ExecutionNBTask:
-    ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
-    if ctx_str:
-        exec_ctx = ExecutionNBTask(**json.loads(ctx_str))
-    else:
-        execid = context.ExecID()
-        wf = NBClient.read("workflows.yaml")
-        pd = wf.project
-        pd.username = "dummy"
-        wf_data = None
-        if wfid:
-            for w in wf.workflows:
-                if w.wfid == wfid:
-                    wf_data = w
-        else:
-            # TODO: dumy nb_name
-            wf_data = NBTask(nb_name="test", params={})
-
-        exec_ctx = context.create_notebook_ctx(pd, wf_data, execid.pure())
-    return exec_ctx
+# def create_ctx(wfid=None) -> ExecutionNBTask:
+#     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
+#     if ctx_str:
+#         exec_ctx = ExecutionNBTask(**json.loads(ctx_str))
+#     else:
+#         execid = context.ExecID()
+#         wf = NBClient.read("workflows.yaml")
+#         pd = wf.project
+#         pd.username = "dummy"
+#         wf_data = None
+#         if wfid:
+#             for w in wf.workflows:
+#                 if w.wfid == wfid:
+#                     wf_data = w
+#         else:
+#             # TODO: dumy nb_name
+#             wf_data = NBTask(nb_name="test", params={})
+#
+#         exec_ctx = context.create_notebook_ctx(pd, wf_data, execid.pure())
+#     return exec_ctx

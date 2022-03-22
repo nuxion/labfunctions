@@ -11,24 +11,33 @@ from nb_workflows import secrets
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import generate_random
 from nb_workflows.managers import users_mg
-from nb_workflows.models import ProjectModel, assoc_projects_users
+from nb_workflows.models import ProjectModel, UserModel, assoc_projects_users
 from nb_workflows.types import ProjectData, ProjectReq
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 
 def select_project():
-    stmt = select(ProjectModel).options(
-        selectinload(ProjectModel.owner), selectinload(ProjectModel.users)
+    stmt = (
+        select(ProjectModel)
+        .options(selectinload(ProjectModel.owner))
+        .options(selectinload(ProjectModel.agent))
+        .options(selectinload(ProjectModel.users))
     )
+
     return stmt
 
 
 def _model2projectdata(obj: ProjectModel) -> ProjectData:
+    agent_name = None
+    if obj.agent:
+        agent_name = obj.agent.username
+
     pd = ProjectData(
         name=obj.name,
         projectid=obj.projectid,
         owner=obj.owner.username,
         users=[u.username for u in obj.users],
+        agent=agent_name,
         description=obj.description,
         respository=obj.repository,
     )
@@ -126,6 +135,26 @@ async def assign_project(session, user_id: int, projectid):
         await session.execute(stmt)
         return True
     return False
+
+
+async def create_agent_for_project(session, projectid: str) -> Union[str, None]:
+    prj = await get_by_projectid_model(session, projectid)
+    if prj and not prj.agent_id:
+        um = await users_mg.create_agent(session)
+        um.projects.append(prj)
+        prj.agent = um
+        prj.updated_at = datetime.utcnow()
+        session.add(prj)
+        return um.username
+    return None
+
+
+async def get_agent_for_project(session, projectid: str) -> Union[UserModel, None]:
+    prj = await get_by_projectid_model(session, projectid)
+    if prj and prj.agent_id:
+        user = await users_mg.get_userid_async(session, prj.agent_id)
+        return user
+    return None
 
 
 async def create_or_update(session, user_id: int, pq: ProjectReq):

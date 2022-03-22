@@ -5,8 +5,9 @@ from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.hashes import PasswordScript
+from nb_workflows.hashes import PasswordScript, generate_random
 
 # from nb_workflows.auth import gorups
 from nb_workflows.models import UserModel
@@ -41,11 +42,15 @@ def create_user(
     return u
 
 
-def create_agent(session, username, scopes="agent:rw"):
+async def create_agent(session, scopes=defaults.AGENT_SCOPES):
+    name = generate_random(defaults.AGENT_LEN)
+    fullname = f"{defaults.AGENT_USER_PREFIX}-{name}"
+
     u = UserModel(
-        username=f"agent-{username}",
+        username=fullname,
         scopes=scopes,
     )
+
     session.add(u)
     return u
 

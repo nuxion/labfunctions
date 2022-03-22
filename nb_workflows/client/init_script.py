@@ -65,16 +65,22 @@ def _ask_project_name() -> str:
     return name
 
 
-def init_client_dir_app(root, projectid, project_name):
+def init_setting_dir_app(root, projectid, project_name, url_service=None):
     _pkg_dir = get_package_dir("nb_workflows")
     p = root / "nb_app"
+
+    workflow_service = url_service or "http://localhost:8000"
 
     p.mkdir(parents=True, exist_ok=True)
     _empty_file(p / "__init__.py")
     render_to_file(
         "client_settings.py.j2",
         str((p / "settings.py").resolve()),
-        data={"projectid": projectid, "project_name": project_name},
+        data={
+            "projectid": projectid,
+            "project_name": project_name,
+            "workflow_service": url_service,
+        },
     )
 
 
@@ -124,9 +130,17 @@ def create_on_the_server(dc: DiskClient):
     if create:
         dc.logincli()
         dc.projects_create()
+        valid_agent = dc.projects_create_agent()
+        agent_creds = dc.projects_agent_token()
+        with open("local.nbvars", "w") as f:
+            f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
+            f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}")
     p = Panel.fit(
         "[bold magenta]:smile_cat: Congrats!!!" " Project created[/bold magenta]",
         border_style="red",
+    )
+    console.print(
+        f"Agent for this project was created as: [bold magenta]{valid_agent}[/]"
     )
     console.print(p)
 
@@ -157,10 +171,11 @@ def init(root, init_dirs=True, url_service=None):
         dc = DiskClient(url_service, wf_state=state)
         create_on_the_server(dc)
 
-        init_client_dir_app(
+        init_setting_dir_app(
             root,
             projectid=dc.projectid,
             project_name=dc.project_name,
+            url_service=url_service,
         )
 
         generate_files(root)

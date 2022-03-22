@@ -41,13 +41,13 @@ def workflowscli(ctx, from_file, url_service):
     ctx.obj["WF_FILE"] = from_file
 
 
-@workflowscli.command()
-@click.pass_context
-def init(ctx):
-    """initialize a project"""
-    url_service = ctx.obj["URL"]
-    c = client.init(url_service)
-    c.write()
+# @workflowscli.command()
+# @click.pass_context
+# def init(ctx):
+#     """initialize a project"""
+#     url_service = ctx.obj["URL"]
+#     c = client.init(url_service)
+#     c.write()
 
 
 @click.command()

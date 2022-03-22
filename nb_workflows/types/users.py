@@ -32,3 +32,7 @@ class UserData(BaseModel):
             projects=projects,
         )
         return ud
+
+
+class AgentReq(BaseModel):
+    agent_name: str

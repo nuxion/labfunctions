@@ -99,7 +99,17 @@ class ProjectModel(Base, SerializerMixin):
         ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
         nullable=False,
     )
-    owner = relationship("nb_workflows.models.UserModel")
+    owner = relationship(
+        "nb_workflows.models.UserModel", foreign_keys="ProjectModel.owner_id"
+    )
+    agent_id = Column(
+        BigInteger,
+        ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    agent = relationship(
+        "nb_workflows.models.UserModel", foreign_keys="ProjectModel.agent_id"
+    )
     users = relationship(
         "nb_workflows.models.UserModel",
         secondary=assoc_projects_users,

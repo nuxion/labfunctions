@@ -39,7 +39,6 @@ def exec(from_file, url_service, dev, wfid):
     if not dev:
         # TODO: Should be inject or validate url_service param
         # when running from the data plane machine?
-        # c = client.nb_from_settings_agent()
         rsp = local_exec_env()
         if rsp:
             click.echo(f"Jobid: {rsp.wfid} locally executed")

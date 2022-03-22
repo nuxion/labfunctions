@@ -72,7 +72,7 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
 
     _started = time.time()
     docker_client = docker.from_env()
-    ag_client = client.agent_client(
+    ag_client = client.agent(
         url_service=settings.WORKFLOW_SERVICE,
         token=settings.AGENT_TOKEN,
         refresh=settings.AGENT_REFRESH_TOKEN,
@@ -109,15 +109,3 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
         elapsed = time.time() - _started
         result = context.make_error_result(exec_ctx, elapsed)
         ag_client.history_register(result)
-
-
-def seqpipe_exec():
-    pass
-
-
-# def docker_seq_pipe(jobsid):
-#     from nb_workflows.qworker import settings
-#     _started = time.time()
-#     docker_client = docker.from_env()
-#
-#     priv_key = ag_client.projects_private_key()

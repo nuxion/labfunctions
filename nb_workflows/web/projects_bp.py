@@ -17,7 +17,7 @@ from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg
 from nb_workflows.scheduler import SchedulerExecutor
 from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
-from nb_workflows.types.users import UserData
+from nb_workflows.types.users import AgentReq, UserData
 from nb_workflows.utils import run_async, secure_filename
 
 projects_bp = Blueprint("projects", url_prefix="projects")
@@ -138,22 +138,55 @@ async def project_delete(request, projectid):
     return json(dict(msg="deleted"))
 
 
-@projects_bp.post("/<projectid:str>/_agent_token")
+@projects_bp.post("/<projectid:str>/agent")
+@openapi.parameter("projectid", str, "path")
+@protected()
+async def project_create_user_agent(request, projectid):
+    """
+    Creates a User Agent
+    """
+    session = request.ctx.session
+
+    res = await projects_mg.create_agent_for_project(session, projectid)
+    if res:
+        await session.commit()
+        return json(dict(msg=res), 201)
+    return json(dict(msg="not created"), 200)
+
+
+@projects_bp.delete("/<projectid:str>/agent")
+@openapi.parameter("projectid", str, "path")
+@protected()
+async def project_delete_user_agent(request, projectid):
+    """
+    Creates a User Agent
+    """
+    session = request.ctx.session
+
+    res = await projects_mg.create_agent_for_project(session, projectid)
+    if res:
+        await session.commit()
+        return json(dict(msg=res), 201)
+    return json(dict(msg="not created"), 200)
+
+
+@projects_bp.post("/<projectid:str>/agent/_token")
 @openapi.parameter("projectid", str, "path")
 @openapi.response(200, Credentials, "agent credentials")
 @protected()
-@inject_user()
-async def project_create_agent_token(request, projectid, user: UserData):
+async def project_get_agent_token(request, projectid):
     """
     Create an agent token
-    TODO: create an special user to be used as agent
     """
     # pylint: disable=unused-argument
     _auth = get_auth()
-    # default is 30 min
+    session = request.ctx.session
+
+    agt = await projects_mg.get_agent_for_project(session, projectid)
+    user = UserData.from_model(agt)
     with _auth.override(expiration_delta=settings.AGENT_TOKEN_EXP):
         token = await _auth.generate_access_token(user)
-        refresh = await _auth.generate_refresh_token(request, user.dict())
+        refresh = await _auth.generate_refresh_token(request, user)
 
     return json(dict(access_token=token, refresh_token=refresh), 200)
 

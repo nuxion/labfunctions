@@ -18,6 +18,7 @@ from nb_workflows.types import (
     WorkflowDataWeb,
     WorkflowsList,
 )
+from nb_workflows.types.users import AgentReq
 from nb_workflows.utils import parse_var_line
 
 from .base import BaseClient
@@ -65,10 +66,29 @@ class ProjectsClient(BaseClient):
         r = self._http.post(f"/projects/{self.projectid}/_upload", files=files)
         print(r.status_code)
 
+    def projects_create_agent(self) -> Union[str, None]:
+        r = self._http.post(f"/projects/{self.projectid}/agent")
+
+        if r.status_code == 201:
+            return r.json()["msg"]
+
+        return None
+
     def projects_agent_token(self) -> Union[Credentials, None]:
-        r = self._http.post(f"/projects/{self.projectid}/_agent_token")
+        r = self._http.post(f"/projects/{self.projectid}/agent/_token")
 
         if r.status_code == 200:
             return Credentials(**r.json())
 
+        return None
+
+    def projects_private_key(self) -> Union[str, None]:
+        """Gets private key to be shared to the docker container of a
+        workflow task
+        """
+        r = self._http.get(f"/projects/{self.projectid}/_private_key")
+
+        if r.status_code == 200:
+            key = r.json()["private_key"]
+            return key
         return None

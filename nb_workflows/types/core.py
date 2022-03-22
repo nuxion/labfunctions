@@ -135,6 +135,7 @@ class ProjectData(BaseModel):
     projectid: str
     # username: Optional[str] = None
     owner: Optional[str] = None
+    agent: Optional[str] = None
     users: Optional[List[str]] = None
     description: Optional[str] = None
     repository: Optional[str] = None

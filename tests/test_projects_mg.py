@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from nb_workflows.conf import defaults as df
@@ -22,6 +24,7 @@ from .factories import (
 @pytest.mark.asyncio
 async def test_projects_mg_create(async_session):
     um = create_user_model()
+    um.id = 100
     async_session.add(um)
     await async_session.flush()
     pq = ProjectReqFactory()
@@ -39,3 +42,15 @@ async def test_projects_mg_add_project(async_session):
     pd = await projects_mg.get_by_projectid(async_session, "test")
 
     assert um.username in pd.users
+
+
+@pytest.mark.asyncio
+async def test_projects_mg_create_agent_for(async_session):
+    res = await projects_mg.create_agent_for_project(async_session, "test")
+    pd = await projects_mg.get_by_projectid(async_session, "test")
+
+    agent = await projects_mg.get_agent_for_project(async_session, "test")
+
+    assert res == pd.agent
+    assert "test" in agent.projects[0].name
+    assert agent.scopes == "agent:rw"

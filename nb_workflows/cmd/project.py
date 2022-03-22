@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import click
+from rich.console import Console
 
 from nb_workflows import client, secrets
 from nb_workflows.client.uploads import generate_dockerfile
@@ -12,6 +13,8 @@ from nb_workflows.utils import execute_cmd
 # from nb_workflows.uploads import manage_upload
 
 settings = load_client()
+
+console = Console()
 
 
 @click.group(name="project")
@@ -37,6 +40,32 @@ def projectcli(ctx, url_service, from_file):
 
     ctx.obj["URL"] = url_service
     ctx.obj["WF_FILE"] = from_file
+
+
+@projectcli.command()
+@click.argument("action", type=click.Choice(["create", "token"]))
+@click.pass_context
+def agent(ctx, action):
+    """Create/delete or get credentials of an agent"""
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+
+    c = client.from_file(from_file, url_service)
+
+    if action == "create":
+        res = c.projects_create_agent()
+        if res:
+            console.print("[bold green] Agent created [/]")
+        else:
+            console.print("[bold yellow] Agent creation fail [/]")
+
+    elif action == "token":
+        res = c.projects_agent_token()
+        if res:
+            console.print(f"[bold magenta]access token:[/] {res.access_token}")
+            console.print(f"[bold magenta]refresh token:[/] {res.refresh_token}")
+        else:
+            console.print("[bold yellow] Agent creds fail [/]")
 
 
 @projectcli.command()

@@ -6,6 +6,10 @@ Q_NS = QueuesNS(control="ctrl", machine="mch", build="bui")
 
 REFRESH_TOKEN_PATH = "/auth/refresh"
 
+AGENT_USER_PREFIX = "agt"
+AGENT_SCOPES = "agent:rw"
+AGENT_LEN = 8
+
 NOTEBOOKS_DIR = "notebooks/"
 
 # Builder

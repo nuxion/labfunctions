@@ -33,7 +33,7 @@ def db(sql, action):
     """Create or Drop tables from a database"""
     db = SQL(sql)
     settings.SQL = sql
-    auth_mod = importlib.import_module("nb_workflows.auth.models")
+    # auth_mod = importlib.import_module("nb_workflows.auth.models")
     wf_mod = importlib.import_module("nb_workflows.models")
 
     if action == "create":
