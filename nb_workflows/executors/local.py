@@ -41,7 +41,9 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     c.logger.info(f"jobdid:{etask.wfid} execid:{etask.execid} Starting")
 
     # Execution
+    breakpoint()
     result = notebook_executor(etask)
+    breakpoint()
 
     # Registration
     status = _simple_retry(c.history_nb_output, (result,))
@@ -62,13 +64,12 @@ def notebook_executor(etask: ExecutionNBTask) -> ExecutionResult:
     logger = logging.getLogger(__name__)
 
     Path(etask.output_dir).mkdir(parents=True, exist_ok=True)
-
     try:
         pm.execute_notebook(etask.pm_input, etask.pm_output, parameters=etask.params)
     except pm.exceptions.PapermillExecutionError as e:
         logger.error(f"jobdid:{etask.wfid} execid:{etask.execid} failed {e}")
         _error = True
-        error_handler(etask)
+        _error_handler(etask)
 
     elapsed = time.time() - _started
     return ExecutionResult(
@@ -87,8 +88,7 @@ def notebook_executor(etask: ExecutionNBTask) -> ExecutionResult:
     )
 
 
-def error_handler(etask: ExecutionNBTask):
-
+def _error_handler(etask: ExecutionNBTask):
     error_output = f"{etask.error_dir}/{etask.output_name}"
-    Path(error_output).mkdir(parents=True, exist_ok=True)
+    Path(etask.error_dir).mkdir(parents=True, exist_ok=True)
     shutil.move(etask.pm_output, error_output)

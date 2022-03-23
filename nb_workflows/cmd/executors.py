@@ -6,6 +6,7 @@ from rich.console import Console
 
 from nb_workflows import client
 from nb_workflows.conf import defaults, load_client
+from nb_workflows.types import NBTask
 
 console = Console()
 
@@ -112,17 +113,30 @@ def wf(ctx, wfid):
 @click.option(
     "--docker-version", "-D", default="latest", help="Docker image where it should run"
 )
+@click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
 @click.argument("notebook")
 @click.pass_context
-def notebook(ctx, param, machine, docker_version, notebook):
+def notebook(ctx, param, machine, docker_version, dev, notebook):
     """On demand execution of a notebook file, with custom parameters"""
+    from nb_workflows.executors.development import local_nb_dev_exec
 
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
     params_dict = _parse_params_args(param)
 
-    rsp = c.notebook_run(
-        notebook, params_dict, machine=machine, docker_version=docker_version
-    )
-    print_json(rsp.json())
+    if not dev:
+        rsp = c.notebook_run(
+            notebook, params_dict, machine=machine, docker_version=docker_version
+        )
+        print_json(rsp.json())
+    else:
+        task = NBTask(
+            nb_name=notebook,
+            params=params_dict,
+            machine=machine,
+            docker_version=docker_version,
+        )
+        rsp = local_nb_dev_exec(task)
+
+        print_json(rsp.dict())

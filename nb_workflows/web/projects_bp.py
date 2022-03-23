@@ -208,7 +208,6 @@ async def project_build(request, projectid):
 
     sche = _get_scheduler()
     job = await run_async(sche.enqueue_build, projectid, fp)
-    breakpoint()
 
     return json(dict(msg="ok", execid=job.id), 202)
 

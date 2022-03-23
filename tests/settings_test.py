@@ -10,19 +10,15 @@ from nb_workflows.secrets import nbvars
 
 
 # Main settings
-# PROJECTID = "{{ data.projectid }}"
-# PROJECT_NAME = "{{ data.project_name }}"
-PROJECTID = ""
-PROJECT_NAME = ""
-
 WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
+PROJECTID = "wzy8GipO"
+PROJECT_NAME = "project_test"
 
 # Theese information is used to run workloads in the workers.
 # Don't modify at least you know what you are doing.
 AGENT_TOKEN = nbvars.get("AGENT_TOKEN", "")
-AGENT_REFRESH_TOKEN = nbvars.get("AGENT_REFRESH", "")
+AGENT_REFRESH_TOKEN = nbvars.get("AGENT_REFRESH_TOKEN", "")
 
-# USER Credentials
 CLIENT_TOKEN = nbvars.get("NB_CLIENT_TOKEN", "")
 CLIENT_REFRESH_TOKEN = nbvars.get("NB_CLIENT_REFRESH", "")
 
@@ -32,7 +28,7 @@ LOGFORMAT = "%(levelname)s - %(message)s"
 
 
 # Folders
-BASE_PATH = nbvars.get("NB_BASEPATH")
+BASE_PATH = os.getenv("NB_BASE_PATH")
 
 # Options to build the docker image used as runtime of
 # this project.

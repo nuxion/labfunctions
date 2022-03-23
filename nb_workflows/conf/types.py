@@ -70,6 +70,7 @@ class ClientSettings(BaseSettings):
     LOGLEVEL: str = "INFO"
     LOGFORMAT: str = "%(asctime)s %(message)s"
     DEBUG: bool = False
+    NBVARS: Optional[str] = None
 
     PROJECT_NAME: Optional[str] = None
     PROJECTID_LEN: int = 10

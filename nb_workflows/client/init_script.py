@@ -24,7 +24,7 @@ console = Console()
 
 def _example_task() -> NBTask:
     t = NBTask(
-        nb_name="test_workflow",
+        nb_name="welcome",
         description="An example of how to configure a specific workflow",
         params=dict(TIMEOUT=5),
     )
@@ -100,8 +100,8 @@ def create_dirs(base_path):
         (root / dir_).mkdir(parents=True, exist_ok=True)
 
     render_to_file(
-        "test_workflow.ipynb.j2",
-        str((root / defaults.NOTEBOOKS_DIR / "test_workflow.ipynb").resolve()),
+        "welcome.ipynb.j2",
+        str((root / defaults.NOTEBOOKS_DIR / "welcome.ipynb").resolve()),
     )
 
 

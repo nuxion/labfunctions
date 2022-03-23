@@ -40,9 +40,10 @@ def _open_vars_file(vars_file) -> Dict[str, Any]:
 def load() -> Dict[str, Any]:
 
     priv_key = os.getenv(defaults.PRIVKEY_VAR_NAME)
+    # base_path = define_base_path()
 
     if not priv_key:
-        _file = os.getenv(defaults.NBVARS_VAR_NAME, "local.nbvars")
+        _file = os.getenv(defaults.NBVARS_VAR_NAME, f"local.nbvars")
         _nbvars = _open_vars_file(vars_file=_file)
     else:
         f = Fernet(priv_key)

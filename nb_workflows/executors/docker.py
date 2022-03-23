@@ -95,7 +95,7 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
     try:
         logs = docker_client.containers.run(
             exec_ctx.docker_name,
-            f"nb exec",
+            f"nb exec local",
             environment={
                 defaults.PRIVKEY_VAR_NAME: priv_key,
                 defaults.EXECUTIONTASK_VAR: json.dumps(exec_ctx.dict()),
