@@ -150,7 +150,13 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
 
         nb_name = nb_fullpath.rsplit("/", maxsplit=1)[1].split(".")[0]
 
-        wd = NBTask(nb_name=nb_name, alias=alias, params=params)
+        task = NBTask(nb_name=nb_name, params=params)
+        wd = WorkflowDataWeb(
+            alias=alias,
+            nbtask=task,
+            enabled=False,
+        )
+
         self.state.add_workflow(wd)
         self.write()
 

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from nb_workflows import errors, secrets
 from nb_workflows.conf import defaults
+from nb_workflows.errors.client import ProjectUploadError
 from nb_workflows.types import (
     ExecutionResult,
     HistoryRequest,
@@ -18,6 +19,7 @@ from nb_workflows.types import (
     WorkflowDataWeb,
     WorkflowsList,
 )
+from nb_workflows.types.projects import ProjectBuildReq, ProjectBuildResp
 from nb_workflows.types.users import AgentReq
 from nb_workflows.utils import parse_var_line
 
@@ -64,7 +66,14 @@ class ProjectsClient(BaseClient):
     def projects_upload(self, zfile: ProjectZipFile):
         files = {"file": open(zfile.filepath, "rb")}
         r = self._http.post(f"/projects/{self.projectid}/_upload", files=files)
-        print(r.status_code)
+        if r.status_code != 201:
+            raise ProjectUploadError(self.projectid)
+
+    def projects_build(self, name) -> ProjectBuildResp:
+        pbr = ProjectBuildReq(name=name)
+        breakpoint()
+        rsp = self._http.post(f"/projects/{self.projectid}/_build", json=pbr.dict())
+        return ProjectBuildResp(**rsp.json())
 
     def projects_create_agent(self) -> Union[str, None]:
         r = self._http.post(f"/projects/{self.projectid}/agent")

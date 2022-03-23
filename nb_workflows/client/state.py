@@ -56,6 +56,12 @@ class WorkflowsState:
     def delete_workflow(self, alias):
         del self._workflows[alias]
 
+    def find_by_id(self, wfid) -> Union[WorkflowDataWeb, None]:
+        for alias in self._workflows:
+            if self._workflows[alias].wfid == wfid:
+                return self._workflows[alias]
+        return None
+
     def add_seq(self, sp: SeqPipe):
         self._seq_pipes.append(sp)
 

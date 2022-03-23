@@ -10,11 +10,12 @@ from sanic_ext import openapi
 from sanic_jwt import protected
 
 from nb_workflows.errors.generics import WorkflowRegisterError
-from nb_workflows.executors.context import ExecID
-from nb_workflows.managers import workflows_mg
+from nb_workflows.executors.context import ExecID, create_notebook_ctx_ondemand
+from nb_workflows.managers import projects_mg, workflows_mg
 from nb_workflows.scheduler import SchedulerExecutor, scheduler_dispatcher
 from nb_workflows.types import (
     NBTask,
+    ProjectData,
     ScheduleData,
     WorkflowData,
     WorkflowDataWeb,
@@ -35,7 +36,7 @@ workflows_bp = Blueprint("workflows", url_prefix="workflows")
 @workflows_bp.get("/<projectid>/notebooks/_files")
 @openapi.parameter("projectid", str, "path")
 @protected()
-def list_nb_workflows(request, projectid):
+def notebooks_list(request, projectid):
     """
     List file workflows
     TODO: implement a way to register notebooks from each project
@@ -46,6 +47,33 @@ def list_nb_workflows(request, projectid):
     nb_files = []
 
     return json(nb_files)
+
+
+@workflows_bp.post("/<projectid>/notebooks/_run")
+@openapi.parameter("projectid", str, "path")
+@openapi.body({"application/json": NBTask})
+@protected()
+async def notebooks_run(request, projectid):
+    """
+    Run a notebook
+    """
+    # pylint: disable=unused-argument
+
+    # nb_files = list_workflows()
+    session = request.ctx.session
+    try:
+        task = NBTask(**request.json)
+    except ValidationError:
+        return json(dict(msg="wrong params"), 400)
+
+    pm = await projects_mg.get_by_projectid_model(session, projectid)
+    breakpoint()
+    pd = ProjectData(name=pm.name, projectid=pm.projectid, owner=pm.owner.username)
+    nb_ctx = create_notebook_ctx_ondemand(pd, task)
+    scheduler = get_scheduler()
+    await run_async(scheduler.enqueue_notebook, nb_ctx, task.machine)
+
+    return json(nb_ctx.dict(), 202)
 
 
 @workflows_bp.get("/<projectid>")
@@ -62,22 +90,6 @@ async def workflows_list(request, projectid):
         data = [r.dict() for r in result]
 
     return json(dict(rows=data), 200)
-
-
-@workflows_bp.delete("/<projectid>/<wfid>")
-@openapi.parameter("projectid", str, "path")
-@openapi.parameter("wfid", str, "path")
-@protected()
-async def workflow_delete(request, projectid, wfid):
-    """Delete from db and queue a workflow"""
-    # pylint: disable=unused-argument
-    session = request.ctx.session
-    scheduler = get_scheduler()
-    async with session.begin():
-        await scheduler.delete_workflow(session, projectid, wfid)
-        await session.commit()
-
-    return json(dict(msg="done"), 200)
 
 
 @workflows_bp.post("/<projectid>")
@@ -144,6 +156,22 @@ async def workflow_update(request, projectid):
         return json(dict(wfid=wfid), status=201)
 
 
+@workflows_bp.delete("/<projectid>/<wfid>")
+@openapi.parameter("projectid", str, "path")
+@openapi.parameter("wfid", str, "path")
+@protected()
+async def workflow_delete(request, projectid, wfid):
+    """Delete from db and queue a workflow"""
+    # pylint: disable=unused-argument
+    session = request.ctx.session
+    scheduler = get_scheduler()
+    async with session.begin():
+        await scheduler.delete_workflow(session, projectid, wfid)
+        await session.commit()
+
+    return json(dict(msg="done"), 200)
+
+
 @workflows_bp.get("/<projectid>/<wfid>")
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("wfid", str, "path")
@@ -168,7 +196,7 @@ async def workflow_get(request, projectid, wfid):
 @openapi.response(202, dict(execid=str))
 @protected()
 async def workflow_enqueue(request, projectid, wfid):
-    """Get a workflow by projectid"""
+    """Enqueue a worflow"""
     # pylint: disable=unused-argument
     sche = get_scheduler()
     execid = ExecID()

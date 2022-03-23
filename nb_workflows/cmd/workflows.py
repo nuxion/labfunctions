@@ -121,31 +121,42 @@ def list_wf(ctx):
     console.print(table)
 
 
-@workflowscli.command()
-@click.option("--local", "-l", default=False, is_flag=True, help="execute locally")
-@click.argument("wfid", required=True)
-@click.pass_context
-def exec(ctx, local, wfid):
-    """Exec workloads remote or locally"""
-
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
-    if not local:
-        c = client.from_file(from_file, url_service=url_service)
-        rsp = c.workflows_enqueue(wfid)
-        if rsp:
-            click.echo(f"Executed: {rsp} on the server {url_service}")
-        else:
-            click.echo(f"Something went wrong")
-    else:
-        rsp = local_dev_exec(wfid)
-        if rsp:
-            click.echo(f"Wfid: {rsp.wfid} locally executed")
-            click.echo(f"Executionid: {rsp.execid}")
-            status = "OK"
-            if rsp.error:
-                status = "ERROR"
-            click.echo(f"Status: {status}")
+# @workflowscli.command()
+# @click.option("--local", "-l", default=False, is_flag=True, help="execute locally")
+# @click.option("--dev", "-d", default=False, is_flag=True, help="execute locally")
+# @click.option("--wfid", "-W", required=False, help="workflow id to execute")
+# @click.option("--notebook", "-n", required=False, help="notebook name to execute")
+# @click.pass_context
+# def exec(ctx, local, dev, wfid, notebook):
+#     """Exec workflows remote or locally"""
+#
+#     url_service = ctx.obj["URL"]
+#     from_file = ctx.obj["WF_FILE"]
+#     if not local and not dev:
+#         c = client.from_file(from_file, url_service=url_service)
+#         rsp = c.workflows_enqueue(wfid)
+#         if rsp:
+#             click.echo(f"Executed: {rsp} on the server {url_service}")
+#         else:
+#             click.echo(f"Something went wrong")
+#     elif dev:
+#         rsp = local_dev_exec(wfid)
+#         if rsp:
+#             click.echo(f"Wfid: {rsp.wfid} locally executed")
+#             click.echo(f"Executionid: {rsp.execid}")
+#             status = "OK"
+#             if rsp.error:
+#                 status = "ERROR"
+#             click.echo(f"Status: {status}")
+#     elif local:
+#         rsp = local_exec_env()
+#         if rsp:
+#             click.echo(f"WFID: {rsp.wfid} locally executed")
+#             click.echo(f"EXECID: {rsp.execid}")
+#             status = "OK"
+#             if rsp.error:
+#                 status = "ERROR"
+#             click.echo(f"Status: {status}")
 
 
 @workflowscli.command()
@@ -157,6 +168,7 @@ def delete(ctx, wfid):
     from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
     rsp = c.workflows_delete(wfid)
+    c.write()
     print(f"Wfid: {wfid}, deleted. Code {rsp}")
 
     # elif action == "sync":
@@ -165,9 +177,8 @@ def delete(ctx, wfid):
     #     click.echo(f"{from_file} sync")
 
 
-workflowscli.add_command(init)
 workflowscli.add_command(push)
 workflowscli.add_command(list_wf)
-workflowscli.add_command(exec)
 workflowscli.add_command(delete)
 workflowscli.add_command(create)
+# workflowscli.add_command(exec)

@@ -17,6 +17,7 @@ from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg
 from nb_workflows.scheduler import SchedulerExecutor
 from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
+from nb_workflows.types.projects import ProjectBuildReq
 from nb_workflows.types.users import AgentReq, UserData
 from nb_workflows.utils import run_async, secure_filename
 
@@ -191,6 +192,27 @@ async def project_get_agent_token(request, projectid):
     return json(dict(access_token=token, refresh_token=refresh), 200)
 
 
+@projects_bp.post("/<projectid:str>/_build")
+@openapi.body({"application/json": ProjectBuildReq})
+@protected()
+async def project_build(request, projectid):
+    """
+    Enqueue docker build image
+    """
+    # pylint: disable=unused-argument
+
+    pbr = ProjectBuildReq(**request.json)
+    name = secure_filename(pbr.name)
+    root = pathlib.Path(projectid)
+    fp = str(root / settings.WF_UPLOADS / name)
+
+    sche = _get_scheduler()
+    job = await run_async(sche.enqueue_build, projectid, fp)
+    breakpoint()
+
+    return json(dict(msg="ok", execid=job.id), 202)
+
+
 @projects_bp.post("/<projectid:str>/_upload")
 @protected()
 async def project_upload(request, projectid):
@@ -201,7 +223,7 @@ async def project_upload(request, projectid):
 
     # root = pathlib.Path(settings.BASE_PATH)
     # (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
-    fsrv = AsyncFileserver(settings.FILESERVER)
+    fsrv = AsyncFileserver(settings.FILESERVER, settings.FILESERVER_BUCKET)
     root = pathlib.Path(projectid)
 
     file_body = request.files["file"][0].body
@@ -209,15 +231,9 @@ async def project_upload(request, projectid):
     fp = str(root / settings.WF_UPLOADS / name)
     await fsrv.put(fp, file_body)
 
-    sche = _get_scheduler()
+    # sche = _get_scheduler()
 
-    job = await run_async(sche.enqueue_build, projectid, fp)
-
-    # fp = str(root / settings.WF_UPLOADS / name)
-    # async with aiofiles.open(fp, "wb") as f:
-    #    await f.write(file_body)
-
-    return json(dict(msg="ok", wfid=job.id), 201)
+    return json(dict(msg="ok", wfid="mock"), 201)
 
 
 @projects_bp.post("/<projectid:str>/_register_exec")

@@ -184,7 +184,7 @@ async def get_by_projectid(
 
     stmt = select_project().where(ProjectModel.projectid == projectid)
     if user_id:
-        stmt = stmt.where(ProjectModel.user_id == user_id)
+        stmt = stmt.where(ProjectModel.owner_id == user_id)
     stmt = stmt.limit(1)
     r = await session.execute(stmt)
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
@@ -214,7 +214,7 @@ async def get_by_name(session, name) -> Union[ProjectData, None]:
 async def list_all(session, user_id=None) -> Union[List[ProjectData], None]:
     stmt = select_project()
     if user_id:
-        stmt = stmt.where(ProjectModel.user_id == user_id)
+        stmt = stmt.where(ProjectModel.owner_id == user_id)
     rows = await session.execute(stmt)
 
     if rows:
@@ -224,7 +224,7 @@ async def list_all(session, user_id=None) -> Union[List[ProjectData], None]:
 
 
 async def list_by_user(session, user_id) -> Union[List[ProjectData], None]:
-    stmt = select_project().where(ProjectModel.user_id == user_id)
+    stmt = select_project().where(ProjectModel.owner_id == user_id)
     rows = await session.execute(stmt)
     if rows:
         results = [_model2projectdata(r[0]) for r in rows]

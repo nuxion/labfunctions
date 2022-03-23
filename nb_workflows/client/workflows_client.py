@@ -8,6 +8,7 @@ from nb_workflows import errors, secrets
 from nb_workflows.conf import defaults
 from nb_workflows.errors.generics import WorkflowRegisterClientError
 from nb_workflows.types import (
+    ExecutionNBTask,
     ExecutionResult,
     HistoryRequest,
     HistoryResult,
@@ -80,7 +81,7 @@ class WorkflowsClient(BaseClient):
                         if wr.status_code == 200:
                             self.logger.warning(f"Workflow {wd.alias} already exist")
                         elif wr.status_code == 201:
-                            created.append(wd)
+                            created.append(wr)
                             if refresh_workflows:
                                 wd.wfid = wr.wfid
                                 self.state.add_workflow(wd)
@@ -110,6 +111,8 @@ class WorkflowsClient(BaseClient):
 
     def workflows_delete(self, wfid) -> int:
         r = self._http.delete(f"/workflows/{self.projectid}/{wfid}")
+        wd = self.state.find_by_id(wfid)
+        wd.wfid = None
         if r.status_code == 200:
             # self.sync_file()
             pass
@@ -119,3 +122,25 @@ class WorkflowsClient(BaseClient):
         r = self._http.post(f"/workflows/{self.projectid}/queue/{wfid}")
         if r.status_code == 202:
             return r.json()["execid"]
+
+    def notebook_run(
+        self,
+        nb_name: str,
+        params: Optional[Dict[str, Any]] = None,
+        machine=None,
+        docker_version=None,
+    ) -> ExecutionNBTask:
+
+        task = NBTask(
+            nb_name=nb_name,
+            params=params,
+            machine=machine,
+            docker_version=docker_version,
+        )
+        rsp = self._http.post(
+            f"/workflows/{self.projectid}/notebooks/_run", json=task.dict()
+        )
+        if rsp.status_code != 202:
+            raise AttributeError(rsp.text)
+
+        return ExecutionNBTask(**rsp.json())

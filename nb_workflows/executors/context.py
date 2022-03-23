@@ -1,6 +1,7 @@
 from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
+from typing import NamedTuple
 
 from nb_workflows import errors
 from nb_workflows.conf import defaults
@@ -15,44 +16,43 @@ from nb_workflows.types import (
 )
 from nb_workflows.utils import today_string
 
-Steps = namedtuple(
-    "Steps", ["start", "build", "dispatcher", "docker", "web", "seqpipe"]
-)
+WFID_PREFIX = "tmp"
 
-# steps are used to prepend for each step in a workflow execution as namespace.
-steps = Steps(
-    start="0", build="bld", dispatcher="dsp", docker="dck", web="web", seqpipe="seq"
-)
-firms = Steps(
-    start="0", build="bld", dispatcher="dsp", docker="dck", web="web", seqpipe="seq"
-)
+
+class ExecutionFirms(NamedTuple):
+    start: str = "0"
+    build: str = "bld"
+    dispatcher: str = "dsp"
+    docker: str = "dck"
+    web: str = "web"
+    local: str = "loc"
 
 
 class ExecID:
 
-    firms = firms
+    firms = ExecutionFirms()
 
     def __init__(self, execid=None, size=defaults.EXECID_LEN):
-        self.id_ = execid or generate_random(size=size)
+        self._id = execid or generate_random(size=size)
         self._signed = self.firm("start")
 
     def firm(self, firm) -> str:
         _name = getattr(self.firms, firm)
-        self.signed = f"{_name}.{self.id_}"
+        self.signed = f"{_name}.{self._id}"
         return self.signed
 
     def pure(self):
-        return self.id_
+        return self._id
 
     @classmethod
     def from_str(cls, execid: str):
         return cls(pure_execid(execid))
 
     def __str__(self):
-        return self.id_
+        return self._id
 
     def __repr__(self):
-        return self.id_
+        return self._id
 
 
 def execid_from_str(execid) -> ExecID:
@@ -72,8 +72,7 @@ def generate_execid(size=defaults.EXECID_LEN) -> str:
     EXECID_LEN = 14
     ~20 years needed for %1 collision at 1000 execs per second
     """
-    _id = generate_random(size=size)
-    return f"{steps.start}.{_id}"
+    return generate_random(size=size)
 
 
 def pure_execid(execid):
@@ -82,18 +81,26 @@ def pure_execid(execid):
     return execid.split(".", maxsplit=1)[1]
 
 
-def move_step_execid(step: str, execid: str) -> str:
-    """replace the actual NS for a newone"""
-    id_ = execid.split(".", maxsplit=1)[1]
-    return f"{step}.{id_}"
-
-
 def execid_for_build(size=defaults.EXECID_LEN):
-    return f"{steps.build}.{generate_random(size)}"
+    return f"{ExecID.firms.build}.{generate_random(size)}"
 
 
 def generate_docker_name(pd: ProjectData, docker_version: str):
     return f"{pd.owner}/{pd.name}:{docker_version}"
+
+
+def dummy_wf_from_nbtask(pd: ProjectData, nbtask: NBTask) -> WorkflowDataWeb:
+    alias = generate_random(size=10)
+
+    wfid = f"{WFID_PREFIX}.{generate_random(defaults.WFID_LEN)}"
+    return WorkflowDataWeb(alias=alias, nbtask=nbtask, wfid=wfid)
+
+
+def create_notebook_ctx_ondemand(pd: ProjectData, task: NBTask) -> ExecutionNBTask:
+    wd = dummy_wf_from_nbtask(pd, task)
+    _execid = ExecID()
+    ctx = create_notebook_ctx(pd, wd, execid=_execid.firm("web"))
+    return ctx
 
 
 def create_notebook_ctx(
@@ -112,7 +119,7 @@ def create_notebook_ctx(
 
     _params = wd.nbtask.params.copy()
     _params["WFID"] = wfid
-    _params["EXECUTIONID"] = _execid
+    _params["EXECID"] = _execid
     _params["NOW"] = _now
 
     nb_filename = f"{task.nb_name}.ipynb"

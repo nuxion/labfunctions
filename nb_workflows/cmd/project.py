@@ -8,6 +8,7 @@ from rich.console import Console
 from nb_workflows import client, secrets
 from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import defaults, load_client
+from nb_workflows.errors.client import ProjectUploadError
 from nb_workflows.utils import execute_cmd
 
 # from nb_workflows.uploads import manage_upload
@@ -96,9 +97,6 @@ def agent(ctx, action):
     default=False,
     help="Only generates the zip file",
 )
-@click.argument(
-    "action", type=click.Choice(["upload", "dockerfile", "agent-token", "recreate"])
-)
 @click.pass_context
 def upload(ctx, only_zip, env_file, current, all):
     """Prepare and push your porject information to the server"""
@@ -112,13 +110,18 @@ def upload(ctx, only_zip, env_file, current, all):
         print("Not private key found or authentication error")
         sys.exit(-1)
 
-    _agent_token = c.projects_agent_token()
+    # _agent_token = c.projects_agent_token()
 
-    zfile = client.manage_upload(pv, env_file, current, _agent_token, all)
-
+    zfile = client.manage_upload(pv, env_file, current, all)
     click.echo(f"Zipfile generated in {zfile.filepath}")
     if not only_zip:
-        c.projects_upload(zfile)
+        try:
+            c.projects_upload(zfile)
+            console.print("[bold green] Succesfully uploaded file[/]")
+            rsp = c.projects_build(zfile.filename)
+            console.print(f"Build task sent with execid: [bold magenta]{rsp.execid}[/]")
+        except ProjectUploadError:
+            console.print("[bold red] Error uploading file [/]")
 
     # elif action == "agent-token":
     #    creds = c.projects_agent_token()

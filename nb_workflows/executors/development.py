@@ -23,7 +23,7 @@ def local_dev_exec(wfid) -> Union[ExecutionResult, None]:
     dc = client.from_file()
     for _, w in dc.state.workflows.items():
         if w.wfid == wfid:
-            _execid = generate_execid(4)
+            _execid = f"loc.{generate_execid(4)}"
             ctx = create_notebook_ctx(dc.state.project, w, _execid)
 
             exec_res = notebook_executor(ctx)

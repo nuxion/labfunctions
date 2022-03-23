@@ -85,10 +85,11 @@ def scheduler_dispatcher(projectid: str, wfid: str, execid: str) -> Union[Job, N
 
     with Session() as session:
         try:
-            next_step = context.move_step_execid(context.steps.docker, execid)
+            id_ = context.ExecID(execid)
+            signed = id_.firm("", "dispatcher")
 
             exec_nb_ctx = workflows_mg.prepare_notebook_job(
-                session, projectid, wfid, next_step
+                session, projectid, wfid, signed
             )
             scheduler.enqueue_notebook(exec_nb_ctx, qname=exec_nb_ctx.machine)
 

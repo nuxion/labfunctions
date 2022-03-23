@@ -15,6 +15,7 @@ def load_client_cli(cli):
     cli.add_command(workflowscli)
     cli.add_command(projectcli)
     cli.add_command(historycli)
+    cli.add_command(executorscli)
 
 
 def load_server_cli(cli):
@@ -66,5 +67,5 @@ cli = init_cli()
 
 if __name__ == "__main__":
 
-    # cli()
-    cli(obj={})
+    cli(ctx={})
+    # cli(obj={})

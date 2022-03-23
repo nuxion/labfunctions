@@ -18,7 +18,7 @@ ASQL = os.getenv(
     "NB_ASQL", "postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows"
 )
 FILESERVER = os.getenv("NB_FILESERVER")
-FILESERVER_BUCKET = "nb-workflows"
+FILESERVER_BUCKET = "nbwf"
 
 # RQ_REDIS_HOST = os.getenv("NB_RQ_HOST", "redis")
 # RQ_REDIS_PORT = os.getenv("NB_RQ_PORT", "6379")

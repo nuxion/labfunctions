@@ -53,5 +53,6 @@ class WorkflowRsp:
 
 class ProjectZipFile(BaseModel):
     filepath: str
+    filename: str
     commit: Optional[str]
     current: Optional[bool] = False

@@ -8,3 +8,9 @@ class WorkflowStateNotSetError(Exception):
     def __init__(self, module_name):
         msg = f"WorkflowState is not set in {module_name}"
         super().__init__(msg)
+
+
+class ProjectUploadError(Exception):
+    def __init__(self, projectid):
+        msg = f"Upload Failed from project {projectid}"
+        super().__init__(msg)

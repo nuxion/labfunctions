@@ -1,6 +1,6 @@
 import logging
 import os
-import pathlib
+from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from zipfile import ZipFile
 
@@ -52,7 +52,9 @@ def zip_git_current(
 
     secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
 
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/CURRENT.zip"
+    filename = "CURRENT.zip"
+
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     stash_id = execute_cmd("git stash create")
     if not stash_id:
         return None
@@ -64,7 +66,7 @@ def zip_git_current(
 
     execute_cmd(cmd)
 
-    return ProjectZipFile(filepath=output_file, current=True)
+    return ProjectZipFile(filepath=output_file, filename=filename, current=True)
 
 
 def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
@@ -85,20 +87,28 @@ def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
     if not tagname:
         tagname = git_short_head_id()
 
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{tagname}.zip"
+    filename = f"{tagname}.zip"
+
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     execute_cmd(
         f"git archive --prefix={prefix_folder} "
         f"--add-file {secrets_file} "
         f"-o {output_file} HEAD "
     )
-    return ProjectZipFile(filepath=output_file, commit=tagname)
+    return ProjectZipFile(filepath=output_file, filename=filename, commit=tagname)
 
 
 def zip_all(root, prefix_folder=defaults.ZIP_GIT_PREFIX):
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/ALL.zip"
+
+    filename = "ALL.zip"
+
+    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
+    secrets_file = Path(".") / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
+    dst = root / ".secrets"
+    dst.write_bytes(secrets_file.read_bytes())
 
     with ZipFile(output_file, "w") as z:
-        for i in pathlib.Path(".").glob("**/*"):
+        for i in Path(".").glob("**/*"):
             if (
                 not str(i).startswith(".venv")
                 and not str(i).startswith(".git")
@@ -110,7 +120,8 @@ def zip_all(root, prefix_folder=defaults.ZIP_GIT_PREFIX):
                 else:
                     z.write(i)
 
-    return ProjectZipFile(filepath=output_file)
+    dst.unlink(missing_ok=True)
+    return ProjectZipFile(filepath=output_file, filename=filename)
 
 
 def zip_project(root, secrets_file, current=False, all_=False) -> ProjectZipFile:
@@ -131,7 +142,9 @@ def zip_project(root, secrets_file, current=False, all_=False) -> ProjectZipFile
         zfile = zip_git_current(root)
         if not zfile:
             raise TypeError(
-                "There isn't changes in the git repository to perform a CURRENT zip file. For untracked files you should add to the stash the changes, perform: git add ."
+                "There isn't changes in the git repository to perform a "
+                "CURRENT zip file. For untracked files you should add to "
+                "the stash the changes, perform: git add ."
             )
     elif all_:
         zfile = zip_all(root)
@@ -141,9 +154,7 @@ def zip_project(root, secrets_file, current=False, all_=False) -> ProjectZipFile
     return zfile
 
 
-def manage_upload(
-    privkey, env_file, current, creds: Credentials, all_=False
-) -> ProjectZipFile:
+def manage_upload(privkey, env_file, current, all_=False) -> ProjectZipFile:
     """
     It manages how to upload project files to the server.
 
@@ -159,15 +170,16 @@ def manage_upload(
     and documentation so that they can handle it manually if they want.
     """
 
-    secrets.nbvars["AGENT_TOKEN"] = creds.access_token
-    secrets.nbvars["AGENT_REFRESH_TOKEN"] = creds.refresh_token
+    # secrets.nbvars["AGENT_TOKEN"] = creds.access_token
+    # secrets.nbvars["AGENT_REFRESH_TOKEN"] = creds.refresh_token
+    # checks if AGENT_TOKEN and REFERSH exist?
 
-    root = pathlib.Path(os.getcwd())
+    root = Path(os.getcwd())
     (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
 
     secrets_file = write_secrets(root, privkey, secrets.nbvars)
     zfile = zip_project(root, secrets_file, current, all_)
 
-    pathlib.Path(secrets_file).unlink(missing_ok=True)
+    Path(secrets_file).unlink(missing_ok=True)
 
     return zfile
