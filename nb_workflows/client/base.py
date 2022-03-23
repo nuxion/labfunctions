@@ -6,7 +6,7 @@ import httpx
 
 from nb_workflows.conf import defaults
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
-from nb_workflows.types import NBTask, ProjectData, ScheduleData, SeqPipe, WorkflowData
+from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
 from nb_workflows.types.client import WorkflowsFile
 from nb_workflows.utils import open_yaml, write_yaml
 

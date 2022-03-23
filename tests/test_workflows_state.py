@@ -1,11 +1,6 @@
 from nb_workflows.client import state
 
-from .factories import (
-    NBTaskFactory,
-    ProjectDataFactory,
-    SeqPipeFactory,
-    WorkflowDataWebFactory,
-)
+from .factories import NBTaskFactory, ProjectDataFactory, WorkflowDataWebFactory
 
 
 def test_workflows_state_from_file():
@@ -18,14 +13,6 @@ def test_workflows_state_write(tempdir):
     wf.write(f"{tempdir}/workflows.yaml")
     wf_2 = state.from_file(f"{tempdir}/workflows.yaml")
     assert wf_2._project.name == wf._project.name
-
-
-def test_workflows_state_add_seq():
-    wf = state.from_file("tests/workflows_test.yaml")
-    spf = SeqPipeFactory()
-    wf.add_seq(spf)
-    assert len(wf._seq_pipes) == 1
-    assert wf._seq_pipes[0].alias == spf.alias
 
 
 def test_workflows_state_file():

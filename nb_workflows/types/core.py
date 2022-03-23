@@ -46,23 +46,6 @@ class NBTask(BaseModel):
     # schedule: Optional[ScheduleData] = None
 
 
-class SeqPipeSpec(BaseModel):
-    workflows: List[str]
-    shared_volumes: Optional[List[str]] = None
-    timeout: int = 10800  # secs 3h default
-    notifications_ok: Optional[List[str]] = None
-    notifications_fail: Optional[List[str]] = None
-    schedule: Optional[ScheduleData] = None
-
-
-class SeqPipe(BaseModel):
-    alias: str
-    spec: SeqPipeSpec
-    pipeid: Optional[str] = None
-    description: Optional[str] = None
-    enabled: bool = True
-
-
 class ExecutionNBTask(BaseModel):
     """It will be send to task_handler, and it has the
     configuration needed for papermill to run a specific notebook.

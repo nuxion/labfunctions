@@ -161,39 +161,6 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     updated_at = Column(DateTime(), default=datetime.utcnow())
 
 
-class SeqPipeModel(Base, SerializerMixin, ProjectRelationMixin):
-    """
-    Configuration for each workflow.
-
-    :param wfid: an unique identifier for this workflow
-    :param alias: because the filename could be shared between different
-    workflows, an alias was added to identify each instance, and is more
-    friendly than wfid.
-    :param name: name of the notebook file.
-    :param description: A friendly description of the purpose of this workflow
-    :param job_detail: details of the execution. It is composed by two nested
-    entities: ScheduleData and NBTask.
-    :param enabled: if the task should run or not.
-    """
-
-    __tablename__ = "nb_seqpipe"
-    __table_args__ = (
-        UniqueConstraint("alias", "project_id", name="_nb_seqpipe__project_alias"),
-    )
-    # needed for async support
-    __mapper_args__ = {"eager_defaults": True}
-
-    id = Column(Integer, primary_key=True)
-    pipeid = Column(String(24), index=True, unique=True)
-    alias = Column(String(33), index=True, nullable=False)
-    description = Column(String(), nullable=True)
-    spec = Column(JSONB(), nullable=False)
-    enabled = Column(Boolean, default=True, nullable=False)
-
-    created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
-    updated_at = Column(DateTime(), default=datetime.utcnow())
-
-
 class UserModel(Base):
 
     __tablename__ = "nb_auth_user"

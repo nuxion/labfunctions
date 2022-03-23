@@ -1,9 +1,11 @@
 version: 0.2.0
 project:
   name: pd-name0
-  projectid: vtTrK-C51D
-  username: user0
-  description: Usually significant.
+  projectid: JElzmGUmOJ
+  owner: user0
+  agent: null
+  users: null
+  description: Full care adult sport.
   repository: null
 workflows:
   nb-alias0:
@@ -21,7 +23,7 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: e4kAdY2zD_1HRPnXnOkg-Yl2
+    wfid: ZQYK6RXo2JFAcxyPHxkyHJ2B
     schedule:
       start_in_min: 0
       repeat: 2
@@ -42,7 +44,7 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: FLbrbp1wbccugyb7VQ2wumDa
+    wfid: Qf9knc2OwVSHuFq44Kf3Mv0N
     schedule:
       start_in_min: 0
       repeat: 2
@@ -63,11 +65,9 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: 1oBLgSXM7wX06tJWfs6MY4wn
+    wfid: 0mhBj7FSXUeWhdMv56yoK5-a
     schedule:
       start_in_min: 0
       repeat: 2
       cron: 0 * * * * *
       interval: null
-pipelines:
-  sequences: []

@@ -1,9 +1,11 @@
 version: 0.2.0
 project:
   name: pd-name0
-  projectid: FoZMvN_4qP
-  username: user0
-  description: Paper society certain.
+  projectid: JElzmGUmOJ
+  owner: user0
+  agent: null
+  users: null
+  description: Full care adult sport.
   repository: null
 workflows:
   nb-alias0:
@@ -21,7 +23,7 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: KtLjWGTahAvOrhQ0WszWqaMV
+    wfid: ZQYK6RXo2JFAcxyPHxkyHJ2B
     schedule:
       start_in_min: 0
       repeat: 2
@@ -42,7 +44,7 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: RzJqGnuDTGtFYKfvydgFRpT6
+    wfid: Qf9knc2OwVSHuFq44Kf3Mv0N
     schedule:
       start_in_min: 0
       repeat: 2
@@ -63,11 +65,9 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: Rw09-WYZ7Ewne2Ipu1JGrlWQ
+    wfid: 0mhBj7FSXUeWhdMv56yoK5-a
     schedule:
       start_in_min: 0
       repeat: 2
       cron: 0 * * * * *
       interval: null
-pipelines:
-  sequences: []

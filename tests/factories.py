@@ -15,11 +15,9 @@ from nb_workflows.types import (
     ProjectData,
     ProjectReq,
     ScheduleData,
-    SeqPipe,
     WorkflowData,
     WorkflowDataWeb,
 )
-from nb_workflows.types.core import SeqPipeSpec
 from nb_workflows.types.users import UserData
 from nb_workflows.utils import run_sync
 
@@ -89,22 +87,6 @@ class ExecutionNBTaskFactory(factory.Factory):
     today = factory.LazyAttribute(lambda n: utils.today_string(format_="day"))
     timeout = 5
     created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
-
-
-class SeqPipeSpecFactory(factory.Factory):
-    class Meta:
-        model = SeqPipeSpec
-
-    workflows = factory.LazyAttribute(lambda n: [generate_random(5) for x in range(5)])
-    shared_volumes = ["data/", "models/"]
-
-
-class SeqPipeFactory(factory.Factory):
-    class Meta:
-        model = SeqPipe
-
-    spec = factory.LazyAttribute(lambda n: SeqPipeSpecFactory())
-    alias = factory.Sequence(lambda n: "alias-%d" % n)
 
 
 class UserFactory(factory.Factory):

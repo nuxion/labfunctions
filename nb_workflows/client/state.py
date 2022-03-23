@@ -3,8 +3,8 @@ from typing import Dict, List, Optional, Union
 
 import yaml
 
-from nb_workflows.types import NBTask, ProjectData, SeqPipe, WorkflowDataWeb
-from nb_workflows.types.client import Pipelines, WorkflowsFile
+from nb_workflows.types import NBTask, ProjectData, WorkflowDataWeb
+from nb_workflows.types.client import WorkflowsFile
 from nb_workflows.utils import Singleton, open_yaml, write_yaml
 
 
@@ -21,12 +21,10 @@ class WorkflowsState:
         self,
         project: Optional[ProjectData] = None,
         workflows: Optional[Dict[str, NBTask]] = None,
-        seqpipes: Optional[List[SeqPipe]] = None,
         version="0.2.0",
     ):
         self._version = version
         self._project = project
-        self._seq_pipes = seqpipes or []
         self._workflows = workflows or {}
 
         self.snapshots: List[WorkflowsFile] = []
@@ -62,21 +60,16 @@ class WorkflowsState:
                 return self._workflows[alias]
         return None
 
-    def add_seq(self, sp: SeqPipe):
-        self._seq_pipes.append(sp)
-
     def update_project(self, pd: ProjectData):
         self._project = pd
 
     @property
     def file(self) -> WorkflowsFile:
-        p = Pipelines(sequences=self._seq_pipes)
         return WorkflowsFile(
             version=self._version,
             project=self._project,
             # workflows={w.alias: w for w in self._workflows}
             workflows=self._workflows,
-            pipelines=p,
         )
 
     @property
@@ -125,14 +118,8 @@ class WorkflowsState:
 
 def from_file(fpath="workflows.yaml") -> WorkflowsState:
     wf = WorkflowsState.read(fpath)
-    pipes = wf.pipelines
-    seq = None
-    if wf.pipelines:
-        seq = pipes.sequences
-
     return WorkflowsState(
         project=wf.project,
         version=wf.version,
         workflows=wf.workflows,
-        seqpipes=seq,
     )
