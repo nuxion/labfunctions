@@ -51,6 +51,7 @@ def builder_executor(projectid, project_zip_route):
     docker_tag = context.generate_docker_name(pd, docker_version=_version)
     logger.error(docker_tag)
     make_build(project_dir / zip_name, tag=docker_tag, temp_dir=str(temp_dir))
+    # register build
 
 
 def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):

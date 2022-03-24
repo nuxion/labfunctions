@@ -61,9 +61,6 @@ class ClientSettings(BaseSettings):
     WORKFLOW_SERVICE: str
     PROJECTID: str
 
-    AGENT_TOKEN: str
-    AGENT_REFRESH_TOKEN: str
-
     BASE_PATH: str
     # NB_WORKFLOWS: str
     # NB_OUTPUT: str
@@ -71,12 +68,11 @@ class ClientSettings(BaseSettings):
     LOGFORMAT: str = "%(asctime)s %(message)s"
     DEBUG: bool = False
     NBVARS: Optional[str] = None
+    AGENT_TOKEN: Optional[str] = None
+    AGENT_REFRESH_TOKEN: Optional[str] = None
 
     PROJECT_NAME: Optional[str] = None
     PROJECTID_LEN: int = 10
-    CLIENT_TOKEN: Optional[str] = None
-    CLIENT_REFRESH_TOKEN: Optional[str] = None
-    VERSION: Optional[str] = "0.1.0"
     SLACK_BOT_TOKEN: Optional[str] = None
     SLACK_CHANNEL_OK: Optional[str] = None
     SLACK_CHANNEL_FAIL: Optional[str] = None
@@ -85,8 +81,7 @@ class ClientSettings(BaseSettings):
 
     FILESERVER: Optional[str] = None
     SETTINGS_MODULE: Optional[str] = None
-    DOCKER_IMAGE: Dict[str, Any] = None
-    DOCKER_COMPOSE: Dict[str, Any] = None
+    # DOCKER_COMPOSE: Dict[str, Any] = None
 
     class Config:
         env_prefix = "NB_"

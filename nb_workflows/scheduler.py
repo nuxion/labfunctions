@@ -86,7 +86,7 @@ def scheduler_dispatcher(projectid: str, wfid: str, execid: str) -> Union[Job, N
     with Session() as session:
         try:
             id_ = context.ExecID(execid)
-            signed = id_.firm("", "dispatcher")
+            signed = id_.firm("dispatcher")
 
             exec_nb_ctx = workflows_mg.prepare_notebook_job(
                 session, projectid, wfid, signed

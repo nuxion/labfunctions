@@ -43,6 +43,6 @@ def local_nb_dev_exec(task: NBTask) -> Union[ExecutionResult, None]:
 
     nb_ctx = create_notebook_ctx_ondemand(dc.state.project, task)
     os.environ[defaults.EXECUTIONTASK_VAR] = json.dumps(nb_ctx.dict())
-    os.environ["DEBUG"] = True
+    os.environ["DEBUG"] = "true"
     res = local_exec_env()
     return res

@@ -199,13 +199,22 @@ def prepare_notebook_job(
     """It prepares the task execution of the notebook"""
     wm = get_by_prj_and_wfid_sync(session, projectid, wfid)
     if wm and wm.enabled:
-        pm = projects_mg.get_by_projectid_model_sync(session, projectid)
+        # pm = projects_mg.get_by_projectid_model_sync(session, projectid)
+        pm = wm.project
         task = NBTask(**wm.nbtask)
+        wd = WorkflowDataWeb(
+            alias=wm.alias,
+            nbtask=task,
+            wfid=wm.wfid,
+        )
 
-        pd = ProjectData.from_orm(pm)
-        pd.username = pm.user.username
+        pd = ProjectData(
+            name=pm.name,
+            projectid=pm.projectid,
+            owner=pm.owner.username,
+        )
 
-        exec_notebook_ctx = ctx.create_notebook_ctx(pd, task, execid)
+        exec_notebook_ctx = ctx.create_notebook_ctx(pd, wd, execid)
         return exec_notebook_ctx
     elif not wm.enabled:
         raise errors.WorkflowDisabled(projectid, wfid)

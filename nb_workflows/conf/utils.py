@@ -22,7 +22,7 @@ DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
 # Client defaults
 GLOBAL_CLIENT = "nb_workflows.conf.global_client"
 CLIENT_VARIABLE = "NB_CLIENT_MODULE"
-DEFAULT_CLIENT = os.environ.get(CLIENT_VARIABLE, "nb_app.settings")
+DEFAULT_CLIENT_MOD = os.environ.get(CLIENT_VARIABLE, "nb_app.settings")
 
 
 def _get_level(level):
@@ -65,7 +65,7 @@ def define_base_path() -> str:
     return base_path
 
 
-def load_client(settings_module=DEFAULT_CLIENT) -> ClientSettings:
+def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
     # sys.path.append(os.getcwd())
     module_loaded = settings_module
     base_path = define_base_path()

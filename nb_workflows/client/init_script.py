@@ -15,6 +15,7 @@ from nb_workflows.conf import defaults, load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 from nb_workflows.hashes import generate_random
 from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowDataWeb
+from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.utils import get_parent_folder
 
 from .utils import normalize_name
@@ -44,6 +45,14 @@ def _example_workflow() -> WorkflowDataWeb:
     return wd
 
 
+def default_runtime() -> DockerfileImage:
+    return DockerfileImage(
+        maintener=defaults.DOCKERFILE_MAINTENER,
+        image=defaults.DOCKERFILE_IMAGE,
+        final_packages="vim-tiny",
+    )
+
+
 def _empty_file(filename):
     with open(filename, "w", encoding="utf-8") as f:
         pass
@@ -66,7 +75,7 @@ def _ask_project_name() -> str:
 
 
 def init_setting_dir_app(root, projectid, project_name, url_service=None):
-    _pkg_dir = get_package_dir("nb_workflows")
+    # _pkg_dir = get_package_dir("nb_workflows")
     p = root / "nb_app"
 
     workflow_service = url_service or "http://localhost:8000"
@@ -84,10 +93,10 @@ def init_setting_dir_app(root, projectid, project_name, url_service=None):
     )
 
 
-def generate_files(root):
-    settings = load_client(settings_module="nb_app.settings")
-    if settings.DOCKER_IMAGE:
-        generate_dockerfile(root, settings.DOCKER_IMAGE)
+def generate_cicd_files(root):
+
+    runtime = default_runtime()
+    generate_dockerfile(root, runtime.dict())
 
     render_to_file("Makefile", str((root / "Makefile").resolve()))
     render_to_file("dockerignore", str((root / ".dockerignore").resolve()))
@@ -105,13 +114,14 @@ def create_dirs(base_path):
     )
 
 
-def workflow_state_init(settings) -> WorkflowsState:
+def workflow_state_init(projectid=None, name=None) -> WorkflowsState:
 
     wd = _example_workflow()
     wd_dict = {wd.alias: wd}
+    runtime = default_runtime()
 
-    projectid = settings.PROJECTID
-    name = settings.PROJECT_NAME
+    # projectid = settings.PROJECTID
+    # name = settings.PROJECT_NAME
 
     if not projectid:
         name = _ask_project_name()
@@ -120,7 +130,7 @@ def workflow_state_init(settings) -> WorkflowsState:
         projectid = generate_random(defaults.PROJECTID_LEN)
 
     pd = ProjectData(name=name, projectid=projectid)
-    wf_state = WorkflowsState(pd, workflows=wd_dict, version="0.2.0")
+    wf_state = WorkflowsState(pd, workflows=wd_dict, runtime=runtime, version="0.2.0")
     wf_state.write()
     return wf_state
 
@@ -162,12 +172,13 @@ def init(root, init_dirs=True, url_service=None):
     i_should_create = True
     if verify_pre_existent(root):
         i_should_create = Confirm.ask(
-            "[yellow]It seems that a project already exist, do you want to continue?[/yellow]",
+            "[yellow]It seems that a project already exist, "
+            "do you want to continue?[/yellow]",
             default=False,
         )
     if i_should_create:
         _empty_file(root / "local.nbvars")
-        state = workflow_state_init(settings)
+        state = workflow_state_init()
         dc = DiskClient(url_service, wf_state=state)
         create_on_the_server(dc)
 
@@ -178,6 +189,6 @@ def init(root, init_dirs=True, url_service=None):
             url_service=url_service,
         )
 
-        generate_files(root)
+        generate_cicd_files(root)
         if init_dirs:
             create_dirs(root)

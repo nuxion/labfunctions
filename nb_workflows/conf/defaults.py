@@ -18,6 +18,7 @@ ZIP_GIT_PREFIX = "src/"
 # Secrets and security
 SECRETS_FILENAME = ".secrets"
 NBVARS_VAR_NAME = "NB_NBVARS"
+NBVARS_FILENAME = "local.nbvars"
 PRIVKEY_VAR_NAME = "PRIVATE_KEY"
 
 # Client DEFAULT OPTIONS
@@ -26,7 +27,8 @@ CLIENT_HOME_DIR = ".nb_workflows/"
 CLIENT_TIMEOUT = 60
 
 DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
-
+DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
+DOCKERFILE_IMAGE = "python:3.8.10-slim"
 
 # Sanic
 SANIC_APP_NAME = "nb_workflows"

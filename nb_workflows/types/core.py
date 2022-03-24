@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from .docker import DockerfileImage
+
 
 class ScheduleData(BaseModel):
     """Used as generic structure when querying database"""

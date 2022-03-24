@@ -75,3 +75,9 @@ def startproject(url_service, create_dirs, base_path):
     console.print("\t2. create a notebook inside of the notebook folder")
     console.print("\t3. generate a workflow for that notebook")
     console.print("\t4. and finally publish your work\n")
+
+    console.print(
+        " [bold magenta]To test if everything is working "
+        " you can run the following command:[/]\n"
+    )
+    console.print("\t[bold] nb exec notebook welcome --dev -p TIMEOUT=5[/]\n")

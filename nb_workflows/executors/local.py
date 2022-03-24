@@ -41,15 +41,16 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     c.logger.info(f"jobdid:{etask.wfid} execid:{etask.execid} Starting")
 
     # Execution
-    breakpoint()
     result = notebook_executor(etask)
-    breakpoint()
 
     # Registration
-    status = _simple_retry(c.history_nb_output, (result,))
-    status_register = _simple_retry(c.history_register, (result,))
-    if not status or not status_register:
-        c.logger.error(f"jobdid:{etask.wfid} execid:{etask.execid} Fail registration")
+    if not os.getenv("DEBUG"):
+        status = _simple_retry(c.history_nb_output, (result,))
+        status_register = _simple_retry(c.history_register, (result,))
+        if not status or not status_register:
+            c.logger.error(
+                f"jobdid:{etask.wfid} execid:{etask.execid} Fail registration"
+            )
 
     c.logger.info(
         f"jobdid:{etask.wfid} execid:{etask.execid} Finish in {result.elapsed_secs} secs"

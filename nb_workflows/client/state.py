@@ -5,6 +5,7 @@ import yaml
 
 from nb_workflows.types import NBTask, ProjectData, WorkflowDataWeb
 from nb_workflows.types.client import WorkflowsFile
+from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.utils import Singleton, open_yaml, write_yaml
 
 
@@ -21,13 +22,19 @@ class WorkflowsState:
         self,
         project: Optional[ProjectData] = None,
         workflows: Optional[Dict[str, NBTask]] = None,
+        runtime: Optional[DockerfileImage] = None,
         version="0.2.0",
     ):
         self._version = version
         self._project = project
         self._workflows = workflows or {}
+        self._runtime = runtime
 
         self.snapshots: List[WorkflowsFile] = []
+
+    @property
+    def runtime(self) -> DockerfileImage:
+        return self._runtime
 
     @property
     def projectid(self) -> Union[str, None]:
@@ -68,8 +75,8 @@ class WorkflowsState:
         return WorkflowsFile(
             version=self._version,
             project=self._project,
-            # workflows={w.alias: w for w in self._workflows}
             workflows=self._workflows,
+            runtime=self._runtime,
         )
 
     @property
@@ -107,10 +114,10 @@ class WorkflowsState:
         _dict = OrderedDict()
         _dict["version"] = wf.version
         _dict["project"] = wf.project.dict()
+        if wf_dict.get("runtime"):
+            _dict["runtime"] = wf.runtime.dict()
         if wf_dict.get("workflows"):
             _dict["workflows"] = {k: v.dict() for k, v in wf.workflows.items()}
-        if wf_dict.get("pipelines"):
-            _dict["pipelines"] = wf.pipelines.dict()
         write_yaml(
             fp, dict(_dict), Dumper=WFDumper, default_flow_style=False, sort_keys=False
         )

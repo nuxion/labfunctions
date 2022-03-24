@@ -3,7 +3,9 @@ import logging
 import os
 import sys
 
-from . import load_client
+from nb_workflows.secrets2 import load
+
+from .utils import load_client
 
 
 def _get_level(level):

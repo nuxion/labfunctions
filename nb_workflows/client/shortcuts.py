@@ -2,10 +2,11 @@ import getpass
 import json
 import os
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import httpx
 
+from nb_workflows import secrets2
 from nb_workflows.conf import defaults, load_client
 from nb_workflows.conf.types import ClientSettings
 from nb_workflows.executors import context
@@ -20,6 +21,15 @@ from .state import WorkflowsState
 from .state import from_file as ws_from_file
 from .types import Credentials
 from .utils import _example_task, get_credentials_disk, validate_credentials_local
+
+
+def _load_creds(settings: ClientSettings, nbvars) -> Union[Credentials, None]:
+    creds = None
+    at = nbvars.get("AGENT_TOKEN", settings.AGENT_TOKEN)
+    rt = nbvars.get("AGENT_REFRESH_TOKEN", settings.AGENT_REFRESH_TOKEN)
+    if at and rt:
+        creds = Credentials(access_token=at, refresh_token=rt)
+    return creds
 
 
 def normalize_name(name: str) -> str:
@@ -49,13 +59,15 @@ def from_file(
     return dc
 
 
-def from_env(settings=load_client()) -> NBClient:
-    """Creates a client using env variables"""
+def from_env(settings: Optional[ClientSettings] = None) -> NBClient:
+    """Creates a client using the settings module and environment variables"""
+    if not settings:
+        settings = load_client()
+    nbvars = secrets2.load(settings.BASE_PATH)
+
     tasks = None
-    creds = Credentials(
-        access_token=settings.AGENT_TOKEN,
-        refresh_token=settings.AGENT_REFRESH_TOKEN,
-    )
+    creds = _load_creds(settings, nbvars)
+
     pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
 
     wf_state = WorkflowsState(pd)
@@ -63,36 +75,6 @@ def from_env(settings=load_client()) -> NBClient:
         url_service=settings.WORKFLOW_SERVICE,
         creds=creds,
         wf_state=wf_state,
-    )
-
-
-def minimal_client(url_service, token, refresh, projectid) -> NBClient:
-    """A shortcut to intialize :class:`nb_workflows.client.NBClient`
-
-    Usually, it is used in each machine running a agent (data plane),
-    and is used to communicates with server for workflows task
-    preparations.
-
-    TODO: in the future agent use case should be treat apart. Right now
-    if the credential env variable is outdated, then
-    it will be allways refreshing their token.
-
-    Workaround #1: extend expire time for services like tokens
-    Workaround #2: manage a shared store like
-    store_creds_disk with redis instead
-    Workaround #3: Inject crendentials with the task.
-
-
-    :param url_service: WORKFLOWS_SERVICE url
-    :param token: access_token
-    :param refresh: refresh_token
-    :param projectid: projectid
-    """
-    creds = Credentials(access_token=token, refresh_token=refresh)
-    return NBClient(
-        url_service=url_service,
-        creds=creds,
-        # store_creds=store_creds,
     )
 
 

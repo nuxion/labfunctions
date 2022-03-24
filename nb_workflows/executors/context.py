@@ -96,6 +96,15 @@ def dummy_wf_from_nbtask(pd: ProjectData, nbtask: NBTask) -> WorkflowDataWeb:
     return WorkflowDataWeb(alias=alias, nbtask=nbtask, wfid=wfid)
 
 
+def create_dummy_ctx(projectid, pname, execid=None) -> ExecutionNBTask:
+    dummy_id = execid or f"{WFID_PREFIX}.{generate_random(defaults.WFID_LEN)}"
+    pd = ProjectData(name=pname, projectid=projectid)
+    task = NBTask(nb_name="welcome", params={})
+    wd = dummy_wf_from_nbtask(pd, task)
+    ctx = create_notebook_ctx(pd, wd, execid=dummy_id)
+    return ctx
+
+
 def create_notebook_ctx_ondemand(pd: ProjectData, task: NBTask) -> ExecutionNBTask:
     wd = dummy_wf_from_nbtask(pd, task)
     _execid = ExecID()
@@ -168,3 +177,7 @@ def make_error_result(ctx, elapsed) -> ExecutionResult:
         created_at=ctx.created_at,
     )
     return result
+
+
+# def generate_context(client: Optional[NBClient] = None) -> ExecutionNBTask:
+# CTX creation

@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 from dataclasses import asdict
 from typing import Callable, List, Optional
 
@@ -6,7 +8,15 @@ import httpx
 
 from nb_workflows.conf import defaults
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
-from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
+from nb_workflows.executors import context
+from nb_workflows.hashes import generate_random
+from nb_workflows.types import (
+    ExecutionNBTask,
+    NBTask,
+    ProjectData,
+    ScheduleData,
+    WorkflowData,
+)
 from nb_workflows.types.client import WorkflowsFile
 from nb_workflows.utils import open_yaml, write_yaml
 
@@ -122,6 +132,14 @@ class BaseClient:
             return self.state.project_name
         else:
             raise WorkflowStateNotSetError(__name__)
+
+    def generate_context(self, execid=None) -> ExecutionNBTask:
+        _env = os.getenv(defaults.EXECUTIONTASK_VAR)
+        if _env:
+            ctx = ExecutionNBTask(**json.loads(_env))
+        else:
+            ctx = context.create_dummy_ctx(self.projectid, self.project_name, execid)
+        return ctx
 
     def _auth_init(self) -> AuthFlow:
         self._auth = AuthFlow(

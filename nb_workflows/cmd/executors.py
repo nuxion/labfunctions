@@ -129,7 +129,7 @@ def notebook(ctx, param, machine, docker_version, dev, notebook):
         rsp = c.notebook_run(
             notebook, params_dict, machine=machine, docker_version=docker_version
         )
-        print_json(rsp.json())
+        print_json(data=rsp.json())
     else:
         task = NBTask(
             nb_name=notebook,
@@ -139,4 +139,4 @@ def notebook(ctx, param, machine, docker_version, dev, notebook):
         )
         rsp = local_nb_dev_exec(task)
 
-        print_json(rsp.dict())
+        print_json(data=rsp.dict())
