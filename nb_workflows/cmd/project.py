@@ -138,7 +138,11 @@ def dockerfile(ctx):
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
     root = Path(os.getcwd())
-    generate_dockerfile(root, settings.DOCKER_IMAGE)
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+
+    c = client.from_file(from_file, url_service)
+    generate_dockerfile(root, c.state.runtime.dict())
     click.echo(f"{defaults.DOCKERFILE_RUNTIME_NAME} updated")
     click.echo("Remember to add this change to git...")
 

@@ -33,7 +33,6 @@ def local_exec_env() -> Union[ExecutionResult, None]:
     """
     # Init
     c = client.from_env()
-
     # CTX creation
     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
 

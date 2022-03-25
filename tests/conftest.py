@@ -129,8 +129,10 @@ async def sanic_app(async_conn):
     from nb_workflows.utils import init_blueprints
 
     rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+    # rweb = Redis("/tmp/RWeb.rdb")
 
-    app = app_init(async_conn, web_redis=rweb)
+    rqdb = Redis("/tmp/RQWeb.rdb")
+    app = app_init(async_conn, web_redis=rweb, rq_redis=rqdb)
     init_blueprints(app, ["workflows", "history", "projects"])
 
     yield app

@@ -101,9 +101,12 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
                 defaults.PRIVKEY_VAR_NAME: priv_key,
                 defaults.EXECUTIONTASK_VAR: json.dumps(exec_ctx.dict()),
                 "NB_WORKFLOW_SERVICE": settings.WORKFLOW_SERVICE,
+                defaults.BASE_PATH_ENV: "/app",
             },
             remove=True,
         )
+        for line in logs.decode().split("\n"):
+            logger.info(line)
 
     except docker.errors.ContainerError as e:
         logger.error(e.stderr.decode())

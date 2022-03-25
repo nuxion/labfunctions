@@ -23,6 +23,7 @@ from nb_workflows.db.sync import SQL
 from nb_workflows.executors import context
 from nb_workflows.executors.docker import builder_executor, docker_exec
 from nb_workflows.managers import projects_mg, workflows_mg
+from nb_workflows.managers.workflows_mg import prepare_notebook_job
 from nb_workflows.models import WorkflowModel
 
 # from nb_workflows.notebooks import nb_job_executor
@@ -40,7 +41,18 @@ def machine_q(name) -> str:
     return f"{df.Q_NS.machine}.{name}"
 
 
-def scheduler_dispatcher(projectid: str, wfid: str, execid: str) -> Union[Job, None]:
+def firm_or_new(execid, firm):
+    if execid:
+        eid = context.ExecID.from_str(execid)
+        final_id = eid.firm(firm)
+    else:
+        final_id = context.ExecID().firm(firm)
+    return final_id
+
+
+def scheduler_dispatcher(
+    projectid: str, wfid: str, execid=None, redis=None, db=None, is_async=True
+) -> Union[Job, None]:
     """
     This is the entrypoint of any workflow or job to be executed by RQ and it
     will be executed by :class:`nb_workflows.scheduler.SchedulerExecutor`
@@ -74,24 +86,25 @@ def scheduler_dispatcher(projectid: str, wfid: str, execid: str) -> Union[Job, N
     :return: a Job instance from RQ a or None if the Job or the project is not found
     :rtype: an Union between Job or None.
     """
-    db = SQL(settings.SQL)
+    _db = db or SQL(settings.SQL)
     _cfg = settings.rq2dict()
-    redis = Redis(**_cfg)
-    scheduler = SchedulerExecutor(redis=redis, qname=control_q())
+    _redis = redis or Redis(**_cfg)
+
+    scheduler = SchedulerExecutor(redis=_redis, qname=control_q(), is_async=is_async)
 
     logger = logging.getLogger(__name__)
 
-    Session = db.sessionmaker()
+    Session = _db.sessionmaker()
 
     with Session() as session:
         try:
-            id_ = context.ExecID(execid)
-            signed = id_.firm("dispatcher")
+            signed = firm_or_new(execid, "dispatcher")
 
             exec_nb_ctx = workflows_mg.prepare_notebook_job(
                 session, projectid, wfid, signed
             )
             scheduler.enqueue_notebook(exec_nb_ctx, qname=exec_nb_ctx.machine)
+            logger.info(f"SCHEDULING {wfid}")
 
             # priv_key = projects_mg.get_private_key_sync(session, projectid)
         except errors.WorkflowNotFound as e:
@@ -139,9 +152,17 @@ class SchedulerExecutor:
 
         Every time a task is enqueue again the step MUST be moved.
         """
-        execid = execid or context.ExecID().firm("dispatcher")
 
-        j = self.Q.enqueue(scheduler_dispatcher, projectid, wfid, execid, job_id=execid)
+        final_id = firm_or_new(execid, "dispatcher")
+
+        j = self.Q.enqueue(
+            scheduler_dispatcher,
+            projectid,
+            wfid,
+            execid,
+            is_async=self.is_async,
+            job_id=final_id,
+        )
         return j
 
     def enqueue_notebook(self, nb_job_ctx: ExecutionNBTask, qname: str) -> Job:

@@ -45,7 +45,7 @@ async def history_last_job(request, wfid, projectid):
 @history_bp.post("/")
 @openapi.body({"application/json": HistoryRequest})
 @openapi.response(201, "Created")
-@protected()
+@protected
 async def history_create(request):
     """Register a jobexecution"""
     # pylint: disable=unused-argument

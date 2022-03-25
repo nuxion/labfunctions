@@ -46,7 +46,11 @@ class ExecID:
 
     @classmethod
     def from_str(cls, execid: str):
-        return cls(pure_execid(execid))
+        try:
+            _pure = pure_execid(execid)
+        except IndexError:
+            _pure = execid
+        return cls(execid)
 
     def __str__(self):
         return self._id
@@ -161,7 +165,7 @@ def create_notebook_ctx(
     )
 
 
-def make_error_result(ctx, elapsed) -> ExecutionResult:
+def make_error_result(ctx: ExecutionNBTask, elapsed) -> ExecutionResult:
     result = ExecutionResult(
         wfid=ctx.wfid,
         execid=ctx.execid,

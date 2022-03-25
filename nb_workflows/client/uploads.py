@@ -177,7 +177,9 @@ def manage_upload(privkey, env_file, current, all_=False) -> ProjectZipFile:
     root = Path(os.getcwd())
     (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
 
-    secrets_file = write_secrets(root, privkey, secrets.nbvars)
+    nbvars = secrets.load()
+
+    secrets_file = write_secrets(root, privkey, nbvars)
     zfile = zip_project(root, secrets_file, current, all_)
 
     Path(secrets_file).unlink(missing_ok=True)

@@ -3,8 +3,6 @@ import logging
 import os
 import sys
 
-from nb_workflows.secrets2 import load
-
 from .utils import load_client
 
 

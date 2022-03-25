@@ -133,7 +133,7 @@ class BaseClient:
         else:
             raise WorkflowStateNotSetError(__name__)
 
-    def generate_context(self, execid=None) -> ExecutionNBTask:
+    def get_context(self, execid=None) -> ExecutionNBTask:
         _env = os.getenv(defaults.EXECUTIONTASK_VAR)
         if _env:
             ctx = ExecutionNBTask(**json.loads(_env))

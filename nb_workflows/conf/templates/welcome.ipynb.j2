@@ -25,7 +25,7 @@
     "\n",
     "![tag preview](https://papermill.readthedocs.io/en/latest/_images/lab3_parameters.png)\n",
     "\n",
-    "As you can image `SLEEP`, `ERROR` `NOW` `WFID` and `EXECID` are variables inside the notebook and parameters that could be changed in the future. You can think on this notebook as a function and the cell marked with the tag `parameters` as their parameters. "
+    "As you can image `SLEEP`, `ERROR` are variables inside the notebook and parameters that could be changed in the future. You can think on this notebook as a function and the cell marked with the tag `parameters` as their parameters. "
    ]
   },
   {
@@ -41,11 +41,39 @@
    "outputs": [],
    "source": [
     "SLEEP = 5\n",
-    "ERROR = False\n",
+    "ERROR = False"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7014f094-3964-42a1-9de0-031100edaf8a",
+   "metadata": {},
+   "source": [
+    "## Context\n",
     "\n",
-    "NOW = None\n",
-    "WFID = None\n",
-    "EXECID = None"
+    "The `context` could be a concept a little difficult to grasp, please be patient. \n",
+    "\n",
+    "The idea behind it is to have information (and context 😜) about the environment and the execution of a specific run, inside context you will get information about paths, identifiers (of the workflow, project & execution), times, and so forth. Also it could be used safely in development and referenced after in a production workload. \n",
+    "\n",
+    "The idea of having a `context` allows you, if you want, to use some of this **metadata as reference to store or retrieve data in this notebook or others**. \n",
+    "\n",
+    "Finally, be careful with some of the values in `context`, for instance execid and NOW are uniques to each execution."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "331fc3e8-80ee-49ee-8725-720360c80fc6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from nb_workflows.shortcuts import client\n",
+    "ctx = client.get_context()\n",
+    "print(f\"PROJECT_ID: {ctx.projectid}\")\n",
+    "print(f\"notebook: {ctx.nb_name}\")\n",
+    "print(f\"WFID: {ctx.wfid}\")\n",
+    "print(f\"EXECID: {ctx.execid}\")\n",
+    "print(f\"NOW: {ctx.params['NOW']}\")"
    ]
   },
   {
@@ -60,33 +88,12 @@
     "from datetime import datetime\n",
     "import time\n",
     "\n",
-    "print(\"=\" * 10)\n",
-    "print(f\"WFID: {WFID} starting\")\n",
-    "print(f\"EXECID: {EXECID} starting\")\n",
-    "print(\"=\" * 10)\n",
-    "print(f\"SLEEP: {SLEEP}\")\n",
-    "print(f\"ERROR: {ERROR}\")\n",
-    "\n",
-    "NOW = datetime.utcnow().isoformat()\n",
-    "\n",
     "time.sleep(SLEEP)\n",
     "\n",
     "if ERROR:\n",
     "    raise IndexError(\"Error was requested for this task\")\n",
     "    # 10 / 0\n",
-    "print(\"Error?\", ERROR)\n",
-    "\n",
-    "print(f\"Task {WFID} finished\")"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "a70ce514-eda0-4608-adb4-413fdbc4c394",
-   "metadata": {},
-   "source": [
-    "In addition to the above, some helpful functions comes with **NB Workflows**\n",
-    "\n",
-    "TODO: base_path"
+    "print(\"Error?\", ERROR)"
    ]
   },
   {
@@ -101,15 +108,13 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "21f1feb5-8e7c-4c04-82e6-b6bc600b5573",
+   "cell_type": "markdown",
+   "id": "c3ef5e7b-ce07-47f1-a68b-18e49b6c8196",
    "metadata": {},
-   "outputs": [],
    "source": [
-    "from nb_workflows.conf import load_client\n",
-    "settings = load_client()\n",
-    "settings.SETTINGS_MODULE"
+    "An extra object that is provided regardless if the execution is locally or in prod, is a dictionary with values defined in the “local.nbvars” (by default, but you can change it or you can have different files by environment). These values are in plain text when you are locally working, but are encrypted with a key when going to production\n",
+    "\n",
+    "see it action:"
    ]
   },
   {
@@ -119,21 +124,9 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "from nb_workflows.secrets import nbvars\n",
+    "from nb_workflows.shortcuts import secrets\n",
     "\n",
-    "nbvars"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b7493386-481b-44c7-bc48-20eb07e31cb8",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "with open(\"test.txt\", \"w\") as f:\n",
-    "    f.write(\"RUNN\")\n",
-    "    "
+    "secrets"
    ]
   }
  ],

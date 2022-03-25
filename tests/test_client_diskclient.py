@@ -19,6 +19,14 @@ class MockLoginRsp:
         return dict(access_token="token_test", refresh_token="refresh")
 
 
+class MockPrivKeyRsp:
+    status_code = 200
+
+    @staticmethod
+    def json():
+        return dict(private_key="test_key")
+
+
 def test_client_diskclient_mro():
     """https://stackoverflow.com/questions/3277367/how-does-pythons-super-work-with-multiple-inheritance"""
 
@@ -106,3 +114,41 @@ def test_client_diskclient_login(monkeypatch, tempdir):
     assert c._creds.access_token == "token_test"
     assert c._creds.refresh_token == "refresh"
     assert isinstance(c._http.auth, AuthFlow)
+
+
+def test_client_diskclient_logincli(mocker: MockerFixture):
+    import httpx
+
+    mocker.patch(
+        "nb_workflows.client.diskclient.get_credentials_disk", return_value=None
+    )
+
+    mocker.patch("nb_workflows.client.diskclient.input", return_value="nuxion")
+
+    mocker.patch(
+        "nb_workflows.client.diskclient.getpass.getpass", return_value="nuxion"
+    )
+
+    mocker.patch("nb_workflows.client.diskclient.DiskClient.login", return_value=None)
+
+    c = DiskClient(url_service="http://localhost:8000")
+    c.logincli()
+
+
+def test_client_diskclient_priv_key(mocker, monkeypatch, tempdir):
+    import httpx
+
+    def mock_get(*args, **kwargs):
+        return MockPrivKeyRsp()
+
+    mocker.patch("nb_workflows.client.diskclient.store_private_key", return_value=None)
+
+    mocker.patch(
+        "nb_workflows.client.diskclient.DiskClient.projectid", return_value="test"
+    )
+
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
+    c = DiskClient(url_service="http://localhost:8000")
+    key = c.projects_private_key()
+    assert key == "test_key"

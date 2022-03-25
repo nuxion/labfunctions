@@ -6,7 +6,7 @@ from typing import Optional, Union
 
 import httpx
 
-from nb_workflows import secrets2
+from nb_workflows import secrets
 from nb_workflows.conf import defaults, load_client
 from nb_workflows.conf.types import ClientSettings
 from nb_workflows.executors import context
@@ -63,7 +63,8 @@ def from_env(settings: Optional[ClientSettings] = None) -> NBClient:
     """Creates a client using the settings module and environment variables"""
     if not settings:
         settings = load_client()
-    nbvars = secrets2.load(settings.BASE_PATH)
+    nbvars = secrets.load(settings.BASE_PATH)
+    print(nbvars)
 
     tasks = None
     creds = _load_creds(settings, nbvars)
