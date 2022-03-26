@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import BYTEA, JSONB
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 from sqlalchemy.schema import Table
+from sqlalchemy.sql import functions
 from sqlalchemy_serializer import SerializerMixin
 
 from nb_workflows.db.common import Base
@@ -22,7 +23,7 @@ from nb_workflows.db.common import Base
 assoc_projects_users = Table(
     "nb_projects_users",
     Base.metadata,
-    Column("project_id", ForeignKey("nb_project.id")),
+    Column("project_id", ForeignKey("nb_project.projectid")),
     Column("user_id", ForeignKey("nb_auth_user.id")),
 )
 
@@ -93,14 +94,24 @@ class ProjectModel(Base, SerializerMixin):
     private_key = Column(BYTEA(), nullable=False)
     description = Column(String())
     repository = Column(String(2048), nullable=True)
-    user_id = Column(
+    owner_id = Column(
         BigInteger,
         ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
         nullable=False,
     )
-    user = relationship("nb_workflows.auth.models.UserModel")
+    owner = relationship(
+        "nb_workflows.models.UserModel", foreign_keys="ProjectModel.owner_id"
+    )
+    agent_id = Column(
+        BigInteger,
+        ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    agent = relationship(
+        "nb_workflows.models.UserModel", foreign_keys="ProjectModel.agent_id"
+    )
     users = relationship(
-        "nb_workflows.auth.models.UserModel",
+        "nb_workflows.models.UserModel",
         secondary=assoc_projects_users,
         back_populates="projects",
     )
@@ -141,7 +152,7 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     id = Column(Integer, primary_key=True)
     wfid = Column(String(24), index=True, unique=True)
     alias = Column(String(33), index=True, nullable=False)
-    nb_name = Column(String(), nullable=False)
+    # nb_name = Column(String(), nullable=False)
     nbtask = Column(JSONB(), nullable=False)
     schedule = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
@@ -150,34 +161,30 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     updated_at = Column(DateTime(), default=datetime.utcnow())
 
 
-class SeqPipeModel(Base, SerializerMixin, ProjectRelationMixin):
-    """
-    Configuration for each workflow.
+class UserModel(Base):
 
-    :param wfid: an unique identifier for this workflow
-    :param alias: because the filename could be shared between different
-    workflows, an alias was added to identify each instance, and is more
-    friendly than wfid.
-    :param name: name of the notebook file.
-    :param description: A friendly description of the purpose of this workflow
-    :param job_detail: details of the execution. It is composed by two nested
-    entities: ScheduleData and NBTask.
-    :param enabled: if the task should run or not.
-    """
-
-    __tablename__ = "nb_seqpipe"
-    __table_args__ = (
-        UniqueConstraint("alias", "project_id", name="_nb_seqpipe__project_alias"),
-    )
-    # needed for async support
+    __tablename__ = "nb_auth_user"
     __mapper_args__ = {"eager_defaults": True}
 
-    id = Column(Integer, primary_key=True)
-    pipeid = Column(String(24), index=True, unique=True)
-    alias = Column(String(33), index=True, nullable=False)
-    description = Column(String(), nullable=True)
-    spec = Column(JSONB(), nullable=False)
-    enabled = Column(Boolean, default=True, nullable=False)
+    id = Column(BigInteger, primary_key=True)
+    username = Column(String(), index=True, unique=True, nullable=False)
+    password = Column(BYTEA, nullable=True)
+    is_superuser = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    scopes = Column(String(), default="user", nullable=False)
 
-    created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
-    updated_at = Column(DateTime(), default=datetime.utcnow())
+    projects = relationship(
+        "ProjectModel", secondary=assoc_projects_users, back_populates="users"
+    )
+    created_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        default=datetime.utcnow(),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        default=datetime.utcnow(),
+        nullable=False,
+    )

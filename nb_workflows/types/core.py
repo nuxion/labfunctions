@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from .docker import DockerfileImage
+
 
 class ScheduleData(BaseModel):
     """Used as generic structure when querying database"""
@@ -39,30 +41,11 @@ class NBTask(BaseModel):
     docker_version: Optional[str] = "latest"
 
     enabled: bool = True
-    alias: Optional[str] = None
     description: Optional[str] = None
-    wfid: Optional[str] = None
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
     # schedule: Optional[ScheduleData] = None
-
-
-class SeqPipeSpec(BaseModel):
-    workflows: List[str]
-    shared_volumes: Optional[List[str]] = None
-    timeout: int = 10800  # secs 3h default
-    notifications_ok: Optional[List[str]] = None
-    notifications_fail: Optional[List[str]] = None
-    schedule: Optional[ScheduleData] = None
-
-
-class SeqPipe(BaseModel):
-    alias: str
-    spec: SeqPipeSpec
-    pipeid: Optional[str] = None
-    description: Optional[str] = None
-    enabled: bool = True
 
 
 class ExecutionNBTask(BaseModel):
@@ -135,7 +118,10 @@ class HistoryRequest(BaseModel):
 class ProjectData(BaseModel):
     name: str
     projectid: str
-    username: Optional[str] = None
+    # username: Optional[str] = None
+    owner: Optional[str] = None
+    agent: Optional[str] = None
+    users: Optional[List[str]] = None
     description: Optional[str] = None
     repository: Optional[str] = None
 
@@ -165,14 +151,12 @@ class ProjectWebRsp:
 class WorkflowData(BaseModel):
     wfid: str
     alias: str
-    nb_name: str
     nbtask: Dict[str, Any]
     enabled: bool = True
     schedule: Optional[ScheduleData] = None
 
 
 class WorkflowDataWeb(BaseModel):
-    nb_name: str
     alias: str
     nbtask: NBTask
     enabled: bool = True

@@ -19,7 +19,6 @@ def test_models_workflows(connection, session):
 
     wfd = WorkflowDataWebFactory()
     wm = WorkflowModel(
-        nb_name=wfd.nb_name,
         alias=wfd.alias,
         nbtask=wfd.nbtask.dict(),
         schedule=wfd.schedule.dict(),

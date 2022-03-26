@@ -1,27 +1,18 @@
 from nb_workflows.client import state
 
-from .factories import NBTaskFactory, ProjectDataFactory, SeqPipeFactory
+from .factories import NBTaskFactory, ProjectDataFactory, WorkflowDataWebFactory
 
 
 def test_workflows_state_from_file():
     wf = state.from_file("tests/workflows_test.yaml")
     assert isinstance(wf, state.WorkflowsState)
-    assert wf._project.name == "test"
 
 
 def test_workflows_state_write(tempdir):
     wf = state.from_file("tests/workflows_test.yaml")
     wf.write(f"{tempdir}/workflows.yaml")
     wf_2 = state.from_file(f"{tempdir}/workflows.yaml")
-    assert wf_2._project.name == "test"
-
-
-def test_workflows_state_add_seq():
-    wf = state.from_file("tests/workflows_test.yaml")
-    spf = SeqPipeFactory()
-    wf.add_seq(spf)
-    assert len(wf._seq_pipes) == 1
-    assert wf._seq_pipes[0].alias == spf.alias
+    assert wf_2._project.name == wf._project.name
 
 
 def test_workflows_state_file():
@@ -31,14 +22,14 @@ def test_workflows_state_file():
 
 
 def test_workflows_state_list2dict():
-    tasks = NBTaskFactory.create_batch(size=5)
+    tasks = WorkflowDataWebFactory.create_batch(size=5)
     res = state.WorkflowsState.listworkflows2dict(tasks)
     assert len(res.keys()) == 5
 
 
 def test_workflows_state_add_workflow():
     pd = ProjectDataFactory()
-    tasks = NBTaskFactory.create_batch(size=2)
+    tasks = WorkflowDataWebFactory.create_batch(size=2)
     ws = state.WorkflowsState(pd, workflows={tasks[0].alias: tasks[0]})
     ws.add_workflow(tasks[1])
     assert len(ws.workflows.keys()) == 2
@@ -47,7 +38,7 @@ def test_workflows_state_add_workflow():
 
 def test_workflows_state_del_workflow():
     pd = ProjectDataFactory()
-    tasks = NBTaskFactory.create_batch(size=2)
+    tasks = WorkflowDataWebFactory.create_batch(size=2)
     tasks_dict = state.WorkflowsState.listworkflows2dict(tasks)
     ws = state.WorkflowsState(pd, workflows=tasks_dict)
     ws.delete_workflow(tasks[1].alias)

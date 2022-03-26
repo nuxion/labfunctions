@@ -5,16 +5,17 @@ from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-# from nb_workflows.auth import gorups
-from nb_workflows.auth.models import UserModel
-from nb_workflows.auth.types import UserData
+from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.hashes import PasswordScript
+from nb_workflows.hashes import PasswordScript, generate_random
+
+# from nb_workflows.auth import gorups
+from nb_workflows.models import UserModel
+from nb_workflows.types.users import UserData
 
 
 def select_user():
     stmt = select(UserModel).options(
-        selectinload(UserModel.groups),
         selectinload(UserModel.projects),
     )
     return stmt
@@ -26,16 +27,30 @@ def password_manager() -> PasswordScript:
 
 
 def create_user(
-    session, username, password, superuser=False, is_active=False
+    session, username, password, scopes, superuser=False, is_active=False
 ) -> UserModel:
     pm = password_manager()
     key = pm.encrypt(password)
     u = UserModel(
         username=username,
         password=key,
+        scopes=scopes,
         is_superuser=superuser,
         is_active=is_active,
     )
+    session.add(u)
+    return u
+
+
+async def create_agent(session, scopes=defaults.AGENT_SCOPES):
+    name = generate_random(defaults.AGENT_LEN)
+    fullname = f"{defaults.AGENT_USER_PREFIX}-{name}"
+
+    u = UserModel(
+        username=fullname,
+        scopes=scopes,
+    )
+
     session.add(u)
     return u
 
@@ -82,6 +97,17 @@ def disable_user(session, username) -> Union[UserModel, None]:
     user = get_user(session, username)
     if user:
         user.is_active = False
+        user.updated_at = datetime.utcnow()
+        session.add(user)
+
+        return user
+    return None
+
+
+def change_scopes(session, username, new_scopes) -> Union[UserModel, None]:
+    user = get_user(session, username)
+    if user:
+        user.scopes = new_scopes
         user.updated_at = datetime.utcnow()
         session.add(user)
 

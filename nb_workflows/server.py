@@ -7,7 +7,7 @@ from sanic.response import json
 from sanic_ext import Extend
 from sanic_jwt import Initialize
 
-from nb_workflows.auth import authenticate, users
+from nb_workflows import auth
 from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
@@ -39,12 +39,11 @@ def app_init(
 
     Initialize(
         _app,
-        authentication_class=authenticate.NBAuthentication,
+        authentication_class=auth.NBAuthWeb,
         secret=settings.SECRET_KEY,
         refresh_token_enabled=True,
-        # retrieve_refresh_token=users.retrieve_refresh_token,
-        # store_refresh_token=users.store_refresh_token,
-        # retrieve_user=users.retrieve_user,
+        add_scopes_to_payload=auth.scope_extender,
+        custom_claims=[auth.ProjectClaim],
     )
 
     _app.config.CORS_ORIGINS = "*"

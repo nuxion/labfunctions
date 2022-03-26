@@ -1,0 +1,154 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "8fb764d8-8929-49b1-9ea9-0f1f37e12d45",
+   "metadata": {
+    "tags": []
+   },
+   "source": [
+    "# Welcome to NB Workflows\n",
+    "\n",
+    "This a notebook example. A workflow related to this is also defined in workflows.yaml. \n",
+    "\n",
+    "It could be used for testing and learning purposes.\n",
+    "\n",
+    "If you want to explore the next cell, you will see that it was marked with a tag called `parameters` (more info in [papermill](https://papermill.readthedocs.io/en/latest/usage-parameterize.html))\n",
+    "\n",
+    "Explore doing:\n",
+    "\n",
+    "1. Select the cell\n",
+    "\n",
+    "2. Click the property inspector in the right sidebar (double gear icon)\n",
+    "\n",
+    "3. You will a see a “parameters” tag. \n",
+    "\n",
+    "![tag preview](https://papermill.readthedocs.io/en/latest/_images/lab3_parameters.png)\n",
+    "\n",
+    "As you can image `SLEEP`, `ERROR` are variables inside the notebook and parameters that could be changed in the future. You can think on this notebook as a function and the cell marked with the tag `parameters` as their parameters. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0d86469b",
+   "metadata": {
+    "lines_to_next_cell": 2,
+    "tags": [
+     "parameters"
+    ]
+   },
+   "outputs": [],
+   "source": [
+    "SLEEP = 5\n",
+    "ERROR = False"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7014f094-3964-42a1-9de0-031100edaf8a",
+   "metadata": {},
+   "source": [
+    "## Context\n",
+    "\n",
+    "The `context` could be a concept a little difficult to grasp, please be patient. \n",
+    "\n",
+    "The idea behind it is to have information (and context 😜) about the environment and the execution of a specific run, inside context you will get information about paths, identifiers (of the workflow, project & execution), times, and so forth. Also it could be used safely in development and referenced after in a production workload. \n",
+    "\n",
+    "The idea of having a `context` allows you, if you want, to use some of this **metadata as reference to store or retrieve data in this notebook or others**. \n",
+    "\n",
+    "Finally, be careful with some of the values in `context`, for instance execid and NOW are uniques to each execution."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "331fc3e8-80ee-49ee-8725-720360c80fc6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from nb_workflows.shortcuts import client\n",
+    "ctx = client.get_context()\n",
+    "print(f\"PROJECT_ID: {ctx.projectid}\")\n",
+    "print(f\"notebook: {ctx.nb_name}\")\n",
+    "print(f\"WFID: {ctx.wfid}\")\n",
+    "print(f\"EXECID: {ctx.execid}\")\n",
+    "print(f\"NOW: {ctx.params['NOW']}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b611d982",
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "from datetime import datetime\n",
+    "import time\n",
+    "\n",
+    "time.sleep(SLEEP)\n",
+    "\n",
+    "if ERROR:\n",
+    "    raise IndexError(\"Error was requested for this task\")\n",
+    "    # 10 / 0\n",
+    "print(\"Error?\", ERROR)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3e337247-66b6-4f60-ae6b-5e8e99fd6aba",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from nb_workflows.utils import get_version\n",
+    "get_version()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c3ef5e7b-ce07-47f1-a68b-18e49b6c8196",
+   "metadata": {},
+   "source": [
+    "An extra object that is provided regardless if the execution is locally or in prod, is a dictionary with values defined in the “local.nbvars” (by default, but you can change it or you can have different files by environment). These values are in plain text when you are locally working, but are encrypted with a key when going to production\n",
+    "\n",
+    "see it action:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0f33d5d6-7618-476e-9abb-df943cb814f1",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from nb_workflows.shortcuts import secrets\n",
+    "\n",
+    "secrets"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.10"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

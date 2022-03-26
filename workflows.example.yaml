@@ -1,52 +1,73 @@
 version: 0.2.0
 project:
   name: pd-name0
-  projectid: WzP49tISi1
-  username: user0
-  description: test
+  projectid: JElzmGUmOJ
+  owner: user0
+  agent: null
+  users: null
+  description: Full care adult sport.
   repository: null
 workflows:
   nb-alias0:
-    nb_name: nb-name0
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
-    enabled: true
     alias: nb-alias0
-    description: null
-    wfid: 43ncKBffmqPkjpuonR27LE0u
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
+    nbtask:
+      nb_name: nb-name0
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: ZQYK6RXo2JFAcxyPHxkyHJ2B
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
   nb-alias1:
-    nb_name: nb-name1
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
-    enabled: true
     alias: nb-alias1
-    description: null
-    wfid: 5prBvMMeSbnFzDVfFxqrOlMD
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
-  nb-alias2:
-    nb_name: nb-name2
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
+    nbtask:
+      nb_name: nb-name1
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
     enabled: true
+    wfid: Qf9knc2OwVSHuFq44Kf3Mv0N
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
+  nb-alias2:
     alias: nb-alias2
-    description: null
-    wfid: 1FVcQDc_eZj8-ir3rYawetOd
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
-pipelines:
-  sequences: []
+    nbtask:
+      nb_name: nb-name2
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: 0mhBj7FSXUeWhdMv56yoK5-a
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null

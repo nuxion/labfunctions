@@ -5,10 +5,9 @@ import click
 from alembic import command
 from alembic.config import Config as AlembicConfig
 
-from nb_workflows.auth import password_manager
-from nb_workflows.auth import users as users_mgt
 from nb_workflows.conf import load_server
 from nb_workflows.db.sync import SQL
+from nb_workflows.managers import users_mg
 
 settings = load_server()
 
@@ -34,7 +33,7 @@ def db(sql, action):
     """Create or Drop tables from a database"""
     db = SQL(sql)
     settings.SQL = sql
-    auth_mod = importlib.import_module("nb_workflows.auth.models")
+    # auth_mod = importlib.import_module("nb_workflows.auth.models")
     wf_mod = importlib.import_module("nb_workflows.models")
 
     if action == "create":
@@ -54,9 +53,12 @@ def db(sql, action):
 @click.option(
     "--superuser", "-S", is_flag=True, default=False, help="User as supersuer"
 )
+@click.option("--scopes", default="user", help="User scopes")
 @click.option("--username", "-u", default=None, help="Username")
-@click.argument("action", type=click.Choice(["create", "disable", "reset"]))
-def users(sql, superuser, username, action):
+@click.argument(
+    "action", type=click.Choice(["create", "disable", "reset", "change-scopes"])
+)
+def users(sql, superuser, scopes, username, action):
     """Manage users"""
     db = SQL(sql)
     if action == "create":
@@ -65,7 +67,7 @@ def users(sql, superuser, username, action):
 
         S = db.sessionmaker()
         with S() as session:
-            u = users_mgt.create_user(session, _u, _p, superuser, is_active=True)
+            u = users_mg.create_user(session, _u, _p, scopes, superuser, is_active=True)
             session.commit()
 
         click.echo(f"User {_u} created")
@@ -73,18 +75,28 @@ def users(sql, superuser, username, action):
     elif action == "disable":
         S = db.sessionmaker()
         with S() as session:
-            u = users_mgt.disable_user(session, username)
+            u = users_mg.disable_user(session, username)
             session.commit()
             if u:
                 click.echo(f"{username} disabled")
             else:
                 click.echo(f"{username} not found")
 
+    elif action == "change-scopes":
+        S = db.sessionmaker()
+        with S() as session:
+            u = users_mg.change_scopes(session, username, scopes)
+            session.commit()
+            if u:
+                click.echo(f"{username} scopes changed")
+            else:
+                click.echo(f"{username} not found")
+
     elif action == "reset":
         S = db.sessionmaker()
         with S() as session:
-            pm = password_manager()
-            u = users_mgt.get_user(session, username)
+            pm = users_mg.password_manager()
+            u = users_mg.get_user(session, username)
             if u:
                 _p = getpass()
                 key = pm.encrypt(_p)

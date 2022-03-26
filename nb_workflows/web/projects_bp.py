@@ -10,7 +10,6 @@ from sanic_ext import openapi
 from sanic_jwt import inject_user, protected
 
 from nb_workflows.auth import get_auth
-from nb_workflows.auth.types import UserData
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
@@ -18,6 +17,8 @@ from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg
 from nb_workflows.scheduler import SchedulerExecutor
 from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
+from nb_workflows.types.projects import ProjectBuildReq
+from nb_workflows.types.users import AgentReq, UserData
 from nb_workflows.utils import run_async, secure_filename
 
 projects_bp = Blueprint("projects", url_prefix="projects")
@@ -68,22 +69,11 @@ async def project_create(request, user: UserData):
     # pylint: disable=unused-argument
 
     dict_ = request.json
-    pd = ProjectReq(**dict_)
+    pr = ProjectReq(**dict_)
     session = request.ctx.session
-    r = await projects_mg.create(session, user.user_id, pd)
+    r = await projects_mg.create(session, user.user_id, pr)
     if r:
-        d_ = r.to_dict(
-            rules=(
-                "-id",
-                "-private_key",
-                "-created_at",
-                "-updated_at",
-                "-user",
-                "-user_id",
-                "-users",
-            )
-        )
-        return json(d_, 201)
+        return json(r.dict(), 201)
     return json(dict(msg="already exist"), 200)
 
 
@@ -99,7 +89,8 @@ async def project_create_or_update(request, user: UserData):
     dict_ = request.json
     pd = ProjectReq(**dict_)
     session = request.ctx.session
-    r = await projects_mg.create_or_update(session, user.user_id, pd)
+    async with session() as new_session:
+        r = await projects_mg.create_or_update(new_session, user.user_id, pd)
     return json(dict(msg="created"), 202)
 
 
@@ -148,24 +139,77 @@ async def project_delete(request, projectid):
     return json(dict(msg="deleted"))
 
 
-@projects_bp.post("/<projectid:str>/_agent_token")
+@projects_bp.post("/<projectid:str>/agent")
+@openapi.parameter("projectid", str, "path")
+@protected()
+async def project_create_user_agent(request, projectid):
+    """
+    Creates a User Agent
+    """
+    session = request.ctx.session
+
+    res = await projects_mg.create_agent_for_project(session, projectid)
+    if res:
+        await session.commit()
+        return json(dict(msg=res), 201)
+    return json(dict(msg="not created"), 200)
+
+
+@projects_bp.delete("/<projectid:str>/agent")
+@openapi.parameter("projectid", str, "path")
+@protected()
+async def project_delete_user_agent(request, projectid):
+    """
+    Creates a User Agent
+    """
+    session = request.ctx.session
+
+    res = await projects_mg.create_agent_for_project(session, projectid)
+    if res:
+        await session.commit()
+        return json(dict(msg=res), 201)
+    return json(dict(msg="not created"), 200)
+
+
+@projects_bp.post("/<projectid:str>/agent/_token")
 @openapi.parameter("projectid", str, "path")
 @openapi.response(200, Credentials, "agent credentials")
 @protected()
-@inject_user()
-async def project_create_agent_token(request, projectid, user: UserData):
+async def project_get_agent_token(request, projectid):
     """
     Create an agent token
-    TODO: create an special user to be used as agent
     """
     # pylint: disable=unused-argument
     _auth = get_auth()
-    # default is 30 min
+    session = request.ctx.session
+
+    agt = await projects_mg.get_agent_for_project(session, projectid)
+    user = UserData.from_model(agt)
     with _auth.override(expiration_delta=settings.AGENT_TOKEN_EXP):
         token = await _auth.generate_access_token(user)
-        refresh = await _auth.generate_refresh_token(request, user.dict())
+        refresh = await _auth.generate_refresh_token(request, user)
 
     return json(dict(access_token=token, refresh_token=refresh), 200)
+
+
+@projects_bp.post("/<projectid:str>/_build")
+@openapi.body({"application/json": ProjectBuildReq})
+@protected()
+async def project_build(request, projectid):
+    """
+    Enqueue docker build image
+    """
+    # pylint: disable=unused-argument
+
+    pbr = ProjectBuildReq(**request.json)
+    name = secure_filename(pbr.name)
+    root = pathlib.Path(projectid)
+    fp = str(root / settings.WF_UPLOADS / name)
+
+    sche = _get_scheduler()
+    job = await run_async(sche.enqueue_build, projectid, fp)
+
+    return json(dict(msg="ok", execid=job.id), 202)
 
 
 @projects_bp.post("/<projectid:str>/_upload")
@@ -178,7 +222,7 @@ async def project_upload(request, projectid):
 
     # root = pathlib.Path(settings.BASE_PATH)
     # (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
-    fsrv = AsyncFileserver(settings.FILESERVER)
+    fsrv = AsyncFileserver(settings.FILESERVER, settings.FILESERVER_BUCKET)
     root = pathlib.Path(projectid)
 
     file_body = request.files["file"][0].body
@@ -186,15 +230,9 @@ async def project_upload(request, projectid):
     fp = str(root / settings.WF_UPLOADS / name)
     await fsrv.put(fp, file_body)
 
-    sche = _get_scheduler()
+    # sche = _get_scheduler()
 
-    job = await run_async(sche.enqueue_build, projectid, fp)
-
-    # fp = str(root / settings.WF_UPLOADS / name)
-    # async with aiofiles.open(fp, "wb") as f:
-    #    await f.write(file_body)
-
-    return json(dict(msg="ok", wfid=job.id), 201)
+    return json(dict(msg="ok", wfid="mock"), 201)
 
 
 @projects_bp.post("/<projectid:str>/_register_exec")

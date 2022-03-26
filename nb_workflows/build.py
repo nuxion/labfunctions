@@ -37,7 +37,7 @@ def docker_build(path, dockerfile, tag, rm=False, push=False) -> DockerBuildLog:
     client = docker.from_env()
 
     build_log = docker_low_build(path, dockerfile, tag, rm)
-    if not build_log.error and tag is not "current":
+    if not build_log.error and tag != "current":
         img = client.images.get(tag)
         img.tag(tag, tag="latest")
 

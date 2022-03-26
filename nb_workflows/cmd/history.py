@@ -30,7 +30,7 @@ from nb_workflows.utils import mkdir_p
 @click.option("--last", "-l", default=1, help="The last executions")
 def historycli(from_file, url_service, last, wfid):
     """Examine the history and state of your workflows"""
-    c = client.nb_from_file(from_file, url_service=url_service)
+    c = client.from_file(from_file, url_service=url_service)
     rsp = c.history_get_last(wfid, last)
     print("wfid | execid | status")
     for r in rsp:

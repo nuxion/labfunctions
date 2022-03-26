@@ -8,12 +8,11 @@ import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.auth.authenticate import initialize
-from nb_workflows.auth.models import GroupModel, UserModel
+from nb_workflows.auth import initialize
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
-from nb_workflows.models import HistoryModel, WorkflowModel
+from nb_workflows.models import HistoryModel, UserModel, WorkflowModel
 
 from .factories import create_project_model, create_user_model, create_workflow_model
 from .resources import app_init
@@ -130,8 +129,10 @@ async def sanic_app(async_conn):
     from nb_workflows.utils import init_blueprints
 
     rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+    # rweb = Redis("/tmp/RWeb.rdb")
 
-    app = app_init(async_conn, web_redis=rweb)
+    rqdb = Redis("/tmp/RQWeb.rdb")
+    app = app_init(async_conn, web_redis=rweb, rq_redis=rqdb)
     init_blueprints(app, ["workflows", "history", "projects"])
 
     yield app
@@ -139,7 +140,7 @@ async def sanic_app(async_conn):
     await app.asgi_client.aclose()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def auth_helper():
     auth = initialize("testing")
-    return auth
+    yield auth

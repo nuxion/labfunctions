@@ -19,6 +19,9 @@ class Credentials(BaseModel):
     access_token: str
     refresh_token: Optional[str] = None
 
+    class Config:
+        extra = "forbid"
+
 
 @dataclass
 class WFCreateRsp:
@@ -50,5 +53,6 @@ class WorkflowRsp:
 
 class ProjectZipFile(BaseModel):
     filepath: str
+    filename: str
     commit: Optional[str]
     current: Optional[bool] = False

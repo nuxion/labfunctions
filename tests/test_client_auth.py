@@ -30,4 +30,4 @@ def test_client_auth_nbauth(auth_helper):
     client = httpx.Client(base_url="http://localhost:8000", auth=a, transport=transport)
     r = client.get("/")
     assert r.status_code == 200
-    assert client.auth.access_token == new_tkn
+    assert client.auth.access_token

@@ -1,17 +1,28 @@
+import json
 import logging
+import os
 from dataclasses import asdict
 from typing import Callable, List, Optional
 
 import httpx
 
 from nb_workflows.conf import defaults
-from nb_workflows.types import NBTask, ProjectData, ScheduleData, SeqPipe, WorkflowData
+from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
+from nb_workflows.executors import context
+from nb_workflows.hashes import generate_random
+from nb_workflows.types import (
+    ExecutionNBTask,
+    NBTask,
+    ProjectData,
+    ScheduleData,
+    WorkflowData,
+)
 from nb_workflows.types.client import WorkflowsFile
 from nb_workflows.utils import open_yaml, write_yaml
 
 from .state import WorkflowsState
 from .types import Credentials
-from .utils import store_credentials_disk, validate_credentials_local
+from .utils import store_credentials_disk
 
 
 def get_http_client(**kwargs) -> httpx.Client:
@@ -32,8 +43,8 @@ class AuthFlow(httpx.Auth):
         request.headers["Authorization"] = f"Bearer {self.access_token}"
         response = yield request
 
-        is_valid = validate_credentials_local(self.access_token)
-        if response.status_code == 401 or not is_valid:
+        # is_valid = validate_credentials_local(self.access_token)
+        if response.status_code == 401:
             # If the server issues a 401 response, then issue a request to
             # refresh tokens, and resend the request.
             refresh_response = yield self.build_refresh_request()
@@ -87,32 +98,62 @@ class BaseClient:
     def __init__(
         self,
         url_service: str,
-        projectid: str,
-        creds: Credentials,
+        creds: Optional[Credentials] = None,
         wf_state: Optional[WorkflowsState] = None,
         version="0.1.0",
         http_init_func=get_http_client,
         timeout=defaults.CLIENT_TIMEOUT,
     ):
 
-        self.projectid = projectid
         self._addr = url_service
-
-        self._auth = AuthFlow(
-            creds.access_token,
-            creds.refresh_token,
-            f"{url_service}{defaults.REFRESH_TOKEN_PATH}",
-        )
+        self._creds = creds
+        self._auth: Optional[AuthFlow] = None
         self.logger = logging.getLogger(__name__)
         self.state = wf_state
         self._version = version
         self._timeout = timeout
         self._http_creator = http_init_func
-        self._http: httpx.Client = self._http_client_creator()
+        self._http: httpx.Client = self._http_init()
 
-    def _http_client_creator(self) -> httpx.Client:
+    @property
+    def http(self) -> httpx.Client:
+        return self._http
+
+    @property
+    def projectid(self) -> str:
+        if self.state:
+            return self.state.projectid
+        else:
+            raise WorkflowStateNotSetError(__name__)
+
+    @property
+    def project_name(self) -> str:
+        if self.state:
+            return self.state.project_name
+        else:
+            raise WorkflowStateNotSetError(__name__)
+
+    def get_context(self, execid=None) -> ExecutionNBTask:
+        _env = os.getenv(defaults.EXECUTIONTASK_VAR)
+        if _env:
+            ctx = ExecutionNBTask(**json.loads(_env))
+        else:
+            ctx = context.create_dummy_ctx(self.projectid, self.project_name, execid)
+        return ctx
+
+    def _auth_init(self) -> AuthFlow:
+        self._auth = AuthFlow(
+            self._creds.access_token,
+            self._creds.refresh_token,
+            f"{self._addr}{defaults.REFRESH_TOKEN_PATH}",
+        )
+
+    def _http_init(self) -> httpx.Client:
         """When token is updated the client MUST BE updated too."""
         # _headers = {"Authorization": f"Bearer {self.creds.access_token}"}
+
+        if self._creds and not self._auth:
+            self._auth_init()
         return self._http_creator(
             base_url=self._addr, timeout=self._timeout, auth=self._auth
         )
@@ -124,5 +165,29 @@ class BaseClient:
             refresh_token=self._auth.refresh_token,
         )
 
+    @creds.setter
+    def creds(self, creds: Credentials):
+        """
+        If credentials are set, the http client should be
+        re-initialized
+        """
+        self._creds = creds
+        self._http = self._http_init()
+
+    def login(self, u: str, p: str):
+        rsp = httpx.post(
+            f"{self._addr}/auth",
+            json=dict(username=u, password=p),
+            timeout=self._timeout,
+        )
+        if rsp.status_code == 200:
+            self.creds = Credentials(**rsp.json())
+            # self._http = self.http_init()
+        else:
+            raise LoginError(self._addr, u)
+
     def write(self, output="workflows.yaml"):
         self.state.write(output)
+
+    def close(self):
+        self._http.close()

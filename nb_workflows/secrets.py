@@ -1,10 +1,12 @@
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 from cryptography.fernet import Fernet
 
 from nb_workflows.conf import defaults
+from nb_workflows.utils import Singleton
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +39,21 @@ def _open_vars_file(vars_file) -> Dict[str, Any]:
         return {}
 
 
-def load() -> Dict[str, Any]:
+def load(base_path=None) -> Dict[str, Any]:
 
     priv_key = os.getenv(defaults.PRIVKEY_VAR_NAME)
-
+    # base_path = define_base_path()
     if not priv_key:
-        _file = os.getenv(defaults.NBVARS_VAR_NAME, "local.nbvars")
-        _nbvars = _open_vars_file(vars_file=_file)
+        _file = os.getenv(defaults.NBVARS_VAR_NAME, f"local.nbvars")
+        if base_path:
+            _file = f"{base_path}/{_file}"
+            _nbvars = _open_vars_file(vars_file=_file)
     else:
         f = Fernet(priv_key)
-        _vars = _open_vars_file(vars_file=defaults.SECRETS_FILENAME)
+        _file = defaults.SECRETS_FILENAME
+        if base_path:
+            _file = f"{base_path}/{_file}"
+        _vars = _open_vars_file(vars_file=_file)
         _nbvars = {k: f.decrypt(v.encode("utf-8")) for k, v in _vars.items()}
     return _nbvars
 
@@ -89,6 +96,3 @@ def write_secrets(fpath, private_key, vars_file) -> str:
         f.write(encoded_vars)
 
     return outfile
-
-
-nbvars = load()

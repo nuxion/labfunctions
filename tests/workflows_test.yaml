@@ -1,40 +1,73 @@
 version: 0.2.0
 project:
-  name: test
-  projectid: hK5FjnCVmI
-  username: user0
-  description: test
+  name: pd-name0
+  projectid: JElzmGUmOJ
+  owner: user0
+  agent: null
+  users: null
+  description: Full care adult sport.
   repository: null
 workflows:
   nb-alias0:
-    nb_name: nb-name0
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
-    enabled: true
     alias: nb-alias0
-    description: null
-    jobid: JwkzF9J9hQjKmV55YFiH7I1G
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
-    schedule: null
-  nb-alias1:
-    nb_name: nb-name1
-    params:
-      TEST: true
-      TIMEOUT: 5
-    machine: default
-    docker_version: latest
+    nbtask:
+      nb_name: nb-name0
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
     enabled: true
+    wfid: ZQYK6RXo2JFAcxyPHxkyHJ2B
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
+  nb-alias1:
     alias: nb-alias1
-    description: null
-    jobid: WQ1RiFxIGJFwiNveZLvkfrat
-    timeout: 10800
-    notifications_ok: null
-    notifications_fail: null
-    schedule: null
-pipelines:
-  sequences: []
+    nbtask:
+      nb_name: nb-name1
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: Qf9knc2OwVSHuFq44Kf3Mv0N
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null
+  nb-alias2:
+    alias: nb-alias2
+    nbtask:
+      nb_name: nb-name2
+      params:
+        TEST: true
+        TIMEOUT: 5
+      machine: default
+      docker_version: latest
+      enabled: true
+      description: null
+      timeout: 10800
+      notifications_ok: null
+      notifications_fail: null
+    enabled: true
+    wfid: 0mhBj7FSXUeWhdMv56yoK5-a
+    schedule:
+      start_in_min: 0
+      repeat: 2
+      cron: 0 * * * * *
+      interval: null

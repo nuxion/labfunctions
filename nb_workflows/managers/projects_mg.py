@@ -1,32 +1,69 @@
 from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
-from sqlalchemy import delete, exc, select
+from sqlalchemy import delete, exc
+from sqlalchemy import insert as sqlinsert
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from nb_workflows import secrets
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import generate_random
-from nb_workflows.models import ProjectModel
+from nb_workflows.managers import users_mg
+from nb_workflows.models import ProjectModel, UserModel, assoc_projects_users
 from nb_workflows.types import ProjectData, ProjectReq
 from nb_workflows.utils import get_parent_folder, secure_filename
 
 
 def select_project():
-    stmt = select(ProjectModel).options(selectinload(ProjectModel.user))
+    stmt = (
+        select(ProjectModel)
+        .options(selectinload(ProjectModel.owner))
+        .options(selectinload(ProjectModel.agent))
+        .options(selectinload(ProjectModel.users))
+    )
+
     return stmt
 
 
 def _model2projectdata(obj: ProjectModel) -> ProjectData:
+    agent_name = None
+    if obj.agent:
+        agent_name = obj.agent.username
+
     pd = ProjectData(
         name=obj.name,
         projectid=obj.projectid,
-        username=obj.user.username,
+        owner=obj.owner.username,
+        users=[u.username for u in obj.users],
+        agent=agent_name,
         description=obj.description,
         respository=obj.repository,
     )
     return pd
+
+
+def _insert(user_id, pq: ProjectReq, projectid):
+
+    table = ProjectModel.__table__
+    name = normalize_name(pq.name)
+    stmt = sqlinsert(table).values(
+        name=name,
+        private_key=pq.private_key.encode("utf-8"),
+        projectid=projectid,
+        description=pq.description,
+        repository=pq.repository,
+        owner_id=user_id,
+    )
+    return stmt
+
+
+def _insert_relation_project(user_id, project_id):
+    stmt = sqlinsert(assoc_projects_users).values(
+        project_id=project_id, user_id=user_id
+    )
+    return stmt
 
 
 def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
@@ -38,7 +75,7 @@ def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
-        user_id=user_id,
+        owner_id=user_id,
     )
     stmt = stmt.on_conflict_do_update(
         # constraint="crawlers_page_bucket_id_fkey",
@@ -64,26 +101,60 @@ def generate_projectid() -> str:
     return generate_random(settings.PROJECTID_LEN)
 
 
-async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectModel, None]:
-    name = normalize_name(pq.name)
+async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, None]:
 
-    # _key = secrets.generate_private_key()
     projectid = pq.projectid or generate_projectid()
-    pm = ProjectModel(
-        name=name,
-        private_key=pq.private_key.encode("utf-8"),
+    stmt = _insert(user_id, pq, projectid)
+    project = _insert_relation_project(user_id, projectid)
+    # session.add(pm)
+    try:
+        await session.execute(stmt)
+        await session.execute(project)
+        await session.commit()
+    except exc.IntegrityError as e:
+        # await session.rollback()
+        return None
+
+    return ProjectData(
+        name=pq.name,
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
-        user_id=user_id,
     )
-    session.add(pm)
-    try:
-        await session.commit()
-    except exc.IntegrityError:
-        await session.rollback()
-        return None
-    return pm
+
+
+async def assign_project(session, user_id: int, projectid):
+    """
+    Assign a user to a project.
+    """
+    um = await users_mg.get_userid_async(session, user_id)
+    if um:
+        # projects = [p.projectid for p in um.projects]
+        # if projectid in projects:
+        stmt = _insert_relation_project(user_id, projectid)
+        await session.execute(stmt)
+        return True
+    return False
+
+
+async def create_agent_for_project(session, projectid: str) -> Union[str, None]:
+    prj = await get_by_projectid_model(session, projectid)
+    if prj and not prj.agent_id:
+        um = await users_mg.create_agent(session)
+        um.projects.append(prj)
+        prj.agent = um
+        prj.updated_at = datetime.utcnow()
+        session.add(prj)
+        return um.username
+    return None
+
+
+async def get_agent_for_project(session, projectid: str) -> Union[UserModel, None]:
+    prj = await get_by_projectid_model(session, projectid)
+    if prj and prj.agent_id:
+        user = await users_mg.get_userid_async(session, prj.agent_id)
+        return user
+    return None
 
 
 async def create_or_update(session, user_id: int, pq: ProjectReq):
@@ -113,7 +184,7 @@ async def get_by_projectid(
 
     stmt = select_project().where(ProjectModel.projectid == projectid)
     if user_id:
-        stmt = stmt.where(ProjectModel.user_id == user_id)
+        stmt = stmt.where(ProjectModel.owner_id == user_id)
     stmt = stmt.limit(1)
     r = await session.execute(stmt)
     obj: Optional[ProjectModel] = r.scalar_one_or_none()
@@ -143,7 +214,7 @@ async def get_by_name(session, name) -> Union[ProjectData, None]:
 async def list_all(session, user_id=None) -> Union[List[ProjectData], None]:
     stmt = select_project()
     if user_id:
-        stmt = stmt.where(ProjectModel.user_id == user_id)
+        stmt = stmt.where(ProjectModel.owner_id == user_id)
     rows = await session.execute(stmt)
 
     if rows:
@@ -153,7 +224,7 @@ async def list_all(session, user_id=None) -> Union[List[ProjectData], None]:
 
 
 async def list_by_user(session, user_id) -> Union[List[ProjectData], None]:
-    stmt = select_project().where(ProjectModel.user_id == user_id)
+    stmt = select_project().where(ProjectModel.owner_id == user_id)
     rows = await session.execute(stmt)
     if rows:
         results = [_model2projectdata(r[0]) for r in rows]
