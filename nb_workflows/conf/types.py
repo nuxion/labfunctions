@@ -37,6 +37,10 @@ class ServerSettings(BaseSettings):
     PROJECTID_LEN: int = PROJECTID_LEN
     WFID_LEN: int = WFID_LEN
 
+    # eventes
+    EVENTS_BLOCK_MS: int = 10 * 1000
+    EVENTS_STREAM_TTL_SECS: int = 60 * 60
+
     # Logs:
     LOGLEVEL: str = "INFO"
     LOGFORMAT: str = "%(asctime)s %(message)s"

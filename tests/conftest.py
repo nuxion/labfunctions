@@ -128,16 +128,26 @@ async def sanic_app(async_conn):
     # from nb_workflows.server import app
     from nb_workflows.utils import init_blueprints
 
+    settings.EVENTS_BLOCK_MS = 5
+    settings.EVENTS_STREAM_TTL_SECS = 5
+
     rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
     # rweb = Redis("/tmp/RWeb.rdb")
 
     rqdb = Redis("/tmp/RQWeb.rdb")
     app = app_init(async_conn, web_redis=rweb, rq_redis=rqdb)
-    init_blueprints(app, ["workflows", "history", "projects"])
+    init_blueprints(app, ["workflows", "history", "projects", "events"])
 
     yield app
     await app.ctx.web_redis.close()
     await app.asgi_client.aclose()
+
+
+@pytest.fixture
+async def async_redis_web():
+    rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+    await rweb.flushdb()
+    yield rweb
 
 
 @pytest.fixture(scope="session")

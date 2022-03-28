@@ -18,6 +18,7 @@ from nb_workflows.types import (
     WorkflowData,
     WorkflowDataWeb,
 )
+from nb_workflows.types.events import EventSSE
 from nb_workflows.types.users import UserData
 from nb_workflows.utils import run_sync
 
@@ -121,6 +122,13 @@ class WorkflowDataFactory(factory.Factory):
     nbtask = factory.LazyAttribute(lambda n: NBTaskFactory())
     wfid = factory.LazyAttribute(lambda n: generate_random(24))
     schedule = factory.LazyAttribute(lambda n: ScheduleDataFactory())
+
+
+class EventSSEFactory(factory.Factory):
+    class Meta:
+        model = EventSSE
+
+    data = factory.Sequence(lambda n: "message-%d" % n)
 
 
 def create_user_model(*args, **kwargs) -> UserModel:
