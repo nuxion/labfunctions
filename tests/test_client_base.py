@@ -102,13 +102,16 @@ def test_client_base_login_error(monkeypatch):
         bc.login(u="test", p="testing_password")
 
 
-def test_client_base_events_pub(monkeypatch):
+def test_client_base_events_pub(monkeypatch, mocker: MockerFixture):
     def mock_post(*args, **kwargs):
         return MockPublishRsp()
 
-    monkeypatch.setattr(httpx, "post", mock_post)
+    # monkeypatch.setattr(httpx, "post", mock_post)
+    http = mocker.MagicMock()
+    http.post.return_value = mock_post()
 
     bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory())
+    bc._http = http
 
     bc.events_publish("test", "hello test")
     bc.events_publish("test", {"msg": "test"})
