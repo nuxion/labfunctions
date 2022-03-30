@@ -8,11 +8,17 @@ import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.auth import initialize
+from nb_workflows.auth import (
+    NBAuthStandalone,
+    ProjectClaim,
+    initialize,
+    scope_extender_sync,
+)
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
 from nb_workflows.models import HistoryModel, UserModel, WorkflowModel
+from nb_workflows.types.users import UserData
 
 from .factories import create_project_model, create_user_model, create_workflow_model
 from .resources import app_init
@@ -24,6 +30,8 @@ Session = sessionmaker()
 
 os.environ["NB_WORKFLOW_SERVICE"] = "http://localhost:8000"
 pytest_plugins = ("pytest_asyncio",)
+
+secret_auth = "testing"
 
 
 @pytest.fixture(scope="module")
@@ -128,19 +136,44 @@ async def sanic_app(async_conn):
     # from nb_workflows.server import app
     from nb_workflows.utils import init_blueprints
 
+    settings.EVENTS_BLOCK_MS = 5
+    settings.EVENTS_STREAM_TTL_SECS = 5
+    settings.SECRET_KEY = secret_auth
+
     rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
     # rweb = Redis("/tmp/RWeb.rdb")
 
     rqdb = Redis("/tmp/RQWeb.rdb")
     app = app_init(async_conn, web_redis=rweb, rq_redis=rqdb)
-    init_blueprints(app, ["workflows", "history", "projects"])
+    init_blueprints(app, ["workflows", "history", "projects", "events"])
 
     yield app
     await app.ctx.web_redis.close()
     await app.asgi_client.aclose()
 
 
+@pytest.fixture
+async def async_redis_web():
+    rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+    await rweb.flushdb()
+    yield rweb
+
+
 @pytest.fixture(scope="session")
 def auth_helper():
     auth = initialize("testing")
     yield auth
+
+
+@pytest.fixture
+def access_token():
+    um = create_user_model()
+    nb = NBAuthStandalone(
+        secret=secret_auth,
+        custom_claims=[ProjectClaim()],
+        add_scopes_to_payload=scope_extender_sync,
+    )
+
+    ud = UserData.from_model(um)
+    p = nb.generate_access_token(ud)
+    yield p

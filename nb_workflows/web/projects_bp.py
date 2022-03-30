@@ -118,7 +118,6 @@ async def project_get_one(request, projectid, user: UserData):
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    # async with session.begin():
     r = await projects_mg.get_by_projectid(session, projectid, user_id=user.user_id)
     if r:
         return json(r.dict(), 200)

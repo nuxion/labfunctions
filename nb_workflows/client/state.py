@@ -21,7 +21,7 @@ class WorkflowsState:
     def __init__(
         self,
         project: Optional[ProjectData] = None,
-        workflows: Optional[Dict[str, NBTask]] = None,
+        workflows: Optional[Dict[str, WorkflowDataWeb]] = None,
         runtime: Optional[DockerfileImage] = None,
         version="0.2.0",
     ):

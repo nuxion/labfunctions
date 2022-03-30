@@ -5,12 +5,16 @@ from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from nb_workflows import utils
+from nb_workflows.client.state import WorkflowsState
 from nb_workflows.client.types import Credentials
 from nb_workflows.hashes import generate_random
 from nb_workflows.managers.users_mg import password_manager
 from nb_workflows.models import HistoryModel, ProjectModel, UserModel, WorkflowModel
 from nb_workflows.types import (
     ExecutionNBTask,
+    ExecutionResult,
+    HistoryRequest,
+    HistoryResult,
     NBTask,
     ProjectData,
     ProjectReq,
@@ -18,6 +22,7 @@ from nb_workflows.types import (
     WorkflowData,
     WorkflowDataWeb,
 )
+from nb_workflows.types.events import EventSSE
 from nb_workflows.types.users import UserData
 from nb_workflows.utils import run_sync
 
@@ -68,6 +73,18 @@ class NBTaskFactory(factory.Factory):
     params = {"TEST": True, "TIMEOUT": 5}
 
 
+class UserFactory(factory.Factory):
+    class Meta:
+        model = UserData
+
+    user_id = factory.Sequence(lambda n: n)
+    username = factory.Sequence(lambda n: "u-name%d" % n)
+    is_superuser = False
+    is_active = True
+    scopes = ["tester"]
+    projects = None
+
+
 class ExecutionNBTaskFactory(factory.Factory):
     class Meta:
         model = ExecutionNBTask
@@ -89,16 +106,22 @@ class ExecutionNBTaskFactory(factory.Factory):
     created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
 
 
-class UserFactory(factory.Factory):
+class ExecutionResultFactory(factory.Factory):
     class Meta:
-        model = UserData
+        model = ExecutionResult
 
-    user_id = factory.Sequence(lambda n: n)
-    username = factory.Sequence(lambda n: "u-name%d" % n)
-    is_superuser = False
-    is_active = True
-    scopes = ["tester"]
-    projects = None
+    projectid = factory.LazyAttribute(lambda n: generate_random(10))
+    execid = factory.LazyAttribute(lambda n: generate_random(10))
+    wfid = factory.LazyAttribute(lambda n: generate_random(10))
+    name = factory.Sequence(lambda n: "nb-name%d" % n)
+    params = {"TEST": True, "TIMEOUT": 5}
+    input_ = factory.Sequence(lambda n: "docker%d" % n)
+    output_name = factory.Sequence(lambda n: "docker%d" % n)
+    output_dir = factory.Sequence(lambda n: "docker%d" % n)
+    error_dir = factory.Sequence(lambda n: "docker%d" % n)
+    error = False
+    elapsed_secs = 5
+    created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
 
 
 class WorkflowDataWebFactory(factory.Factory):
@@ -121,6 +144,35 @@ class WorkflowDataFactory(factory.Factory):
     nbtask = factory.LazyAttribute(lambda n: NBTaskFactory())
     wfid = factory.LazyAttribute(lambda n: generate_random(24))
     schedule = factory.LazyAttribute(lambda n: ScheduleDataFactory())
+
+
+class WorkflowsStateFactory(factory.Factory):
+    class Meta:
+        model = WorkflowsState
+
+    project = factory.LazyAttribute(lambda n: ProjectDataFactory())
+    workflows = factory.LazyAttribute(lambda n: WorkflowDataWebFactory())
+
+
+class EventSSEFactory(factory.Factory):
+    class Meta:
+        model = EventSSE
+
+    data = factory.Sequence(lambda n: "message-%d" % n)
+
+
+class HistoryResultFactory(factory.Factory):
+    class Meta:
+        model = HistoryResult
+
+    class Params:
+        status_ok = True
+
+    wfid = factory.LazyAttribute(lambda n: generate_random(24))
+    status = factory.LazyAttribute(lambda o: 1 if o.status_ok else -1)
+    result = factory.LazyAttribute(lambda n: ExecutionResultFactory())
+    execid = factory.LazyAttribute(lambda n: generate_random(10))
+    created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
 
 
 def create_user_model(*args, **kwargs) -> UserModel:
@@ -178,3 +230,9 @@ def credentials_generator(auth, user=None, *args, **kwargs):
     obj = UserData.from_model(_user)
     tkn = run_sync(auth.generate_access_token, obj)
     return Credentials(access_token=tkn, refresh_token="12345")
+
+
+def create_history_request() -> HistoryRequest:
+    task = NBTaskFactory()
+    result = ExecutionResultFactory()
+    return HistoryRequest(task=task, result=result)

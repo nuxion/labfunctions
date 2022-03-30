@@ -355,3 +355,12 @@ def parse_var_line(line):
     k = line.split("=", maxsplit=1)[0].strip()
     v = line.split("=", maxsplit=1)[1].replace('"', "").strip("\n").strip()
     return k, v
+
+
+def format_seconds(secs) -> str:
+    ago = f"{round(secs)} seconds ago"
+    if secs > 60 and secs < 3600:
+        ago = f"{round(secs / 60)} minutes ago"
+    elif secs >= 3600:
+        ago = f"{round((secs / 60)/ 60)} hours ago"
+    return ago

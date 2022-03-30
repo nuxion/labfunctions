@@ -9,6 +9,7 @@ from sanic_jwt import Initialize
 from nb_workflows import auth
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
+from nb_workflows.events import EventManager
 from nb_workflows.managers import users_mg
 from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
 
@@ -51,6 +52,12 @@ def app_init(db, web_redis, rq_redis=None, app_name="test"):
         request.ctx.session = current_app.ctx.db.sessionmaker()
         request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
         request.ctx.web_redis = current_app.ctx.web_redis
+
+        request.ctx.events = EventManager(
+            current_app.ctx.web_redis,
+            block_ms=settings.EVENTS_BLOCK_MS,
+            ttl_secs=settings.EVENTS_STREAM_TTL_SECS,
+        )
 
         request.ctx.dbconn = current_app.ctx.db.engine
 

@@ -44,7 +44,7 @@ def test_context_execid_for_build():
 def test_context_docker_name():
     pd = ProjectData(name="test", projectid="testid", owner="tester")
     dn = ctx.generate_docker_name(pd, "1.0")
-    assert dn == "tester/test:1.0"
+    assert dn == f"{df.DOCKER_AUTHOR}/test:1.0"
 
 
 def test_context_dummy_wf_from_nbtask():

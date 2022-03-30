@@ -1,3 +1,4 @@
+import json
 import os
 
 import click
@@ -5,8 +6,11 @@ from rich import print_json
 from rich.console import Console
 
 from nb_workflows import client
+from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.conf import defaults, load_client
+from nb_workflows.executors.context import pure_execid
 from nb_workflows.types import NBTask
+from nb_workflows.utils import format_bytes
 
 console = Console()
 
@@ -17,6 +21,30 @@ def _parse_params_args(params):
         k, v = p.split("=")
         params_dict.update({k: v})
     return params_dict
+
+
+def watcher(c: DiskClient, execid, stats=False):
+    keep = True
+    last = None
+
+    console.print(f"[bold magenta]Watching for execid: {execid}[/]")
+    events = 0
+
+    for evt in c.events_listen(execid, last=last):
+        if evt.event == "stats" and stats:
+            _stats = json.loads(evt.data)
+            _mem = _stats["mem"]["mem_usage"]
+            mem = format_bytes(_mem)
+            msg = f"[orange]Memory used {mem}[/]"
+            console.print(msg)
+        elif evt.event == "result":
+            keep = False
+            console.print(f"[bold green]Finished execid: [/] [bold magenta]{execid}[/]")
+        elif evt.event != "stats":
+            msg = evt.data
+            console.print(msg)
+        last = evt.id
+        events += 1
 
 
 @click.group(name="exec")
@@ -41,6 +69,21 @@ def executorscli(ctx, url_service, from_file):
 
     ctx.obj["URL"] = url_service
     ctx.obj["WF_FILE"] = from_file
+
+
+@executorscli.command()
+@click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
+@click.pass_context
+def docker(ctx, wfid):
+    """It will run the task inside a docker container, it exist only as a tester"""
+    import json
+
+    import docker
+    from nb_workflows.executors.development import local_docker
+
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+    local_docker(url_service, from_file, wfid)
 
 
 @executorscli.command()
@@ -88,19 +131,36 @@ def local(ctx, dev, wfid):
 
 
 @executorscli.command()
+@click.option(
+    "--watch",
+    "-w",
+    is_flag=True,
+    default=False,
+    help="Get events & logs from the executions",
+)
+@click.option(
+    "--stats",
+    "-s",
+    is_flag=True,
+    default=False,
+    help="Show stats as memory usage from the execution",
+)
 @click.argument("wfid")
 @click.pass_context
-def wf(ctx, wfid):
+def wf(ctx, wfid, watch, stats):
     """It will dispatch the workflow task to the server"""
 
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
-    rsp = c.workflows_enqueue(wfid)
-    if rsp:
-        click.echo(f"Executed: {rsp} on the server {url_service}")
+    execid = c.workflows_enqueue(wfid)
+    if execid:
+        pure = pure_execid(execid)
+        console.print(f"Executed: {pure} on server {url_service}")
+        if watch:
+            watcher(c, pure, stats=stats)
     else:
-        click.echo(f"Something went wrong")
+        console.print("[red]Something went wrong[/]")
 
 
 @executorscli.command()
@@ -114,9 +174,23 @@ def wf(ctx, wfid):
     "--docker-version", "-D", default="latest", help="Docker image where it should run"
 )
 @click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
+@click.option(
+    "--watch",
+    "-w",
+    is_flag=True,
+    default=False,
+    help="Get events & logs from the executions",
+)
+@click.option(
+    "--stats",
+    "-s",
+    is_flag=True,
+    default=False,
+    help="Show stats as memory usage from the execution",
+)
 @click.argument("notebook")
 @click.pass_context
-def notebook(ctx, param, machine, docker_version, dev, notebook):
+def notebook(ctx, param, machine, docker_version, dev, notebook, watch, stats):
     """On demand execution of a notebook file, with custom parameters"""
     from nb_workflows.executors.development import local_nb_dev_exec
 
@@ -129,7 +203,10 @@ def notebook(ctx, param, machine, docker_version, dev, notebook):
         rsp = c.notebook_run(
             notebook, params_dict, machine=machine, docker_version=docker_version
         )
-        print_json(data=rsp.json())
+        # print_json(rsp.json())
+        if watch:
+            watcher(c, rsp.execid, stats=stats)
+        print_json(data=rsp.dict())
     else:
         task = NBTask(
             nb_name=notebook,

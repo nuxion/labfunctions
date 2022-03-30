@@ -3,6 +3,7 @@ import json as std_json
 import pathlib
 from dataclasses import asdict
 
+import httpx
 from sanic import Blueprint
 from sanic.response import json
 from sanic_ext import openapi
@@ -22,6 +23,23 @@ history_bp = Blueprint("history", url_prefix="history")
 #     request.ctx.user = await extract_user_from_request(request)
 
 
+@history_bp.post("/")
+@openapi.body({"application/json": ExecutionResult})
+@openapi.response(201, "Created")
+@protected()
+async def history_create(request):
+    """Register a jobexecution"""
+    # pylint: disable=unused-argument
+    dict_ = request.json
+    exec_result = ExecutionResult(**dict_)
+
+    session = request.ctx.session
+    async with session.begin():
+        hm = await history_mg.create(session, exec_result)
+
+    return json(dict(msg="created"), 201)
+
+
 @history_bp.get("/<projectid>/<wfid>")
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("wfid", str, "path")
@@ -36,28 +54,10 @@ async def history_last_job(request, wfid, projectid):
     session = request.ctx.session
     async with session.begin():
         h = await history_mg.get_last(session, projectid, wfid, limit=lt)
-        if h:
-            return json(asdict(h), 200)
+        if h.rows:
+            return json(h.dict(), 200)
 
         return json(dict(msg="not found"), 404)
-
-
-@history_bp.post("/")
-@openapi.body({"application/json": HistoryRequest})
-@openapi.response(201, "Created")
-@protected
-async def history_create(request):
-    """Register a jobexecution"""
-    # pylint: disable=unused-argument
-
-    dict_ = request.json
-    # task = NBTask(**dict_["task"])
-    result = ExecutionResult(**dict_)
-    session = request.ctx.session
-    async with session.begin():
-        hm = await history_mg.create(session, result)
-
-    return json(dict(msg="created"), 201)
 
 
 @history_bp.post("/<projectid>/_output_ok")
@@ -93,7 +93,8 @@ async def history_output_fail(request, projectid):
 
     fsrv = AsyncFileserver(settings.FILESERVER)
     today = today_string(format_="day")
-    root = pathlib.Path(projectid / defaults.NB_OUTPUTS / "fail" / today)
+    root = pathlib.Path(projectid)
+    fp = root / defaults.NB_OUTPUTS / "fail" / today
 
     file_body = request.files["file"][0].body
     output_name = request.form["output_name"][0]
@@ -104,34 +105,21 @@ async def history_output_fail(request, projectid):
     return json(dict(msg="OK"), 201)
 
 
-# @history_bp.get("/<projectid>/<wfid>/_get_output")
-# @openapi.parameter("projectid", str, "path")
-# @openapi.parameter("wfid", str, "path")
-# @protected()
-# async def history_get_output(request, projectid, wfid):
-#     """
-#     Upload a workflow project
-#     """
-#     # pylint: disable=unused-argument
-#
-#     fsrv = AsyncFileserver(settings.FILESERVER)
-#     today = today_string(format_="day")
-#
-#     session = request.ctx.session
-#     async with session.begin():
-#         h = await history_mg.get_last(session, projectid, wfid, limit=lt)
-#         if h:
-#             return json(asdict(h), 200)
-#
-#         return json(dict(msg="not found"), 404)
-#
-#     root = pathlib.Path(projectid)
-#     output_dir = root / defaults.NB_OUTPUTS / "ok" / today
-#
-#     file_body = request.files["file"][0].body
-#     output_name = request.form["output_name"][0]
-#
-#     fp = str(output_dir / output_name)
-#     await fsrv.put(fp, file_body)
-#
-#     return json(dict(msg="OK"), 201)
+@history_bp.get("/<projectid>/_get_output")
+@openapi.parameter("projectid", str, "path")
+@openapi.parameter("file", str, "query")
+async def history_get_output(request, projectid):
+    """
+    Upload a workflow project
+    """
+    # pylint: disable=unused-argument
+    uri = request.args.get("file")
+    response = await request.respond(content_type="application/octet-stream")
+    async with httpx.AsyncClient() as client:
+        async with client.stream(
+            "GET", f"{settings.FILESERVER}/{projectid}/{uri}"
+        ) as r:
+            async for chunk in r.aiter_bytes():
+                await response.send(chunk)
+
+    await response.eof()

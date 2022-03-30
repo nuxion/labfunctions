@@ -99,8 +99,7 @@ class SimpleExecCtx:
     execution_dt: str
 
 
-@dataclass
-class HistoryResult:
+class HistoryResult(BaseModel):
     wfid: str
     # posible status: queued, started, deferred,
     # finished, stopped, scheduled, canceled, failed.
@@ -113,6 +112,10 @@ class HistoryResult:
 class HistoryRequest(BaseModel):
     task: NBTask
     result: ExecutionResult
+
+
+class HistoryLastResponse(BaseModel):
+    rows: List[HistoryResult]
 
 
 class ProjectData(BaseModel):

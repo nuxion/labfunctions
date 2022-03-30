@@ -71,7 +71,6 @@ class ProjectsClient(BaseClient):
 
     def projects_build(self, name) -> ProjectBuildResp:
         pbr = ProjectBuildReq(name=name)
-        breakpoint()
         rsp = self._http.post(f"/projects/{self.projectid}/_build", json=pbr.dict())
         return ProjectBuildResp(**rsp.json())
 
