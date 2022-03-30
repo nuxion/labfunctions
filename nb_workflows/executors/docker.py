@@ -182,11 +182,11 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
             )
 
         result = get_result(container, timeout=1)
-        console.print(result)
-        # console.print(container.logs())
         if not result:
             container.kill()
         container.remove()
+        ag_client.events_publish(exec_ctx.execid, data="finished", event="result")
+
     except docker.errors.ContainerError as e:
         ag_client.logger.error(e.stderr.decode())
         elapsed = time.time() - _started
@@ -194,4 +194,6 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
         ag_client.history_register(result)
 
     except docker.errors.APIError as e:
-        ag_client.logger.error(e.stderr.decode())
+        ag_client.logger.error(e)
+
+    ag_client.events_publish(exec_ctx.execid, data="exit", event="control")

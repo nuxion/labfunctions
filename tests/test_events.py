@@ -2,6 +2,7 @@ import json
 
 import aioredis
 import pytest
+from pytest_mock import MockerFixture
 
 from nb_workflows.events import EventManager
 from nb_workflows.types.events import EventSSE
@@ -16,7 +17,9 @@ def test_events_EventManager(async_redis_web: aioredis.client.Redis):
 
 @pytest.mark.asyncio
 async def test_events_EventManager_read(async_redis_web: aioredis.client.Redis):
-    await async_redis_web.xadd("test.test", fields={"msg": "testing stream"})
+    await async_redis_web.xadd(
+        "test.test", fields={"msg": "testing stream", "event": "pytest"}
+    )
     em = EventManager(async_redis_web)
     rsp = await em.read("test.test", "0", block_ms=1)
     rsp_none = await em.read("test.test", "$", block_ms=1)
@@ -78,15 +81,46 @@ async def test_events_bp_publish(async_session, sanic_app, access_token):
 
 @pytest.mark.asyncio
 async def test_events_bp_listen(
-    async_session, sanic_app, async_redis_web, access_token
+    async_session, sanic_app, async_redis_web, access_token, mocker: MockerFixture
 ):
-    await async_redis_web.xadd("test.test", fields={"msg": "testing stream"})
+    # await async_redis_web.xadd("test.test", fields={"msg": "testing stream",
+    # "event": "pytest"})
 
     evt = EventSSEFactory()
+    evt_exit = EventSSEFactory(event="control", data="exit")
+    event_mg = mocker.MagicMock()
+    event_mg.generate_channel.return_value = "test.test"
+
+    mocker.patch(
+        "nb_workflows.web.events_bp.EventManager.read", side_effect=[[evt], [evt_exit]]
+    )
+
+    req, res = await sanic_app.asgi_client.get(
+        "/events/test/test/_listen?last=1123123",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.status_code == 200
+    assert "data" in res.text
+
+
+@pytest.mark.asyncio
+async def test_events_bp_listen_none(
+    async_session, sanic_app, async_redis_web, access_token, mocker: MockerFixture
+):
+    # await async_redis_web.xadd("test.test", fields={"msg": "testing stream",
+    # "event": "pytest"})
+
+    evt = EventSSEFactory()
+    evt_exit = EventSSEFactory(event="control", data="exit")
+    event_mg = mocker.MagicMock()
+    event_mg.generate_channel.return_value = "test.test"
+
+    mocker.patch("nb_workflows.web.events_bp.EventManager.read", return_value=None)
+
     req, res = await sanic_app.asgi_client.get(
         "/events/test/test/_listen?last=0",
         headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert res.status_code == 200
-    assert "data" in res.text

@@ -14,6 +14,7 @@ from nb_workflows.types import (
     ExecutionNBTask,
     ExecutionResult,
     HistoryRequest,
+    HistoryResult,
     NBTask,
     ProjectData,
     ProjectReq,
@@ -158,6 +159,20 @@ class EventSSEFactory(factory.Factory):
         model = EventSSE
 
     data = factory.Sequence(lambda n: "message-%d" % n)
+
+
+class HistoryResultFactory(factory.Factory):
+    class Meta:
+        model = HistoryResult
+
+    class Params:
+        status_ok = True
+
+    wfid = factory.LazyAttribute(lambda n: generate_random(24))
+    status = factory.LazyAttribute(lambda o: 1 if o.status_ok else -1)
+    result = factory.LazyAttribute(lambda n: ExecutionResultFactory())
+    execid = factory.LazyAttribute(lambda n: generate_random(10))
+    created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
 
 
 def create_user_model(*args, **kwargs) -> UserModel:

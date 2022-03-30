@@ -50,7 +50,7 @@ class ExecID:
             _pure = pure_execid(execid)
         except IndexError:
             _pure = execid
-        return cls(execid)
+        return cls(_pure)
 
     def __str__(self):
         return self._id
@@ -90,7 +90,7 @@ def execid_for_build(size=defaults.EXECID_LEN):
 
 
 def generate_docker_name(pd: ProjectData, docker_version: str):
-    return f"{pd.name}/{pd.name}:{docker_version}".lower()
+    return f"{defaults.DOCKER_AUTHOR}/{pd.name}:{docker_version}".lower()
 
 
 def dummy_wf_from_nbtask(pd: ProjectData, nbtask: NBTask) -> WorkflowDataWeb:

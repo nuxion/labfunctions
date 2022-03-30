@@ -200,6 +200,7 @@ async def workflow_enqueue(request, projectid, wfid):
     sche = get_scheduler()
     execid = ExecID()
     signed = execid.firm("web")
+    breakpoint()
     job = await run_async(sche.dispatcher, projectid, wfid, signed)
 
     return json(dict(execid=job.id), 202)

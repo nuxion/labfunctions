@@ -152,14 +152,13 @@ class SchedulerExecutor:
 
         Every time a task is enqueue again the step MUST be moved.
         """
-
         final_id = firm_or_new(execid, "dispatcher")
 
         j = self.Q.enqueue(
             scheduler_dispatcher,
             projectid,
             wfid,
-            execid,
+            str(final_id),
             is_async=self.is_async,
             job_id=final_id,
         )

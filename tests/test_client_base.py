@@ -111,6 +111,8 @@ def test_client_base_events_pub(monkeypatch):
     bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory())
 
     bc.events_publish("test", "hello test")
+    bc.events_publish("test", {"msg": "test"})
+    bc.events_publish("test", None)
 
 
 def test_client_base_events_listen(mocker: MockerFixture):
@@ -130,3 +132,28 @@ def test_client_base_events_listen(mocker: MockerFixture):
     rsp = gen.__next__()
     assert rsp.id == "a"
     assert rsp.data == "hello"
+
+
+def test_client_base_events_listen_exit(mocker: MockerFixture):
+
+    # monkeypatch.setattr(httpx, "post", mock_post)
+    stream_mock = mocker.MagicMock()
+    response = mocker.MagicMock()
+
+    response.iter_lines.return_value = [
+        "id: a\n",
+        "data: hello\n\n",
+        "id: a\n",
+        "data: exit\n\n",
+    ]
+    stream_mock.__enter__.return_value = response
+    mocker.patch("nb_workflows.client.base.httpx.stream", return_value=stream_mock)
+
+    creds = Credentials(access_token="test", refresh_token="test")
+    bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory(), creds=creds)
+
+    events = []
+    for evt in bc.events_listen("test"):
+        events.append(evt)
+
+    assert len(events) == 1

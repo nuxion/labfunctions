@@ -29,8 +29,7 @@ def get_event_manager(request) -> EventManager:
 async def event_listen(request, projectid, execid):
     # redis = get_web_redis(request)
     em = get_event_manager(request)
-
-    last = get_query_param(request, "last", "$")
+    last = request.args.get("last", "$")
 
     response = await request.respond(
         content_type="text/event-stream", headers={"Cache-Control": "no-store"}
@@ -42,9 +41,11 @@ async def event_listen(request, projectid, execid):
         rsp = await em.read(channel, last)
         if rsp:
             for r in rsp:
+                if r.event == "control" and r.data == "exit":
+                    keep = False
                 msg = em.format_sse(r)
                 await response.send(msg)
-            last = "$"
+            last = r.id
         else:
             keep = False
 

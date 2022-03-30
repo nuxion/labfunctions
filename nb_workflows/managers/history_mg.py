@@ -1,16 +1,15 @@
-from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from nb_workflows.models import HistoryModel
-from nb_workflows.types import ExecutionResult, HistoryResult, NBTask
-
-
-@dataclass
-class HistoryLastResponse:
-    rows: List[HistoryResult]
+from nb_workflows.types import (
+    ExecutionResult,
+    HistoryLastResponse,
+    HistoryResult,
+    NBTask,
+)
 
 
 def select_history():

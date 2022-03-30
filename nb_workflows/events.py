@@ -39,7 +39,7 @@ class EventManager:
                 _id = msg[0]
                 _data = msg[1]
                 # _jdata = json.dumps(_data)
-                _evt = EventSSE(id=_id, data=_data["msg"])
+                _evt = EventSSE(id=_id, data=_data["msg"], event=_data["event"])
 
                 events.append(_evt)
 
@@ -50,8 +50,9 @@ class EventManager:
         ttl_secs = ttl_secs or self._ttl
 
         async with self.redis.pipeline() as pipe:
+            event_type = evt.event or ""
             res = (
-                await pipe.xadd(channel, fields={"msg": evt.data})
+                await pipe.xadd(channel, fields={"msg": evt.data, "event": event_type})
                 .expire(channel, ttl_secs)
                 .execute()
             )

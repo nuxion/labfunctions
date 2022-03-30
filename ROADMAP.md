@@ -15,14 +15,14 @@ This file is used only as kind of backlog or/and draft for ideas.
 - [ ] Doc: how to install client nb-workflows
 - [ ] Doc: branch and release strategy adopted
 - [x] Tests: >= 40%
-- [ ] History: Execution result of a Workflow
+- [x] History: Execution result of a Workflow
 - [ ] Web: API versioning
 - [ ] Models: Alembic migrations implemented
 - [-] Copy outputs executions locally
 
 **MAY:**
 
-- [ ] Log execution streaming
+- [x] Log execution streaming
 - [ ] Jupyter on demand instance
 - [-] Custom Errors
 - [ ] Example project using nb-workflows
