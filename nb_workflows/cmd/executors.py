@@ -45,6 +45,21 @@ def executorscli(ctx, url_service, from_file):
 
 @executorscli.command()
 @click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
+@click.pass_context
+def docker(ctx, wfid):
+    """It will run the task inside a docker container, it exist only as a tester"""
+    import json
+
+    import docker
+    from nb_workflows.executors.development import local_docker
+
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+    local_docker(url_service, from_file, wfid)
+
+
+@executorscli.command()
+@click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
 @click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
 @click.pass_context
 def local(ctx, dev, wfid):

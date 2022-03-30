@@ -67,7 +67,6 @@ async def notebooks_run(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     pm = await projects_mg.get_by_projectid_model(session, projectid)
-    breakpoint()
     pd = ProjectData(name=pm.name, projectid=pm.projectid, owner=pm.owner.username)
     nb_ctx = create_notebook_ctx_ondemand(pd, task)
     scheduler = get_scheduler()

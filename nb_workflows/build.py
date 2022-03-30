@@ -112,6 +112,7 @@ def extract_project(project_zip_file, dst_dir):
         zo.extractall(dst_dir)
 
 
-def make_build(project_zip_file, tag, temp_dir="/tmp/zip/"):
+def make_build(project_zip_file, tag, temp_dir="/tmp/zip/") -> DockerBuildLowLog:
     extract_project(project_zip_file, temp_dir)
-    docker_build(f"{temp_dir}/src", defaults.DOCKERFILE_RUNTIME_NAME, tag=tag)
+    logs = docker_build(f"{temp_dir}/src", defaults.DOCKERFILE_RUNTIME_NAME, tag=tag)
+    return logs

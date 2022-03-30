@@ -64,7 +64,6 @@ def from_env(settings: Optional[ClientSettings] = None) -> NBClient:
     if not settings:
         settings = load_client()
     nbvars = secrets.load(settings.BASE_PATH)
-    print(nbvars)
 
     tasks = None
     creds = _load_creds(settings, nbvars)

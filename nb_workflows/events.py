@@ -77,3 +77,17 @@ class EventManager:
         if evt.id is not None:
             msg = f"id: {evt.id}\n{msg}"
         return msg
+
+    @staticmethod
+    def from_sse2event(msg: str) -> EventSSE:
+        event = None
+        id = None
+        data = None
+        for line in msg.split("\n"):
+            if line.startswith("data:"):
+                data = line.split(":", maxsplit=1)[1].strip()
+            elif line.startswith("event:"):
+                event = line.split(":", maxsplit=1)[1].strip()
+            elif line.startswith("id:"):
+                id = line.split(":", maxsplit=1)[1].strip()
+        return EventSSE(id=id, event=event, data=data)

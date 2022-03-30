@@ -16,10 +16,27 @@ from nb_workflows.managers import history_mg
 from nb_workflows.types import ExecutionResult, HistoryRequest, NBTask
 from nb_workflows.utils import get_query_param, today_string
 
-history_bp = Blueprint("history", url_prefix="history")
+history_bp = Blueprint("history", url_prefix="histories")
 
 # async def validate_project(request):
 #     request.ctx.user = await extract_user_from_request(request)
+
+
+@history_bp.post("/")
+@openapi.body({"application/json": HistoryRequest})
+@openapi.response(201, "Created")
+@protected()
+async def history_create(request):
+    """Register a jobexecution"""
+    # pylint: disable=unused-argument
+    dict_ = request.json
+    hq = HistoryRequest(**dict_)
+
+    session = request.ctx.session
+    async with session.begin():
+        hm = await history_mg.create(session, hq.result)
+
+    return json(dict(msg="created"), 201)
 
 
 @history_bp.get("/<projectid>/<wfid>")
@@ -40,24 +57,6 @@ async def history_last_job(request, wfid, projectid):
             return json(asdict(h), 200)
 
         return json(dict(msg="not found"), 404)
-
-
-@history_bp.post("/")
-@openapi.body({"application/json": HistoryRequest})
-@openapi.response(201, "Created")
-@protected
-async def history_create(request):
-    """Register a jobexecution"""
-    # pylint: disable=unused-argument
-
-    dict_ = request.json
-    # task = NBTask(**dict_["task"])
-    result = ExecutionResult(**dict_)
-    session = request.ctx.session
-    async with session.begin():
-        hm = await history_mg.create(session, result)
-
-    return json(dict(msg="created"), 201)
 
 
 @history_bp.post("/<projectid>/_output_ok")

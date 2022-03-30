@@ -39,7 +39,7 @@ def test_events_EventManager_generate_channel():
     assert key == "project.execid"
 
 
-def test_events_format_sse():
+def test_events_EventManager_format_sse():
     evt = EventSSEFactory()
     msg = EventManager.format_sse(evt)
     compare = ""
@@ -51,22 +51,42 @@ def test_events_format_sse():
     assert compare == evt.data
 
 
-@pytest.mark.asyncio
-async def test_events_bp_publish(async_session, sanic_app):
+def test_events_EventManager_from_sse2event():
     evt = EventSSEFactory()
+    evt.id = "test_id"
+    evt.event = "event_test"
+    msg = EventManager.format_sse(evt)
+    compare_evt = EventManager.from_sse2event(msg)
+
+    assert compare_evt.data == evt.data
+    assert compare_evt.id == evt.id
+    assert compare_evt.event == evt.event
+
+
+@pytest.mark.asyncio
+async def test_events_bp_publish(async_session, sanic_app, access_token):
+    evt = EventSSEFactory()
+
     req, res = await sanic_app.asgi_client.post(
-        "/events/test/test/_publish", json=evt.dict()
+        "/events/test/test/_publish",
+        json=evt.dict(),
+        headers={"Authorization": f"Bearer {access_token}"},
     )
 
     assert res.status_code == 204
 
 
 @pytest.mark.asyncio
-async def test_events_bp_listen(async_session, sanic_app, async_redis_web):
+async def test_events_bp_listen(
+    async_session, sanic_app, async_redis_web, access_token
+):
     await async_redis_web.xadd("test.test", fields={"msg": "testing stream"})
 
     evt = EventSSEFactory()
-    req, res = await sanic_app.asgi_client.get("/events/test/test/_listen?last=0")
+    req, res = await sanic_app.asgi_client.get(
+        "/events/test/test/_listen?last=0",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
 
     assert res.status_code == 200
     assert "data" in res.text

@@ -1,7 +1,12 @@
 import json
 import logging
+import os
 import time
+from datetime import datetime, timedelta
 from pathlib import Path, PosixPath
+from typing import Any, Dict, Union
+
+from rich.console import Console
 
 import docker
 from nb_workflows import client, secrets
@@ -18,6 +23,7 @@ from nb_workflows.types import (
     ProjectData,
     ScheduleData,
 )
+from nb_workflows.utils import format_bytes
 
 
 def builder_executor(projectid, project_zip_route):
@@ -49,9 +55,55 @@ def builder_executor(projectid, project_zip_route):
 
     pd = nb_client.projects_get()
     docker_tag = context.generate_docker_name(pd, docker_version=_version)
-    logger.error(docker_tag)
-    make_build(project_dir / zip_name, tag=docker_tag, temp_dir=str(temp_dir))
+    # logger.error(docker_tag)
+    # nb_client.events_publish(projectid, "Building")
+    logs = make_build(project_dir / zip_name, tag=docker_tag, temp_dir=str(temp_dir))
     # register build
+
+
+def get_result(
+    container: docker.models.containers.Container, timeout=5
+) -> Union[Dict[str, Any], None]:
+    result = None
+    try:
+        result = container.wait(timeout=5)
+    except Exception:
+        pass
+    return result
+
+
+def docker_events(
+    container: docker.models.containers.Container, timeout_secs=(60 * 60) * 5, watch=5
+):
+
+    console = Console()
+    now = datetime.utcnow() - timedelta(minutes=10)
+    started = time.time()
+    elapsed = 0
+    running = True
+    while running and elapsed < timeout_secs:
+        logs = container.logs(since=now).decode("utf-8").split("\n")
+        for log in logs:
+            _log = log.strip()
+            if _log:
+                yield {"type": "log", "data": _log}
+        now = datetime.utcnow() - timedelta(seconds=2)
+
+        stats = container.stats(decode=True).__next__()
+        mem_usage_bytes = stats["memory_stats"].get("usage", 0)
+        mem_max_bytes = stats["memory_stats"].get("max_usage", 0)
+
+        mem = {"mem_usage": mem_usage_bytes, "mem_max": mem_max_bytes}
+        yield {"type": "stats", "data": {"mem": mem}}
+
+        result = get_result(container, timeout=watch)
+        if result:
+            running = False
+            return result
+
+        elapsed = time.time() - started
+        yield {"type": "log", "data": f"{round(elapsed)} secs elapsed"}
+        # console.print(log)
 
 
 def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
@@ -69,47 +121,77 @@ def docker_exec(exec_ctx: ExecutionNBTask, volumes=None):
     TODO: task result should be review with the HistoryModel for better registration
     of workflows executions.
     """
-    from nb_workflows.qworker import settings
+    # from nb_workflows.qworker import settings
+
+    agent_token = os.getenv("NB_AGENT_TOKEN")
+    refresh_token = os.getenv("NB_AGENT_REFRESH_TOKEN")
+    url_service = os.getenv("NB_WORKFLOW_SERVICE")
+
+    console = Console()
 
     _started = time.time()
     docker_client = docker.from_env()
     ag_client = client.agent(
-        url_service=settings.WORKFLOW_SERVICE,
-        token=settings.AGENT_TOKEN,
-        refresh=settings.AGENT_REFRESH_TOKEN,
+        url_service=url_service,
+        token=agent_token,
+        refresh=refresh_token,
         projectid=exec_ctx.projectid,
     )
-    logger = logging.getLogger(__name__)
+
+    ag_client.events_publish(exec_ctx.execid, "Starting docker execution")
 
     priv_key = ag_client.projects_private_key()
     if not priv_key:
-        logger.error(f"jobdid:{exec_ctx.wfid} private key not found")
+        ag_client.logger.error(f"jobdid:{exec_ctx.wfid} private key not found")
         elapsed = time.time() - _started
         result = context.make_error_result(exec_ctx, elapsed)
         ag_client.history_register(result)
         return
 
-    logger.info(
+    msg = (
         f"jobdid:{exec_ctx.wfid} execid:{exec_ctx.execid} "
         f"Sending to docker: {exec_ctx.docker_name}"
     )
+    ag_client.logger.info(msg)
+    ag_client.events_publish(exec_ctx.execid, msg)
     try:
-        logs = docker_client.containers.run(
+        container = docker_client.containers.run(
             exec_ctx.docker_name,
             f"nb exec local",
             environment={
                 defaults.PRIVKEY_VAR_NAME: priv_key,
                 defaults.EXECUTIONTASK_VAR: json.dumps(exec_ctx.dict()),
-                "NB_WORKFLOW_SERVICE": settings.WORKFLOW_SERVICE,
+                "NB_WORKFLOW_SERVICE": url_service,
                 defaults.BASE_PATH_ENV: "/app",
             },
-            remove=True,
+            # remove=True,
+            detach=True,
         )
-        for line in logs.decode().split("\n"):
-            logger.info(line)
+        for evt in docker_events(container, timeout_secs=exec_ctx.timeout):
+            # console.print(evt["data"])
+            if evt["type"] == "stats":
+                _mem = evt["data"]["mem"]["mem_usage"]
+                mem = format_bytes(_mem)
+                msg = f"Memory used {mem}"
+            else:
+                msg = evt["data"]
+            # ag_client.logger.info(msg)
+            console.print(msg)
+            ag_client.events_publish(
+                exec_ctx.execid, data=evt["data"], event=evt["type"]
+            )
 
+        result = get_result(container, timeout=1)
+        console.print(result)
+        # console.print(container.logs())
+        if not result:
+            container.kill()
+        container.remove()
     except docker.errors.ContainerError as e:
-        logger.error(e.stderr.decode())
+        ag_client.logger.error(e.stderr.decode())
         elapsed = time.time() - _started
         result = context.make_error_result(exec_ctx, elapsed)
         ag_client.history_register(result)
+
+    except docker.errors.APIError as e:
+        ag_client.logger.error(e.stderr.decode())

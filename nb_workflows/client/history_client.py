@@ -55,7 +55,6 @@ class HistoryClient(BaseClient):
         TODO: zip or compress notebook before upload.
         :return: True if ok, False if something fails.
         """
-        breakpoint()
         form_data = dict(output_name=exec_result.output_name)
 
         file_dir = f"{exec_result.output_dir}/{exec_result.output_name}"

@@ -5,12 +5,13 @@ from redis import Redis
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
-from sanic_jwt import Initialize
+from sanic_jwt import Initialize, inject_user, protected
 
 from nb_workflows import auth
 from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
+from nb_workflows.events import EventManager
 from nb_workflows.utils import get_version
 
 version = get_version("__version__.py")
@@ -77,6 +78,7 @@ def app_init(
         request.ctx.session = current_app.ctx.db.sessionmaker()
         request.ctx.session_ctx_token = _base_model_session_ctx.set(request.ctx.session)
         request.ctx.web_redis = current_app.ctx.web_redis
+        request.ctx.events = EventManager(current_app.ctx.web_redis)
 
         request.ctx.dbconn = current_app.ctx.db.engine
 
@@ -93,7 +95,6 @@ def app_init(
 
     @_app.get("/status")
     async def status_handler(request):
-
         return json(dict(msg="We are ok", version=version))
 
     return _app

@@ -1,10 +1,13 @@
 import httpx
 import pytest
+from pytest_mock import MockerFixture
 
 from nb_workflows.client.base import AuthFlow, BaseClient
 from nb_workflows.client.types import Credentials
 from nb_workflows.errors import LoginError
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
+
+from .factories import WorkflowsStateFactory
 
 url = "http://localhost:8000"
 
@@ -23,6 +26,10 @@ class MockLoginErrorRsp:
     @staticmethod
     def json():
         return dict(msg="error")
+
+
+class MockPublishRsp:
+    status_code = 204
 
 
 def test_client_base_auth():
@@ -93,3 +100,33 @@ def test_client_base_login_error(monkeypatch):
     bc = BaseClient(url_service=url)
     with pytest.raises(LoginError):
         bc.login(u="test", p="testing_password")
+
+
+def test_client_base_events_pub(monkeypatch):
+    def mock_post(*args, **kwargs):
+        return MockPublishRsp()
+
+    monkeypatch.setattr(httpx, "post", mock_post)
+
+    bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory())
+
+    bc.events_publish("test", "hello test")
+
+
+def test_client_base_events_listen(mocker: MockerFixture):
+
+    # monkeypatch.setattr(httpx, "post", mock_post)
+    stream_mock = mocker.MagicMock()
+    response = mocker.MagicMock()
+
+    response.iter_lines.return_value = ["id: a\n", "data: hello\n\n"]
+    stream_mock.__enter__.return_value = response
+    mocker.patch("nb_workflows.client.base.httpx.stream", return_value=stream_mock)
+
+    creds = Credentials(access_token="test", refresh_token="test")
+    bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory(), creds=creds)
+
+    gen = bc.events_listen("test", "hello test")
+    rsp = gen.__next__()
+    assert rsp.id == "a"
+    assert rsp.data == "hello"

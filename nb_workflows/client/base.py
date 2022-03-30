@@ -2,12 +2,13 @@ import json
 import logging
 import os
 from dataclasses import asdict
-from typing import Callable, List, Optional
+from typing import Callable, Generator, List, Optional
 
 import httpx
 
 from nb_workflows.conf import defaults
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
+from nb_workflows.events import EventManager
 from nb_workflows.executors import context
 from nb_workflows.hashes import generate_random
 from nb_workflows.types import (
@@ -18,6 +19,7 @@ from nb_workflows.types import (
     WorkflowData,
 )
 from nb_workflows.types.client import WorkflowsFile
+from nb_workflows.types.events import EventSSE
 from nb_workflows.utils import open_yaml, write_yaml
 
 from .state import WorkflowsState
@@ -186,8 +188,49 @@ class BaseClient:
         else:
             raise LoginError(self._addr, u)
 
+    def verify(self):
+        rsp = self._http.get("/auth/verify")
+        if rsp.status_code == 401:
+            return False
+        return True
+
     def write(self, output="workflows.yaml"):
         self.state.write(output)
 
     def close(self):
         self._http.close()
+
+    def events_listen(
+        self, execid, last=None, timeout=None
+    ) -> Generator[EventSSE, None, None]:
+        timeout = timeout or self._timeout
+        # uri = f"/events/{self.projectid}/{execid}/_listen"
+        uri = f"{self._addr}/events/{self.projectid}/{execid}/_listen"
+        if last:
+            uri = f"{uri}?last={last}"
+
+        headers = {"Authorization": f"Bearer {self.creds.access_token}"}
+
+        with httpx.stream("GET", uri, timeout=timeout, headers=headers) as r:
+            buffer_ = ""
+            for line in r.iter_lines():
+                buffer_ += line
+                if buffer_.endswith("\n\n"):
+                    evt = EventManager.from_sse2event(buffer_)
+                    # print(evt.dict())
+                    if evt.data == "exit":
+                        return
+                    yield evt
+                    buffer_ = ""
+
+    def events_publish(self, execid, data, event=None):
+        final = data
+        if isinstance(data, dict):
+            final = json.dumps(data)
+        if final:
+            evt = EventSSE(data=final, event=event)
+            self._http.post(
+                f"/events/{self.projectid}/{execid}/_publish", json=evt.dict()
+            )
+        else:
+            self.logger.warning(f"execid: {execid} empty message")

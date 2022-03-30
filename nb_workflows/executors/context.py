@@ -90,7 +90,7 @@ def execid_for_build(size=defaults.EXECID_LEN):
 
 
 def generate_docker_name(pd: ProjectData, docker_version: str):
-    return f"{pd.owner}/{pd.name}:{docker_version}"
+    return f"{pd.name}/{pd.name}:{docker_version}".lower()
 
 
 def dummy_wf_from_nbtask(pd: ProjectData, nbtask: NBTask) -> WorkflowDataWeb:

@@ -14,6 +14,9 @@ from nb_workflows.conf import load_server
 settings = load_server()
 
 sys.path.append(settings.BASE_PATH)
+os.environ["NB_AGENT_TOKEN"] = settings.AGENT_TOKEN
+os.environ["NB_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
+os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
 
 
 def worker(params):

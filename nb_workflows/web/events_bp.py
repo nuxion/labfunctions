@@ -25,7 +25,7 @@ def get_event_manager(request) -> EventManager:
 @openapi.parameter("last", str, "query")
 @openapi.response(200, "Found")
 @openapi.response(404, dict(msg=str), "Not Found")
-# @protected()
+@protected()
 async def event_listen(request, projectid, execid):
     # redis = get_web_redis(request)
     em = get_event_manager(request)
@@ -56,7 +56,7 @@ async def event_listen(request, projectid, execid):
 @openapi.parameter("execid", str, "path")
 @openapi.response(204)
 @openapi.response(404, dict(msg=str), "Not Found")
-# @protected()
+@protected()
 async def event_publish(request, projectid, execid):
     evt = EventSSE(**request.json)
 
