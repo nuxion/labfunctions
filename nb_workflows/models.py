@@ -69,7 +69,10 @@ class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
     status = Column(Integer, index=True)
 
     created_at = Column(
-        DateTime(), default=datetime.utcnow(), index=True, nullable=False
+        DateTime(),
+        server_default=functions.now(),
+        index=True,
+        nullable=False,
     )
 
 
@@ -115,8 +118,16 @@ class ProjectModel(Base, SerializerMixin):
         secondary=assoc_projects_users,
         back_populates="projects",
     )
-    created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
-    updated_at = Column(DateTime(), default=datetime.utcnow())
+    created_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        nullable=False,
+    )
 
 
 # class VersionModel(Base, ProjectRelationMixin):
@@ -157,8 +168,9 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     schedule = Column(JSONB(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
-    updated_at = Column(DateTime(), default=datetime.utcnow())
+    created_at = Column(DateTime(), server_default=functions.now(), nullable=False)
+
+    updated_at = Column(DateTime(), server_default=functions.now())
 
 
 class UserModel(Base):
@@ -179,12 +191,10 @@ class UserModel(Base):
     created_at = Column(
         DateTime(),
         server_default=functions.now(),
-        default=datetime.utcnow(),
         nullable=False,
     )
     updated_at = Column(
         DateTime(),
         server_default=functions.now(),
-        default=datetime.utcnow(),
         nullable=False,
     )
