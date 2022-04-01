@@ -155,7 +155,9 @@ def builder_exec(ctx: DockerBuildCtx):
         docker_tag = f"{settings.DOCKER_REGISTRY}/{docker_tag}"
         push = True
 
-    nb_client.events_publish(ctx.execid, "Starting build for {docker_tag}", event="log")
+    nb_client.events_publish(
+        ctx.execid, f"Starting build for {docker_tag}", event="log"
+    )
     logs = docker_build(
         f"{tmp_dir}/src",
         defaults.DOCKERFILE_RUNTIME_NAME,
