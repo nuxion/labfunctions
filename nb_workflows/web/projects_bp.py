@@ -3,9 +3,11 @@ import json as std_json
 import pathlib
 from typing import List, Union
 
+import httpx
+
 # import aiofiles
-from sanic import Blueprint, Sanic, exceptions
-from sanic.response import json
+from sanic import Blueprint, Request, Sanic, exceptions
+from sanic.response import empty, json
 from sanic_ext import openapi
 from sanic_jwt import inject_user, protected
 
@@ -13,6 +15,7 @@ from nb_workflows.auth import get_auth
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf import defaults
 from nb_workflows.conf.server_settings import settings
+from nb_workflows.executors.context import build_upload_uri, create_build_ctx
 from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg
 from nb_workflows.scheduler import SchedulerExecutor
@@ -20,6 +23,7 @@ from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
 from nb_workflows.types.projects import ProjectBuildReq
 from nb_workflows.types.users import AgentReq, UserData
 from nb_workflows.utils import run_async, secure_filename
+from nb_workflows.web.utils import get_query_param2, stream_reader
 
 projects_bp = Blueprint("projects", url_prefix="projects")
 
@@ -46,7 +50,7 @@ def _get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
 @projects_bp.get("/_generateid")
 @openapi.response(200, "project")
 @openapi.response(500, "not found")
-async def project_generateid(request):
+async def project_generateid(request: Request):
     """Generates a random projectid"""
     # pylint: disable=unused-argument
 
@@ -192,7 +196,7 @@ async def project_get_agent_token(request, projectid):
 
 
 @projects_bp.post("/<projectid:str>/_build")
-@openapi.body({"application/json": ProjectBuildReq})
+@openapi.parameter("version", str, "query")
 @protected()
 async def project_build(request, projectid):
     """
@@ -200,18 +204,26 @@ async def project_build(request, projectid):
     """
     # pylint: disable=unused-argument
 
-    pbr = ProjectBuildReq(**request.json)
-    name = secure_filename(pbr.name)
     root = pathlib.Path(projectid)
-    fp = str(root / settings.WF_UPLOADS / name)
 
-    sche = _get_scheduler()
-    job = await run_async(sche.enqueue_build, projectid, fp)
+    version = get_query_param2(request, "version", None)
 
-    return json(dict(msg="ok", execid=job.id), 202)
+    session = request.ctx.session
+    async with session.begin():
+        pd = await projects_mg.get_by_projectid(session, projectid)
+    if pd:
+
+        ctx = create_build_ctx(pd, version)
+
+        sche = _get_scheduler()
+        job = await run_async(sche.enqueue_build, ctx)
+
+        return json(dict(msg="ok", execid=job.id), 202)
+    return json(dict(msg="not found"), 404)
 
 
-@projects_bp.post("/<projectid:str>/_upload")
+@projects_bp.post("/<projectid:str>/_upload", stream=True)
+@openapi.parameter("version", str, "query")
 @protected()
 async def project_upload(request, projectid):
     """
@@ -219,41 +231,20 @@ async def project_upload(request, projectid):
     """
     # pylint: disable=unused-argument
 
-    # root = pathlib.Path(settings.BASE_PATH)
-    # (root / settings.WF_UPLOADS).mkdir(parents=True, exist_ok=True)
-    fsrv = AsyncFileserver(settings.FILESERVER, settings.FILESERVER_BUCKET)
     root = pathlib.Path(projectid)
+    version = get_query_param2(request, "version", None)
+    session = request.ctx.session
+    async with session.begin():
+        pd = await projects_mg.get_by_projectid(session, projectid)
 
-    file_body = request.files["file"][0].body
-    name = secure_filename(request.files["file"][0].name)
-    fp = str(root / settings.WF_UPLOADS / name)
-    await fsrv.put(fp, file_body)
-
-    # sche = _get_scheduler()
-
-    return json(dict(msg="ok", wfid="mock"), 201)
-
-
-@projects_bp.post("/<projectid:str>/_register_exec")
-@protected()
-async def project_register_exec(request, projectid):
-    """
-    Upload a workflow project
-    """
-    # pylint: disable=unused-argument
-
-    fsrv = AsyncFileserver(settings.FILESERVER)
-    root = pathlib.Path(projectid / defaults.NB_OUTPUTS)
-
-    data = request.form["result"][0]
-    exec_task = ExecutionResult(**std_json.loads(data))
-
-    file_body = request.files["file"][0].body
-
-    fp = str(root / exec_task.output_name)
-    await fsrv.put(fp, file_body)
-
-    return json(dict(msg="OK"))
+    uri = build_upload_uri(pd, version)
+    fileserver = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}"
+    dst_url = f"{fileserver}/{uri}"
+    async with httpx.AsyncClient() as client:
+        r = await client.put(dst_url, content=stream_reader(request))
+    if r.status_code == 204:
+        return empty()
+    return json(dict(msg="ok"), r.status_code)
 
 
 @projects_bp.get("/<projectid:str>/_private_key")

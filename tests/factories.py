@@ -22,6 +22,7 @@ from nb_workflows.types import (
     WorkflowData,
     WorkflowDataWeb,
 )
+from nb_workflows.types.docker import DockerBuildCtx, DockerfileImage
 from nb_workflows.types.events import EventSSE
 from nb_workflows.types.users import UserData
 from nb_workflows.utils import run_sync
@@ -173,6 +174,26 @@ class HistoryResultFactory(factory.Factory):
     result = factory.LazyAttribute(lambda n: ExecutionResultFactory())
     execid = factory.LazyAttribute(lambda n: generate_random(10))
     created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
+
+
+class DockerfileImageFactory(factory.Factory):
+    class Meta:
+        model = DockerfileImage
+
+    maintener = factory.Sequence(lambda n: "maintener-%d" % n)
+    image = "python-3.7"
+
+
+class DockerBuildCtxFactory(factory.Factory):
+    class Meta:
+        model = DockerBuildCtx
+
+    projectid = factory.LazyAttribute(lambda n: generate_random(10))
+    project_zip_route = "/tmp/test.current.zip"
+    zip_name = "test.current.zip"
+    version = "current"
+    docker_name = "nbworkflows/test"
+    execid = factory.LazyAttribute(lambda n: generate_random(10))
 
 
 def create_user_model(*args, **kwargs) -> UserModel:

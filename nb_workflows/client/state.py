@@ -129,4 +129,5 @@ def from_file(fpath="workflows.yaml") -> WorkflowsState:
         project=wf.project,
         version=wf.version,
         workflows=wf.workflows,
+        runtime=wf.runtime,
     )

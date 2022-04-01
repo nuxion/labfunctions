@@ -117,11 +117,14 @@ def upload(ctx, only_zip, env_file, current, all):
     if not only_zip:
         try:
             c.projects_upload(zfile)
-            console.print("[bold green] Succesfully uploaded file[/]")
-            rsp = c.projects_build(zfile.filename)
-            console.print(f"Build task sent with execid: [bold magenta]{rsp.execid}[/]")
+            console.print("[bold green]Succesfully uploaded file[/]")
+            execid = c.projects_build(zfile.version)
+            if not execid:
+                console.print("[bold red]Error sending build task [/]")
+                sys.exit(-1)
+            console.print(f"Build task sent with execid: [bold magenta]{execid}[/]")
         except ProjectUploadError:
-            console.print("[bold red] Error uploading file [/]")
+            console.print("[bold red]Error uploading file [/]")
 
     # elif action == "agent-token":
     #    creds = c.projects_agent_token()

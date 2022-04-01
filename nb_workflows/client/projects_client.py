@@ -21,7 +21,7 @@ from nb_workflows.types import (
 )
 from nb_workflows.types.projects import ProjectBuildReq, ProjectBuildResp
 from nb_workflows.types.users import AgentReq
-from nb_workflows.utils import parse_var_line
+from nb_workflows.utils import binary_file_reader, parse_var_line
 
 from .base import BaseClient
 from .types import Credentials, ProjectZipFile, WFCreateRsp
@@ -64,15 +64,18 @@ class ProjectsClient(BaseClient):
         return None
 
     def projects_upload(self, zfile: ProjectZipFile):
-        files = {"file": open(zfile.filepath, "rb")}
-        r = self._http.post(f"/projects/{self.projectid}/_upload", files=files)
-        if r.status_code != 201:
+        r = self._http.post(
+            f"/projects/{self.projectid}/_upload?version={zfile.version}",
+            content=binary_file_reader(zfile.filepath),
+        )
+        if r.status_code != 201 and r.status_code != 204:
             raise ProjectUploadError(self.projectid)
 
-    def projects_build(self, name) -> ProjectBuildResp:
-        pbr = ProjectBuildReq(name=name)
-        rsp = self._http.post(f"/projects/{self.projectid}/_build", json=pbr.dict())
-        return ProjectBuildResp(**rsp.json())
+    def projects_build(self, version) -> Union[str, None]:
+        rsp = self._http.post(f"/projects/{self.projectid}/_build?version={version}")
+        if rsp.status_code == 202:
+            return rsp.json()["execid"]
+        return None
 
     def projects_create_agent(self) -> Union[str, None]:
         r = self._http.post(f"/projects/{self.projectid}/agent")

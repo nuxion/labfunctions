@@ -19,6 +19,16 @@ class DockerBuildLog(BaseModel):
     error: bool
 
 
+class DockerBuildCtx(BaseModel):
+    projectid: str
+    project_zip_route: str
+    zip_name: str
+    version: str
+    docker_name: str
+    execid: str
+    registry: Optional[str] = None
+
+
 class DockerfileImage(BaseModel):
     maintener: str
     image: str

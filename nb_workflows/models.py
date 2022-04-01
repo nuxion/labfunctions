@@ -93,7 +93,7 @@ class ProjectModel(Base, SerializerMixin):
 
     id = Column(BigInteger, primary_key=True)
     projectid = Column(String(16), index=True, unique=True, nullable=False)
-    name = Column(String(128), nullable=False)
+    name = Column(String(128), unique=True, nullable=False)
     private_key = Column(BYTEA(), nullable=False)
     description = Column(String())
     repository = Column(String(2048), nullable=True)
