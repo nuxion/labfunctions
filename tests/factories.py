@@ -9,7 +9,13 @@ from nb_workflows.client.state import WorkflowsState
 from nb_workflows.client.types import Credentials
 from nb_workflows.hashes import generate_random
 from nb_workflows.managers.users_mg import password_manager
-from nb_workflows.models import HistoryModel, ProjectModel, UserModel, WorkflowModel
+from nb_workflows.models import (
+    HistoryModel,
+    ProjectModel,
+    RuntimeVersionModel,
+    UserModel,
+    WorkflowModel,
+)
 from nb_workflows.types import (
     ExecutionNBTask,
     ExecutionResult,
@@ -22,7 +28,11 @@ from nb_workflows.types import (
     WorkflowData,
     WorkflowDataWeb,
 )
-from nb_workflows.types.docker import DockerBuildCtx, DockerfileImage
+from nb_workflows.types.docker import (
+    DockerBuildCtx,
+    DockerfileImage,
+    RuntimeVersionData,
+)
 from nb_workflows.types.events import EventSSE
 from nb_workflows.types.users import UserData
 from nb_workflows.utils import run_sync
@@ -194,6 +204,23 @@ class DockerBuildCtxFactory(factory.Factory):
     version = "current"
     docker_name = "nbworkflows/test"
     execid = factory.LazyAttribute(lambda n: generate_random(10))
+
+
+class RuntimeVersionFactory(factory.Factory):
+    class Meta:
+        model = RuntimeVersionData
+
+    projectid = factory.LazyAttribute(lambda n: generate_random(10))
+    docker_name = "nbworkflows/test"
+    version = "current"
+
+
+def create_runtime_model(project: ProjectModel, *args, **kwargs) -> RuntimeVersionModel:
+    rv = RuntimeVersionFactory(*args, **kwargs)
+    rm = RuntimeVersionModel(
+        docker_name=rv.docker_name, project=project, version=rv.version
+    )
+    return rm
 
 
 def create_user_model(*args, **kwargs) -> UserModel:

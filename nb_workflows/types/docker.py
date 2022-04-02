@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict, Optional
 
 from pydantic import BaseModel
@@ -35,3 +36,20 @@ class DockerfileImage(BaseModel):
     user: Dict[str, int] = {"uid": 1089, "gid": 1090}
     build_packages: str = "build-essential libopenblas-dev git"
     final_packages: Optional[str] = None
+
+
+class RuntimeVersionOrm(BaseModel):
+    docker_name: str
+    version: str
+    project_id: str
+    created_at: datetime
+    id: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+
+
+class RuntimeVersionData(BaseModel):
+    docker_name: str
+    version: str
+    projectid: str

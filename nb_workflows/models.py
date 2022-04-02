@@ -130,14 +130,6 @@ class ProjectModel(Base, SerializerMixin):
     )
 
 
-# class VersionModel(Base, ProjectRelationMixin):
-#
-#     id = Column(BigInteger, primary_key=True)
-#     version = Column(String(), nullable=False)
-#
-#     created_at = Column(DateTime(), default=datetime.utcnow(), nullable=False)
-
-
 class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     """
     Configuration for each workflow.
@@ -171,6 +163,23 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     created_at = Column(DateTime(), server_default=functions.now(), nullable=False)
 
     updated_at = Column(DateTime(), server_default=functions.now())
+
+
+class RuntimeVersionModel(Base, ProjectRelationMixin):
+    """
+    Runtimes Register
+    """
+
+    __tablename__ = "nb_runtime"
+    __mapper_args__ = {"eager_defaults": True}
+
+    id = Column(Integer, primary_key=True)
+    docker_name = Column(String(), unique=True, index=True, nullable=False)
+    version = Column(String(), nullable=False)
+
+    created_at = Column(
+        DateTime(), server_default=functions.now(), nullable=False, index=True
+    )
 
 
 class UserModel(Base):
