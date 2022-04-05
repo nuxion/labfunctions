@@ -8,11 +8,12 @@ from sanic.response import empty, json, stream
 from sanic_ext import openapi
 from sanic_jwt import inject_user, protected
 
+from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.events import EventManager
 from nb_workflows.types.events import EventSSE
 from nb_workflows.utils import get_query_param, secure_filename
 
-events_bp = Blueprint("events", url_prefix="events")
+events_bp = Blueprint("events", url_prefix="events", version=API_VERSION)
 
 
 def get_event_manager(request) -> EventManager:

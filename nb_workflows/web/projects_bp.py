@@ -14,6 +14,7 @@ from sanic_jwt import inject_user, protected
 from nb_workflows.auth import get_auth
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf import defaults
+from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.executors.context import build_upload_uri, create_build_ctx
 from nb_workflows.io import AsyncFileserver
@@ -25,7 +26,7 @@ from nb_workflows.types.users import AgentReq, UserData
 from nb_workflows.utils import run_async, secure_filename
 from nb_workflows.web.utils import get_query_param2, stream_reader
 
-projects_bp = Blueprint("projects", url_prefix="projects")
+projects_bp = Blueprint("projects", url_prefix="projects", version=API_VERSION)
 
 
 async def generate_id(session, retries=3) -> Union[str, None]:
