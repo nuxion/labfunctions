@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.table import Table
 
 from nb_workflows import client, secrets
 from nb_workflows.client.uploads import generate_dockerfile
@@ -162,13 +163,22 @@ def dockerfile(ctx):
     click.echo("Remember to add this change to git...")
 
 
-@projectcli.command()
+@projectcli.command(name="runtimes")
 @click.pass_context
-def jupyter(ctx):
-    """Run a jupyter instance"""
-    sys.path.append(os.getcwd())
-    os.environ["NS_BASE_PATH"] = os.getcwd()
-    execute_cmd("jupyter lab")
+def runtimescli(ctx):
+    """List of runtimes available for this project"""
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+    c = client.from_file(from_file, url_service)
+    runtimes = c.runtimes_get_all()
+    table = Table(title="Runtimes for the project")
+    # table.add_column("alias", style="cyan", no_wrap=True, justify="center")
+    table.add_column("id", style="cyan", justify="center")
+    table.add_column("docker_name", style="cyan", justify="center")
+    table.add_column("version", style="cyan", justify="center")
+    for runtime in runtimes:
+        table.add_row(str(runtime.id), runtime.docker_name, runtime.version)
+    console.print(table)
 
 
 @projectcli.command()
@@ -178,7 +188,3 @@ def info(ctx):
     url_service = ctx.obj["URL"]
     c = client.from_file(url_service=url_service)
     c.info()
-
-
-projectcli.add_command(upload)
-projectcli.add_command(jupyter)

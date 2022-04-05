@@ -152,7 +152,7 @@ async def sanic_app(async_conn):
 
     rqdb = Redis("/tmp/RQWeb.rdb")
     app = app_init(async_conn, web_redis=rweb, rq_redis=rqdb)
-    init_blueprints(app, ["workflows", "history", "projects", "events"])
+    init_blueprints(app, ["workflows", "history", "projects", "events", "runtimes"])
 
     yield app
     await app.ctx.web_redis.close()

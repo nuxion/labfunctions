@@ -165,9 +165,9 @@ def builder_exec(ctx: DockerBuildCtx):
         version=ctx.version,
         push=push,
     )
+    nb_client.runtime_create(ctx.docker_name, ctx.version)
 
     nb_client.events_publish(ctx.execid, data="finished", event="result")
-
     nb_client.events_publish(ctx.execid, data="exit", event="control")
 
     return logs

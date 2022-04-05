@@ -25,7 +25,7 @@ def _insert(rd: RuntimeVersionData):
     return stmt
 
 
-async def get_list(session, projectid, limit=1) -> List[RuntimeVersionOrm]:
+async def get_list(session, projectid, limit=1) -> List[RuntimeVersionData]:
     stmt = (
         select_runtime()
         .where(RuntimeVersionModel.project_id == projectid)
@@ -34,10 +34,18 @@ async def get_list(session, projectid, limit=1) -> List[RuntimeVersionOrm]:
     )
     rows = await session.execute(stmt)
 
-    return [RuntimeVersionOrm.from_orm(r[0]) for r in rows]
+    return [
+        RuntimeVersionData(
+            id=r[0].id,
+            docker_name=r[0].docker_name,
+            version=r[0].version,
+            projectid=r[0].project.projectid,
+        )
+        for r in rows
+    ]
 
 
-async def create(session, rd: RuntimeVersionData):
+async def create(session, rd: RuntimeVersionData) -> bool:
     stmt = _insert(rd)
     inserted = True
     try:

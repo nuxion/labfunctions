@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 from nb_workflows import errors, secrets
 from nb_workflows.conf import defaults
 from nb_workflows.errors.client import ProjectUploadError
+from nb_workflows.errors.runtimes import RuntimeCreationError
 from nb_workflows.types import (
     ExecutionResult,
     HistoryRequest,
@@ -19,6 +20,7 @@ from nb_workflows.types import (
     WorkflowDataWeb,
     WorkflowsList,
 )
+from nb_workflows.types.docker import RuntimeVersionData
 from nb_workflows.types.projects import ProjectBuildReq, ProjectBuildResp
 from nb_workflows.types.users import AgentReq
 from nb_workflows.utils import binary_file_reader, parse_var_line
@@ -103,3 +105,23 @@ class ProjectsClient(BaseClient):
             key = r.json()["private_key"]
             return key
         return None
+
+    def runtimes_get_all(self, lt=5) -> List[RuntimeVersionData]:
+        data = self._http.get(f"/runtimes/{self.projectid}?lt={lt}")
+        runtimes = [RuntimeVersionData(**dict_) for dict_ in data.json()]
+        return runtimes
+
+    def runtime_create(self, docker_name, version):
+        rd = RuntimeVersionData(
+            projectid=self.projectid, docker_name=docker_name, version=version
+        )
+        rsp = self._http.post(f"/runtimes/{self.projectid}", json=rd.dict())
+        if rsp.status_code != 201 and rsp.status_code != 200:
+            raise RuntimeCreationError(
+                docker_name=docker_name, projectid=self.projectid
+            )
+
+    def runtime_delete(self, id):
+        rsp = self._http.delete(f"/runtimes/{self.projectid}/{id}")
+        if rsp.status_code != 200:
+            raise RuntimeCreationError(docker_name=id, projectid=self.projectid)

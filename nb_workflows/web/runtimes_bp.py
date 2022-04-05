@@ -13,10 +13,10 @@ runtimes_bp = Blueprint("runtimes", url_prefix="runtimes")
 
 
 @runtimes_bp.get("/<projectid>")
-@openapi.response(200, List[RuntimeVersionOrm], "Created")
-@openapi.parameter("lt", int, "query")
 @openapi.parameter("projectid", str, "path")
-@protected
+@openapi.parameter("lt", int, "query")
+@openapi.response(200, List[RuntimeVersionOrm], "Created")
+@protected()
 async def runtimes_list(request: Request, projectid: str):
     """get a list of runtimes, by default they are ordered by created_at field"""
     lt = get_query_param2(request, "lt", 1)
@@ -24,7 +24,7 @@ async def runtimes_list(request: Request, projectid: str):
     async with session.begin():
         rows = await runtimes_mg.get_list(session, projectid, limit=lt)
 
-    return json([r.dict(exclude={"created_at"}) for r in rows], 200)
+    return json([r.dict() for r in rows], 200)
 
 
 @runtimes_bp.post("/<projectid>")
@@ -32,8 +32,8 @@ async def runtimes_list(request: Request, projectid: str):
 @openapi.parameter("projectid", str, "path")
 @openapi.response(200)
 @openapi.response(201)
-@protected
-async def runtimes_create(request: Request, projectid: str):
+@protected()
+async def runtimes_create(request: Request, projectid):
     session = request.ctx.session
     rd = RuntimeVersionData(**request.json)
     rd.projectid = projectid
@@ -50,7 +50,7 @@ async def runtimes_create(request: Request, projectid: str):
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("id", str, "path")
 @openapi.response(200)
-@protected
+@protected()
 async def runtimes_delete(request: Request, projectid: str, id: int):
     session = request.ctx.session
     async with session.begin():
