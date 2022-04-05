@@ -5,7 +5,8 @@ from typing import List, Optional, Tuple, Union
 from sqlalchemy import delete, exc
 from sqlalchemy import insert as sqlinsert
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert
+
+# from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from nb_workflows import secrets
@@ -67,28 +68,28 @@ def _insert_relation_project(user_id, project_id):
     return stmt
 
 
-def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
-    # _key = secrets.generate_private_key()
-
-    stmt = insert(ProjectModel.__table__).values(
-        name=name,
-        private_key=pq.private_key.encode("utf-8"),
-        projectid=projectid,
-        description=pq.description,
-        repository=pq.repository,
-        owner_id=user_id,
-    )
-    stmt = stmt.on_conflict_do_update(
-        # constraint="crawlers_page_bucket_id_fkey",
-        index_elements=[projectid],
-        set_=dict(
-            description=pq.description,
-            repository=pq.repository,
-            updated_at=datetime.utcnow(),
-        ),
-    )
-
-    return stmt
+# def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
+#     # _key = secrets.generate_private_key()
+#
+#     stmt = insert(ProjectModel.__table__).values(
+#         name=name,
+#         private_key=pq.private_key.encode("utf-8"),
+#         projectid=projectid,
+#         description=pq.description,
+#         repository=pq.repository,
+#         owner_id=user_id,
+#     )
+#     stmt = stmt.on_conflict_do_update(
+#         # constraint="crawlers_page_bucket_id_fkey",
+#         index_elements=[projectid],
+#         set_=dict(
+#             description=pq.description,
+#             repository=pq.repository,
+#             updated_at=datetime.utcnow(),
+#         ),
+#     )
+#
+#     return stmt
 
 
 def normalize_name(name: str) -> str:
@@ -161,10 +162,19 @@ async def get_agent_for_project(session, projectid: str) -> Union[UserModel, Non
 async def create_or_update(session, user_id: int, pq: ProjectReq):
     name = normalize_name(pq.name)
     projectid = generate_projectid()
-    stmt = _create_or_update_stmt(name, user_id, projectid, pq)
-    await session.execute(stmt)
-    obj = await get_by_name_model(session, name)
-    return obj
+    pm = ProjectModel(
+        name=name,
+        private_key=pq.private_key.encode("utf-8"),
+        projectid=projectid,
+        description=pq.description,
+        repository=pq.repository,
+        owner_id=user_id,
+    )
+
+    # stmt = _create_or_update_stmt(name, user_id, projectid, pq)
+    await session.merge(pm)
+    # obj = await get_by_name_model(session, name)
+    return pm
 
 
 async def get_by_projectid_model(session, projectid) -> Union[ProjectModel, None]:

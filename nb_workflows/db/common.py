@@ -1,5 +1,23 @@
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.types import BINARY, JSON, BigInteger
+
+
+@compiles(JSON, "postgresql")
+def compile_jsonb_postgres(type_, compile, **kw):
+    return "JSONB"
+
+
+@compiles(BINARY, "postgresql")
+def compile_bytea_postgres(type_, compiler, **kw):
+    return "BYTEA"
+
+
+@compiles(BigInteger, "sqlite")
+def compile_integer_sqlite(type_, compiler, **kw):
+    return "Integer"
+
 
 Base = declarative_base()
 

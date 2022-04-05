@@ -34,12 +34,15 @@ class AsyncSQL:
         return self._engine
 
     async def init(self, pool_size=20, max_overflow=0):
-        self._engine = create_async_engine(
-            self._uri,
-            echo=self._echo,
-            pool_size=pool_size,
-            max_overflow=max_overflow,
-        )
+        if "sqlite" in self._uri.split("://", maxsplit=1)[0]:
+            self._engine = create_async_engine(self._uri)
+        else:
+            self._engine = create_async_engine(
+                self._uri,
+                echo=self._echo,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
+            )
         self.Meta.bind = self._engine
 
     def sessionmaker(self, expire_on_commit=False):

@@ -58,12 +58,17 @@ def drop_everything(engine):
 
 
 class SQL:
-    def __init__(self, sqluri: str, pool_size=20, inspector=False):
+    def __init__(self, sqluri: str, pool_size=20, max_overflow=0, inspector=False):
         """
         :param sqluri: 'postgresql://postgres:secret@localhost:5432/twitter'
         """
         self._uri = sqluri
-        self.engine = create_engine(sqluri, pool_size=pool_size, max_overflow=0)
+        if "sqlite" in sqluri.split("://", maxsplit=1)[0]:
+            self.engine = create_engine(sqluri)
+        else:
+            self.engine = create_engine(
+                sqluri, pool_size=pool_size, max_overflow=max_overflow
+            )
 
         if inspector:
             self.inspector: PGInspector = inspect(self.engine)
