@@ -10,6 +10,7 @@ from sanic_ext import openapi
 from sanic_jwt import protected
 
 from nb_workflows.conf.defaults import API_VERSION
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.executors.context import ExecID, create_notebook_ctx_ondemand
 from nb_workflows.managers import projects_mg, workflows_mg
@@ -32,6 +33,10 @@ from nb_workflows.utils import (
 from .utils import get_scheduler
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows", version=API_VERSION)
+
+is_async = True
+if settings.DEV_MODE:
+    is_async = False
 
 
 @workflows_bp.get("/<projectid>/notebooks/_files")
@@ -70,7 +75,7 @@ async def notebooks_run(request, projectid):
     pm = await projects_mg.get_by_projectid_model(session, projectid)
     pd = ProjectData(name=pm.name, projectid=pm.projectid, owner=pm.owner.username)
     nb_ctx = create_notebook_ctx_ondemand(pd, task)
-    scheduler = get_scheduler()
+    scheduler = get_scheduler(is_async=is_async)
     await run_async(scheduler.enqueue_notebook, nb_ctx, task.machine)
 
     return json(nb_ctx.dict(), 202)
@@ -110,7 +115,7 @@ async def workflow_create(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
-    scheduler = get_scheduler()
+    scheduler = get_scheduler(is_async=is_async)
 
     async with session.begin():
         try:
@@ -142,7 +147,7 @@ async def workflow_update(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
-    scheduler = get_scheduler()
+    scheduler = get_scheduler(is_async=is_async)
 
     async with session.begin():
         try:
@@ -164,7 +169,7 @@ async def workflow_delete(request, projectid, wfid):
     """Delete from db and queue a workflow"""
     # pylint: disable=unused-argument
     session = request.ctx.session
-    scheduler = get_scheduler()
+    scheduler = get_scheduler(is_async=is_async)
     async with session.begin():
         await scheduler.delete_workflow(session, projectid, wfid)
         await session.commit()
@@ -198,7 +203,7 @@ async def workflow_get(request, projectid, wfid):
 async def workflow_enqueue(request, projectid, wfid):
     """Enqueue a worflow"""
     # pylint: disable=unused-argument
-    sche = get_scheduler()
+    sche = get_scheduler(is_async=is_async)
     execid = ExecID()
     signed = execid.firm("web")
     job = await run_async(sche.dispatcher, projectid, wfid, signed)

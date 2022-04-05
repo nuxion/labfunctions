@@ -19,11 +19,11 @@ def parse_page_limit(request, def_pg="1", def_lt="100"):
     return page, limit
 
 
-def get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
+def get_scheduler(qname=settings.RQ_CONTROL_QUEUE, is_async=True) -> SchedulerExecutor:
 
     current_app = Sanic.get_app(defaults.SANIC_APP_NAME)
     r = current_app.ctx.rq_redis
-    return SchedulerExecutor(r, qname=qname)
+    return SchedulerExecutor(r, qname=qname, is_async=is_async)
 
 
 async def stream_reader(request: Request):
