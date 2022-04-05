@@ -364,3 +364,15 @@ def format_seconds(secs) -> str:
     elif secs >= 3600:
         ago = f"{round((secs / 60)/ 60)} hours ago"
     return ago
+
+
+def binary_file_reader(fp: str, chunk_size=1024):
+    """
+    File reader generator mostly used for projects upload
+    """
+    with open(fp, "rb") as f:
+        while True:
+            data = f.read(chunk_size)
+            if not data:
+                break
+            yield data

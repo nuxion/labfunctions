@@ -13,7 +13,7 @@ settings = load_server()
 @click.option(
     "--apps",
     "-a",
-    default="workflows,projects,history",
+    default="workflows,projects,history,events,runtimes",
     help="List of apps to be mounted as blueprints",
 )
 @click.option(

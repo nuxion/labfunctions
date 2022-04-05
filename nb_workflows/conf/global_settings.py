@@ -39,5 +39,3 @@ NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
 NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")
 NB_PROJECTS = "projects"
 DOCKER_RUNTIMES = "runtimes/"
-
-WF_UPLOADS = "uploads/"

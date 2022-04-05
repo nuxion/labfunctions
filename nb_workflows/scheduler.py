@@ -21,13 +21,15 @@ from nb_workflows.conf import defaults as df
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.sync import SQL
 from nb_workflows.executors import context
-from nb_workflows.executors.docker import builder_executor, docker_exec
+from nb_workflows.executors.builder import builder_exec
+from nb_workflows.executors.docker import docker_exec
 from nb_workflows.managers import projects_mg, workflows_mg
 from nb_workflows.managers.workflows_mg import prepare_notebook_job
 from nb_workflows.models import WorkflowModel
 
 # from nb_workflows.notebooks import nb_job_executor
 from nb_workflows.types import ExecutionNBTask, NBTask, ScheduleData
+from nb_workflows.types.docker import DockerBuildCtx
 from nb_workflows.utils import run_async
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
@@ -191,9 +193,7 @@ class SchedulerExecutor:
         )
         return job
 
-    def enqueue_build(
-        self, projectid, project_zip_route, qname=settings.RQ_CONTROL_QUEUE, execid=None
-    ) -> Job:
+    def enqueue_build(self, build_ctx: DockerBuildCtx) -> Job:
         """
         TODO: in the future a special queue should exists.
         TODO: set default timeout for build tasks,
@@ -201,25 +201,13 @@ class SchedulerExecutor:
         TODO: design internal, onpremise or external docker registries.
         """
 
-        _id = execid or context.execid_for_build()
-        if qname == settings.RQ_CONTROL_QUEUE:
-            job = self.Q.enqueue(
-                builder_executor,
-                projectid,
-                project_zip_route,
-                job_id=_id,
-                job_timeout=(60 * 60) * 24,
-            )
-        else:
-            Q = Queue(qname, connection=self.redis)
-            job = Q.enqueue(
-                builder_executor,
-                projectid,
-                project_zip_route,
-                job_id=_id,
-                job_timeout=(60 * 60) * 24,
-                is_async=self.is_async,
-            )
+        # Q = Queue(qname, connection=self.redis)
+        job = self.Q.enqueue(
+            builder_exec,
+            build_ctx,
+            job_id=build_ctx.execid,
+            job_timeout=(60 * 60) * 24,
+        )
 
         return job
 

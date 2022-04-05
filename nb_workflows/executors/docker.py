@@ -10,7 +10,6 @@ from rich.console import Console
 
 import docker
 from nb_workflows import client, secrets
-from nb_workflows.build import make_build
 from nb_workflows.conf import defaults
 from nb_workflows.executors import context
 from nb_workflows.io import Fileserver
@@ -23,42 +22,8 @@ from nb_workflows.types import (
     ProjectData,
     ScheduleData,
 )
+from nb_workflows.types.docker import DockerBuildCtx
 from nb_workflows.utils import format_bytes
-
-
-def builder_executor(projectid, project_zip_route):
-    """It's in charge of building docker images from projects"""
-    from nb_workflows.qworker import settings
-
-    logger = logging.getLogger(__name__)
-    root = Path(settings.BASE_PATH)
-    project_dir = root / settings.WORKER_DATA_FOLDER / "build" / projectid
-    project_dir.mkdir(parents=True, exist_ok=True)
-
-    temp_dir = project_dir / "tmp"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-
-    fs = Fileserver(settings.FILESERVER, settings.FILESERVER_BUCKET)
-    data = fs.get(project_zip_route)
-    zip_name = project_zip_route.split("/")[-1]
-    with open(project_dir / zip_name, "wb") as f:
-        f.write(data)
-
-    nb_client = client.agent(
-        url_service=settings.WORKFLOW_SERVICE,
-        token=settings.AGENT_TOKEN,
-        refresh=settings.AGENT_REFRESH_TOKEN,
-        projectid=projectid,
-    )
-
-    _version = zip_name.split(".")[0].lower()
-
-    pd = nb_client.projects_get()
-    docker_tag = context.generate_docker_name(pd, docker_version=_version)
-    # logger.error(docker_tag)
-    # nb_client.events_publish(projectid, "Building")
-    logs = make_build(project_dir / zip_name, tag=docker_tag, temp_dir=str(temp_dir))
-    # register build
 
 
 def get_result(

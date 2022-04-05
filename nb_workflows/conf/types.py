@@ -25,8 +25,8 @@ class ServerSettings(BaseSettings):
     NB_WORKFLOWS: str
     NB_OUTPUT: str
     NB_PROJECTS: str
-    WF_UPLOADS: str
     DOCKER_RUNTIMES: str
+    DOCKER_REGISTRY: Optional[str] = None
 
     WEB_REDIS: Optional[str] = None
     RQ_REDIS_HOST: Optional[str] = None

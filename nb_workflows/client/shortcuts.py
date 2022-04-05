@@ -48,11 +48,12 @@ def from_file(
 
     settings = load_client()
     wf_state = ws_from_file(filepath)
+    wf_service = url_service or settings.WORKFLOW_SERVICE
     # creds = get_credentials_disk(home_dir)
     # if not creds:
     #    creds = login_cli(url_service, home_dir)
     dc = DiskClient(
-        url_service=settings.WORKFLOW_SERVICE,
+        url_service=wf_service,
         wf_state=wf_state,
     )
     dc.logincli()

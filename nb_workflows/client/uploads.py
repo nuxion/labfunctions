@@ -66,7 +66,9 @@ def zip_git_current(
 
     execute_cmd(cmd)
 
-    return ProjectZipFile(filepath=output_file, filename=filename, current=True)
+    return ProjectZipFile(
+        filepath=output_file, filename=filename, current=True, version="current"
+    )
 
 
 def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
@@ -95,7 +97,9 @@ def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
         f"--add-file {secrets_file} "
         f"-o {output_file} HEAD "
     )
-    return ProjectZipFile(filepath=output_file, filename=filename, commit=tagname)
+    return ProjectZipFile(
+        filepath=output_file, filename=filename, version=tagname.lower(), commit=tagname
+    )
 
 
 def zip_all(root, prefix_folder=defaults.ZIP_GIT_PREFIX):
@@ -121,7 +125,7 @@ def zip_all(root, prefix_folder=defaults.ZIP_GIT_PREFIX):
                     z.write(i)
 
     dst.unlink(missing_ok=True)
-    return ProjectZipFile(filepath=output_file, filename=filename)
+    return ProjectZipFile(filepath=output_file, filename=filename, version="all")
 
 
 def zip_project(root, secrets_file, current=False, all_=False) -> ProjectZipFile:

@@ -4,12 +4,15 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.table import Table
 
 from nb_workflows import client, secrets
 from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import defaults, load_client
 from nb_workflows.errors.client import ProjectUploadError
 from nb_workflows.utils import execute_cmd
+
+from .utils import watcher
 
 # from nb_workflows.uploads import manage_upload
 
@@ -97,8 +100,15 @@ def agent(ctx, action):
     default=False,
     help="Only generates the zip file",
 )
+@click.option(
+    "--watch",
+    "-w",
+    is_flag=True,
+    default=False,
+    help="Get events & logs from the executions",
+)
 @click.pass_context
-def upload(ctx, only_zip, env_file, current, all):
+def upload(ctx, only_zip, env_file, current, all, watch):
     """Prepare and push your porject information to the server"""
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
@@ -117,11 +127,17 @@ def upload(ctx, only_zip, env_file, current, all):
     if not only_zip:
         try:
             c.projects_upload(zfile)
-            console.print("[bold green] Succesfully uploaded file[/]")
-            rsp = c.projects_build(zfile.filename)
-            console.print(f"Build task sent with execid: [bold magenta]{rsp.execid}[/]")
+            console.print("[bold green]Succesfully uploaded file[/]")
+            execid = c.projects_build(zfile.version)
+            if not execid:
+                console.print("[bold red]Error sending build task [/]")
+                sys.exit(-1)
+
+            console.print(f"Build task sent with execid: [bold magenta]{execid}[/]")
+            if watch:
+                watcher(c, execid, stats=False)
         except ProjectUploadError:
-            console.print("[bold red] Error uploading file [/]")
+            console.print("[bold red]Error uploading file [/]")
 
     # elif action == "agent-token":
     #    creds = c.projects_agent_token()
@@ -147,13 +163,22 @@ def dockerfile(ctx):
     click.echo("Remember to add this change to git...")
 
 
-@projectcli.command()
+@projectcli.command(name="runtimes")
 @click.pass_context
-def jupyter(ctx):
-    """Run a jupyter instance"""
-    sys.path.append(os.getcwd())
-    os.environ["NS_BASE_PATH"] = os.getcwd()
-    execute_cmd("jupyter lab")
+def runtimescli(ctx):
+    """List of runtimes available for this project"""
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+    c = client.from_file(from_file, url_service)
+    runtimes = c.runtimes_get_all()
+    table = Table(title="Runtimes for the project")
+    # table.add_column("alias", style="cyan", no_wrap=True, justify="center")
+    table.add_column("id", style="cyan", justify="center")
+    table.add_column("docker_name", style="cyan", justify="center")
+    table.add_column("version", style="cyan", justify="center")
+    for runtime in runtimes:
+        table.add_row(str(runtime.id), runtime.docker_name, runtime.version)
+    console.print(table)
 
 
 @projectcli.command()
@@ -163,7 +188,3 @@ def info(ctx):
     url_service = ctx.obj["URL"]
     c = client.from_file(url_service=url_service)
     c.info()
-
-
-projectcli.add_command(upload)
-projectcli.add_command(jupyter)

@@ -1,12 +1,20 @@
 version: 0.2.0
 project:
   name: pd-name0
-  projectid: JElzmGUmOJ
+  projectid: ZVUuBDZn0_
   owner: user0
   agent: null
   users: null
-  description: Full care adult sport.
+  description: Arm list key image.
   repository: null
+runtime:
+  maintener: maintener-0
+  image: python-3.7
+  user:
+    uid: 1089
+    gid: 1090
+  build_packages: build-essential libopenblas-dev git
+  final_packages: null
 workflows:
   nb-alias0:
     alias: nb-alias0
@@ -23,7 +31,7 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: ZQYK6RXo2JFAcxyPHxkyHJ2B
+    wfid: 8hIlMLazTp5K_CSPwnHIUyFo
     schedule:
       start_in_min: 0
       repeat: 2
@@ -44,7 +52,7 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: Qf9knc2OwVSHuFq44Kf3Mv0N
+    wfid: ZHSWNme6E_MeKRdlXaFpRNFQ
     schedule:
       start_in_min: 0
       repeat: 2
@@ -65,7 +73,7 @@ workflows:
       notifications_ok: null
       notifications_fail: null
     enabled: true
-    wfid: 0mhBj7FSXUeWhdMv56yoK5-a
+    wfid: G_aqX5hfEvp1DlqwFVaLJj1i
     schedule:
       start_in_min: 0
       repeat: 2
