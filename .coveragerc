@@ -1,0 +1,2 @@
+[run]
+omit = nb_workflows/db/migrations/*

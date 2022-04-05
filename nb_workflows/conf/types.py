@@ -28,6 +28,7 @@ class ServerSettings(BaseSettings):
     DOCKER_RUNTIMES: str
     DOCKER_REGISTRY: Optional[str] = None
 
+    DEV_MODE: bool = False
     WEB_REDIS: Optional[str] = None
     RQ_REDIS_HOST: Optional[str] = None
     RQ_REDIS_PORT: Optional[str] = None

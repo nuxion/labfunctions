@@ -12,10 +12,13 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import BYTEA, JSONB
+
+# from sqlalchemy.dialects.postgresql import BYTEA
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import declarative_mixin, declared_attr, relationship
 from sqlalchemy.schema import Table
 from sqlalchemy.sql import functions
+from sqlalchemy.types import BINARY, JSON
 from sqlalchemy_serializer import SerializerMixin
 
 from nb_workflows.db.common import Base
@@ -64,7 +67,7 @@ class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
     wfid = Column(String(24))
     execid = Column(String(24))  # should be execution id
     nb_name = Column(String(), nullable=False)
-    result = Column(JSONB(), nullable=False)
+    result = Column(JSON, nullable=False)
     elapsed_secs = Column(Float(), nullable=False)
     status = Column(Integer, index=True)
 
@@ -94,7 +97,7 @@ class ProjectModel(Base, SerializerMixin):
     id = Column(BigInteger, primary_key=True)
     projectid = Column(String(16), index=True, unique=True, nullable=False)
     name = Column(String(128), unique=True, nullable=False)
-    private_key = Column(BYTEA(), nullable=False)
+    private_key = Column(BINARY, nullable=False)
     description = Column(String())
     repository = Column(String(2048), nullable=True)
     owner_id = Column(
@@ -156,8 +159,8 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     wfid = Column(String(24), index=True, unique=True)
     alias = Column(String(33), index=True, nullable=False)
     # nb_name = Column(String(), nullable=False)
-    nbtask = Column(JSONB(), nullable=False)
-    schedule = Column(JSONB(), nullable=False)
+    nbtask = Column(JSON(), nullable=False)
+    schedule = Column(JSON(), nullable=False)
     enabled = Column(Boolean, default=True, nullable=False)
 
     created_at = Column(DateTime(), server_default=functions.now(), nullable=False)
@@ -189,7 +192,7 @@ class UserModel(Base):
 
     id = Column(BigInteger, primary_key=True)
     username = Column(String(), index=True, unique=True, nullable=False)
-    password = Column(BYTEA, nullable=True)
+    password = Column(BINARY, nullable=True)
     is_superuser = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     scopes = Column(String(), default="user", nullable=False)

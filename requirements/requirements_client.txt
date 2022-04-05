@@ -1,5 +1,6 @@
 aiofiles==0.8.0; python_version >= "3.6" and python_version < "4.0"
 aioredis==2.0.1; python_version >= "3.6"
+aiosqlite==0.17.0; python_version >= "3.6"
 ansiwrap==0.8.4; python_version >= "3.6"
 anyio==3.5.0; python_full_version >= "3.6.2" and python_version >= "3.6"
 appnope==0.1.2; sys_platform == "darwin" and python_version >= "3.8" and platform_system == "Darwin"

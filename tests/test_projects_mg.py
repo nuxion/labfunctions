@@ -4,6 +4,7 @@ import pytest
 
 from nb_workflows.conf import defaults as df
 from nb_workflows.managers import projects_mg
+from nb_workflows.models import ProjectModel
 from nb_workflows.types import ProjectData
 
 from .factories import (
@@ -13,12 +14,19 @@ from .factories import (
     create_user_model,
 )
 
-# def test_projects_mg_create_or_update():
-#     wfid = "test"
-#     pid = "pid-test"
-#     wfd = WorkflowDataWebFactory()
-#     stmt = workflows_mg._create_or_update_workflow(wfid, pid, wfd)
-#     assert "wfid" in str(stmt)
+
+@pytest.mark.asyncio
+async def test_projects_mg_create_or_update(async_session):
+    um = create_user_model()
+    um.id = 99
+    async_session.add(um)
+    await async_session.flush()
+    pq = ProjectReqFactory()
+    pm = await projects_mg.create_or_update(async_session, um.id, pq)
+    pq.description = "changed"
+    pm2 = await projects_mg.create_or_update(async_session, um.id, pq)
+    assert isinstance(pm, ProjectModel)
+    assert pm2.description == pq.description
 
 
 @pytest.mark.asyncio

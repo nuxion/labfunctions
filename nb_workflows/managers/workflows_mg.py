@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 
 from sqlalchemy import delete, select, update
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -24,35 +23,6 @@ from nb_workflows.types import (
 )
 
 WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
-
-
-def _create_or_update_workflow(wfid: str, projectid: str, wfd: WorkflowDataWeb):
-    task_dict = wfd.nbtask.dict()
-    schedule = None
-    if wfd.schedule:
-        schedule = wfd.schedule.dict()
-
-    stmt = insert(WorkflowModel.__table__).values(
-        wfid=wfid,
-        alias=wfd.alias,
-        nbtask=task_dict,
-        schedule=schedule,
-        project_id=projectid,
-        enabled=wfd.enabled,
-    )
-    stmt = stmt.on_conflict_do_update(
-        # constraint="crawlers_page_bucket_id_fkey",
-        index_elements=["wfid"],
-        set_=dict(
-            nbtask=task_dict,
-            schedule=schedule,
-            alias=wfd.alias,
-            enabled=wfd.enabled,
-            updated_at=datetime.utcnow(),
-        ),
-    )
-
-    return stmt
 
 
 def _update(wfid: str, projectid: str, wfd: WorkflowDataWeb):

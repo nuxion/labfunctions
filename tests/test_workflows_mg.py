@@ -8,13 +8,12 @@ from nb_workflows.types import WorkflowData
 
 from .factories import NBTaskFactory, ScheduleDataFactory, WorkflowDataWebFactory
 
-
-def test_workflows_mg_create_or_update():
-    wfid = "test"
-    pid = "pid-test"
-    wfd = WorkflowDataWebFactory()
-    stmt = workflows_mg._create_or_update_workflow(wfid, pid, wfd)
-    assert "wfid" in str(stmt)
+# def test_workflows_mg_create_or_update():
+#     wfid = "test"
+#     pid = "pid-test"
+#     wfd = WorkflowDataWebFactory()
+#     stmt = workflows_mg._create_or_update_workflow(wfid, pid, wfd)
+#     assert "wfid" in str(stmt)
 
 
 def test_workflows_mg_generate():

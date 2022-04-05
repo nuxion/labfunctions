@@ -479,3 +479,4 @@ docker/.env.client.docker
 .env.dev.dockerclient
 project_test/*
 flycheck_*.py
+db.sqlite

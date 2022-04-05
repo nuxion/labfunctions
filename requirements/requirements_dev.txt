@@ -1,5 +1,6 @@
 aiofiles==0.8.0; python_version >= "3.6" and python_version < "4.0"
 aioredis==2.0.1; python_version >= "3.6"
+aiosqlite==0.17.0; python_version >= "3.6"
 alabaster==0.7.12; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 alembic==1.7.6; python_version >= "3.6"
 ansiwrap==0.8.4; python_version >= "3.6"
