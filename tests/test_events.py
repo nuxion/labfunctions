@@ -4,10 +4,13 @@ import aioredis
 import pytest
 from pytest_mock import MockerFixture
 
+from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.events import EventManager
 from nb_workflows.types.events import EventSSE
 
 from .factories import EventSSEFactory
+
+version = API_VERSION
 
 
 def test_events_EventManager(async_redis_web: aioredis.client.Redis):
@@ -71,7 +74,7 @@ async def test_events_bp_publish(async_session, sanic_app, access_token):
     evt = EventSSEFactory()
 
     req, res = await sanic_app.asgi_client.post(
-        "/events/test/test/_publish",
+        f"{version}/events/test/test/_publish",
         json=evt.dict(),
         headers={"Authorization": f"Bearer {access_token}"},
     )
@@ -96,7 +99,7 @@ async def test_events_bp_listen(
     )
 
     req, res = await sanic_app.asgi_client.get(
-        "/events/test/test/_listen?last=1123123",
+        f"{version}/events/test/test/_listen?last=1123123",
         headers={"Authorization": f"Bearer {access_token}"},
     )
 
@@ -119,7 +122,7 @@ async def test_events_bp_listen_none(
     mocker.patch("nb_workflows.web.events_bp.EventManager.read", return_value=None)
 
     req, res = await sanic_app.asgi_client.get(
-        "/events/test/test/_listen?last=0",
+        f"{version}/events/test/test/_listen?last=0",
         headers={"Authorization": f"Bearer {access_token}"},
     )
 

@@ -1,6 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
+from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.managers.history_mg import HistoryLastResponse
 
 from .factories import (
@@ -8,6 +9,8 @@ from .factories import (
     HistoryResultFactory,
     create_history_request,
 )
+
+version = API_VERSION
 
 
 @pytest.mark.asyncio
@@ -19,7 +22,7 @@ async def test_history_bp_create(
     hreq = create_history_request()
     exec_res = ExecutionResultFactory()
     req, res = await sanic_app.asgi_client.post(
-        "/history",
+        f"{version}/history",
         json=exec_res.dict(),
         headers={"Authorization": f"Bearer {access_token}"},
     )
@@ -35,7 +38,7 @@ async def test_history_bp_last(
     rows = HistoryLastResponse(rows=[h])
     mocker.patch("nb_workflows.web.history_bp.history_mg.get_last", return_value=rows)
     req, res = await sanic_app.asgi_client.get(
-        "/history/test/test?lt=1",
+        f"{version}/history/test/test?lt=1",
         headers={"Authorization": f"Bearer {access_token}"},
     )
 
@@ -52,7 +55,7 @@ async def test_history_bp_last_404(
 ):
 
     req, res = await sanic_app.asgi_client.get(
-        "/history/not-exist-test/non?lt=1",
+        f"{version}/history/not-exist-test/non?lt=1",
         headers={"Authorization": f"Bearer {access_token}"},
     )
 

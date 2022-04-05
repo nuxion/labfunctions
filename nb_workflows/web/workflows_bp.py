@@ -9,6 +9,7 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
+from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.executors.context import ExecID, create_notebook_ctx_ondemand
 from nb_workflows.managers import projects_mg, workflows_mg
@@ -30,7 +31,7 @@ from nb_workflows.utils import (
 
 from .utils import get_scheduler
 
-workflows_bp = Blueprint("workflows", url_prefix="workflows")
+workflows_bp = Blueprint("workflows", url_prefix="workflows", version=API_VERSION)
 
 
 @workflows_bp.get("/<projectid>/notebooks/_files")

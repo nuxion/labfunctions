@@ -102,7 +102,7 @@ class BaseClient:
         url_service: str,
         creds: Optional[Credentials] = None,
         wf_state: Optional[WorkflowsState] = None,
-        version="0.1.0",
+        version=defaults.API_VERSION,
         http_init_func=get_http_client,
         timeout=defaults.CLIENT_TIMEOUT,
     ):
@@ -157,7 +157,9 @@ class BaseClient:
         if self._creds and not self._auth:
             self._auth_init()
         return self._http_creator(
-            base_url=self._addr, timeout=self._timeout, auth=self._auth
+            base_url=f"{self._addr}/{self._version}",
+            timeout=self._timeout,
+            auth=self._auth,
         )
 
     @property
@@ -205,7 +207,7 @@ class BaseClient:
     ) -> Generator[EventSSE, None, None]:
         timeout = timeout or self._timeout
         # uri = f"/events/{self.projectid}/{execid}/_listen"
-        uri = f"{self._addr}/events/{self.projectid}/{execid}/_listen"
+        uri = f"{self._addr}/{self._version}/events/{self.projectid}/{execid}/_listen"
         if last:
             uri = f"{uri}?last={last}"
 

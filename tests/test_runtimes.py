@@ -1,9 +1,12 @@
 import pytest
 
+from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.managers import runtimes_mg
 from nb_workflows.types.docker import RuntimeVersionData, RuntimeVersionOrm
 
 from .factories import RuntimeVersionFactory, create_runtime_model
+
+version = API_VERSION
 
 
 @pytest.mark.asyncio
@@ -37,13 +40,13 @@ async def test_runtimes_bp_create(async_session, sanic_app, access_token, mocker
     rd = RuntimeVersionFactory()
     mocker.patch("nb_workflows.web.runtimes_bp.runtimes_mg.create", return_value=True)
     _, res = await sanic_app.asgi_client.post(
-        "/runtimes/test",
+        f"{version}/runtimes/test",
         headers={"Authorization": f"Bearer {access_token}"},
         json=rd.dict(),
     )
     mocker.patch("nb_workflows.web.runtimes_bp.runtimes_mg.create", return_value=False)
     _, res2 = await sanic_app.asgi_client.post(
-        "/runtimes/test",
+        f"{version}/runtimes/test",
         headers={"Authorization": f"Bearer {access_token}"},
         json=rd.dict(),
     )
@@ -59,7 +62,7 @@ async def test_runtimes_bp_list(async_session, sanic_app, access_token, mocker):
         "nb_workflows.web.runtimes_bp.runtimes_mg.get_list", return_value=runtimes
     )
     _, res = await sanic_app.asgi_client.get(
-        "/runtimes/test",
+        f"{version}/runtimes/test",
         headers={"Authorization": f"Bearer {access_token}"},
     )
     data = res.json
@@ -73,7 +76,7 @@ async def test_runtimes_bp_delete(async_session, sanic_app, access_token, mocker
         "nb_workflows.web.runtimes_bp.runtimes_mg.delete_by_id", return_value=None
     )
     _, res = await sanic_app.asgi_client.get(
-        "/runtimes/test",
+        f"{version}/runtimes/test",
         headers={"Authorization": f"Bearer {access_token}"},
     )
 

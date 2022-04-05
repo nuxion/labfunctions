@@ -7,7 +7,7 @@ This file is used only as kind of backlog or/and draft for ideas.
 **MUST:**
 
 - [x] Executors: SeqPipe implmentation [deprecated]
-- [- ] Executors: Docker volumes specification
+- [-] Executors: Docker volumes specification
 - [x] Executios: Namespacing Execution ID for tracking loads. 
 - [x] Executors: Execution ID injected from Web 
 - [-] Notifications: slack and discord
@@ -16,21 +16,21 @@ This file is used only as kind of backlog or/and draft for ideas.
 - [ ] Doc: branch and release strategy adopted
 - [x] Tests: >= 40%
 - [x] History: Execution result of a Workflow
-- [ ] Web: API versioning
+- [x] Web: API versioning
 - [ ] Models: Alembic migrations implemented
-- [-] Copy outputs executions locally
+- [x] Copy outputs executions locally
 
 **MAY:**
 
 - [x] Log execution streaming
 - [ ] Jupyter on demand instance [x]
-- [-] Custom Errors
+- [x] Custom Errors
 - [ ] Example project using nb-workflows
 - [ ] Timeouts default for server, tasks and clients
 - [x] Split NBClient into UserClient and AgentClient
 - [ ] CI/CD: constraint merges to main branch
 - [ ] Optional [Any] Dockerfile RUN command definition from settings.
-- [-] Tracks dockerfiles versions.
+- [x] Tracks dockerfiles versions.
 - [x] Types: NBTask as pydantic model.
 - [x] Types: ScheduleData as pydantic model.
 - [x] Projects: File spec change where each Workflow Name will be a dict (like serivces in docker-compose.yml)
