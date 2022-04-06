@@ -20,8 +20,8 @@ RUN apt-get -y update \
 
 FROM python:3.8.10-slim as app
 LABEL maintener="Xavier Petit <nuxion@gmail.com>"
-RUN groupadd app -g 1090 \
-    && useradd -m -d /home/app app -u 1089 -g 1090 \
+RUN groupadd app -g 991 \
+    && useradd -m -d /home/app app -u 1000 -g 991 \
     && apt-get update -y  \
     && apt-get install -y --no-install-recommends \
     vim-tiny \
