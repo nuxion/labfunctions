@@ -140,8 +140,8 @@ async def register(session, projectid: str, wfd: WorkflowDataWeb, update=False) 
     obj = WorkflowModel(
         wfid=wfid,
         alias=wfd.alias,
-        nbtask=data_dict,
-        schedule=data_dict.get("schedule"),
+        nbtask=wfd.nbtask.dict(),
+        schedule=wfd.schedule.dict(),
         project_id=projectid,
         enabled=wfd.enabled,
     )
