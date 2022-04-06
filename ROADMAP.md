@@ -18,13 +18,15 @@ Current version: 0.6.0
 - [ ] Workflows: enable/disable workflows from cli
 - [ ] rq_bp: Re-enable observability of jobs and workers running for admin users. 
 - [ ] Tests: >= 60%
+- [ ] If docker container fails, the error is not registered
+- [ ] History: Save last log lines from docker container ?
 
 **MAY:**
 - [ ] E2E: complete testing of project creation, workflows push and execution
 - [ ] Watch events logs on demand
 - [ ] Review ExecutionTaskResult 
 - [-] Timeouts default for server, tasks and clients
-- [ ] Executors: Review function logic and resilience for errors
+- [ ] Executors: Review function logic and resilience for errors. 
 - [ ] RQWorker: Overwrite worker self ip discovery logic
 - [ ] RQWorker: Activity time
 - [ ] Prometheus metrics
