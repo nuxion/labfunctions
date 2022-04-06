@@ -28,7 +28,7 @@ from nb_workflows.managers.workflows_mg import prepare_notebook_job
 from nb_workflows.models import WorkflowModel
 
 # from nb_workflows.notebooks import nb_job_executor
-from nb_workflows.types import ExecutionNBTask, NBTask, ScheduleData
+from nb_workflows.types import ExecutionNBTask, NBTask, ScheduleData, WorkflowDataWeb
 from nb_workflows.types.docker import DockerBuildCtx
 from nb_workflows.utils import run_async
 
@@ -211,22 +211,22 @@ class SchedulerExecutor:
 
         return job
 
-    async def schedule(self, project_id, wfid, task: NBTask) -> str:
+    async def schedule(self, project_id, wfid, wd: WorkflowDataWeb) -> str:
         """Put in RQ-Scheduler a workflows previously created"""
         # schedule_data = data_dict["schedule"]
         # task = NBTask(**data_dict)
         # task.schedule = ScheduleData(**schedule_data)
         # wfid = await workflows_mg.register(session, project_id, task, update=update)
 
-        if task.schedule.cron:
-            await run_async(self._cron2redis, project_id, wfid, task)
+        if wd.schedule.cron:
+            await run_async(self._cron2redis, project_id, wfid, wd)
         else:
-            await run_async(self._interval2redis, project_id, wfid, task)
+            await run_async(self._interval2redis, project_id, wfid, wd)
 
         return wfid
 
-    def _interval2redis(self, projectid: str, wfid: str, task: NBTask):
-        interval = task.schedule
+    def _interval2redis(self, projectid: str, wfid: str, wd: WorkflowDataWeb):
+        interval = wd.schedule
         start_in_dt = datetime.utcnow() + timedelta(minutes=interval.start_in_min)
 
         self.scheduler.schedule(
@@ -240,8 +240,8 @@ class SchedulerExecutor:
             timeout=_DEFAULT_SCH_TASK_TO,
         )
 
-    def _cron2redis(self, projectid: str, wfid: str, task: NBTask):
-        cron = task.schedule
+    def _cron2redis(self, projectid: str, wfid: str, wd: WorkflowDataWeb):
+        cron = wd.schedule
         self.scheduler.cron(
             cron.cron,
             id=wfid,
@@ -249,6 +249,7 @@ class SchedulerExecutor:
             args=[projectid, wfid],
             repeat=cron.repeat,
             queue_name=self.qname,
+            timeout=_DEFAULT_SCH_TASK_TO,
         )
 
     def list_jobs(self):

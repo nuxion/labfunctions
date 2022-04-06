@@ -120,8 +120,8 @@ async def workflow_create(request, projectid):
     async with session.begin():
         try:
             wfid = await workflows_mg.register(session, projectid, wfd)
-            # if nb_task.schedule and nb_task.enabled:
-            #     await scheduler.schedule(projectid, wfid, nb_task)
+            if wfd.schedule and wfd.enabled:
+                await scheduler.schedule(projectid, wfid, wfd)
         except KeyError as e:
             return json(dict(msg="workflow already exist"), status=200)
         except AttributeError as e:
@@ -152,9 +152,8 @@ async def workflow_update(request, projectid):
     async with session.begin():
         try:
             wfid = await workflows_mg.register(session, projectid, wfd, update=True)
-            # await scheduler.cancel_job_async(wfid)
-            # if nb_task.enabled and nb_task.schedule:
-            #    await scheduler.schedule(projectid, wfid, nb_task)
+            if wfd.schedule and wfd.enabled:
+                await scheduler.schedule(projectid, wfid, wfd)
         except WorkflowRegisterError as e:
             return json(dict(msg=str(e)), status=503)
 
