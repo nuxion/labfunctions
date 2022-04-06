@@ -72,7 +72,7 @@ lint: black isort
 
 .PHONY: test
 test:
-	PYTHONPATH=$(PWD) pytest --cov=nb_workflows tests/
+	PYTHONPATH=$(PWD) pytest --cov-report xml --cov=nb_workflows tests/
 
 .PHONY: test-html
 test-html:

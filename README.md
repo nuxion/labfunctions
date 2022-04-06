@@ -19,6 +19,13 @@ A Notebook could be launched remotly on demand, or could be scheduled by interva
 Internally it uses [Sanic](https://sanicframework.org) as web server, [papermill](https://papermill.readthedocs.io/en/latest/) as notebook executor, an [RQ](https://python-rq.org/)
 for task distributions and coordination. 
 
+:tada: Demo :tada: 
+
+See an example of NB Workflows
+:tv: [Demo video](https://www.youtube.com/watch?v=seXoFocUDFo)
+:floppy_disk: [Example project](
+https://github.com/nuxion/nbwf-demo2)
+
 ## :telescope: Philosophy
 
 NB Workflows it insn't a complete MLOps solution and it will never be. 

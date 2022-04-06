@@ -460,14 +460,12 @@ dist
 .yarn/install-state.gz
 .pnp.*
 *.zip
-notebooks/*.ipynb
+# notebooks/*.ipynb
 experiments/*.ipynb
 data/
 models/
 outputs/
 dask-worker-space/
-workflows/*.ipynb
-workflows/deprecated/*.ipynb
 dask-worker-space
 credentials.json
 confs/

@@ -11,7 +11,7 @@ from rich.table import Table
 
 from nb_workflows import client
 from nb_workflows.client import init_script
-from nb_workflows.conf import load_client
+from nb_workflows.conf import defaults, load_client
 from nb_workflows.executors.development import local_dev_exec
 from nb_workflows.executors.local import local_exec_env
 from nb_workflows.utils import format_seconds, mkdir_p
@@ -64,9 +64,13 @@ def historycli(from_file, url_service, last, wfid):
             uri = f"{r.result.error_dir}/{r.result.output_name}"
             mkdir_p(r.result.error_dir)
         if not Path(uri).exists():
-            nb = httpx.get(f"{url_service}/{pid}/_get_output?file={uri}")
-            with open(uri, "wb") as f:
-                f.write(nb.content)
+            fullurl = f"{url_service}/{defaults.API_VERSION}/history/{pid}/_get_output?file={uri}"
+            nb = httpx.get(fullurl)
+            if nb.status_code == 200:
+                with open(uri, "wb") as f:
+                    f.write(nb.content)
+            else:
+                console.print(f"[bold red]Error getting result from {fullurl}[/]")
         # print(f"{r.wfid} | {r.execid} | {status} | {uri}")
         table.add_row(r.wfid, r.execid, status, uri, run)
 
