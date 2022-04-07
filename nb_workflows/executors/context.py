@@ -163,6 +163,8 @@ def create_notebook_ctx(
         today=today,
         timeout=task.timeout,
         created_at=_now,
+        notifications_ok=task.notifications_ok,
+        notifications_fail=task.notifications_fail,
     )
 
 
