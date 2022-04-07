@@ -267,6 +267,22 @@ def create_workflow_model(project: ProjectModel, *args, **kwargs) -> WorkflowMod
     return wm
 
 
+def create_history_model(project_id: str, *args, **kwargs) -> HistoryModel:
+    execution_result = ExecutionResultFactory()
+    hr = HistoryResultFactory(*args, **kwargs)
+    row = HistoryModel(
+        wfid=hr.wfid,
+        execid=hr.execid,
+        project_id=project_id,
+        elapsed_secs=execution_result.elapsed_secs,
+        nb_name=execution_result.name,
+        result=hr.result.dict(),
+        status=hr.status,
+    )
+
+    return row
+
+
 def token_generator(auth, user=None, *args, **kwargs):
     _user = user or create_user_model(*args, **kwargs)
     tkn = run_sync(auth.generate_access_token, UserData.from_model(_user))

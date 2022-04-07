@@ -21,6 +21,7 @@ from nb_workflows.models import HistoryModel, UserModel, WorkflowModel
 from nb_workflows.types.users import UserData
 
 from .factories import (
+    create_history_model,
     create_project_model,
     create_runtime_model,
     create_user_model,
@@ -57,11 +58,13 @@ def setupdb(connection):
     pm = create_project_model(um, projectid="test", name="test")
     wm = create_workflow_model(pm, wfid="wfid-test", alias="alias_test")
     rm = create_runtime_model(pm, project_id="test")
+    hm = create_history_model(project_id="test", wfid="wfid-test", execid="exec-test")
 
     s.add(um)
     s.add(pm)
     s.add(wm)
     s.add(rm)
+    s.add(hm)
     s.commit()
 
 

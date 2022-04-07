@@ -40,8 +40,13 @@ class HistoryClient(BaseClient):
             return True
         return False
 
-    def history_get_last(self, wfid, last=1) -> List[HistoryResult]:
-        rsp = self._http.get(f"/history/{self.projectid}/{wfid}?lt={last}")
+    def history_get_last(
+        self, wfid: Optional[str] = None, last=1
+    ) -> List[HistoryResult]:
+        query = f"/history/{self.projectid}?lt={last}"
+        if wfid:
+            query = f"/history/{self.projectid}/{wfid}?lt={last}"
+        rsp = self._http.get(query)
         rows = []
         for r in rsp.json()["rows"]:
             h = HistoryResult(**r)

@@ -32,13 +32,12 @@ console = Console()
     default=load_client().WORKFLOW_SERVICE,
     help="URL of the NB Workflow Service",
 )
-@click.option(
-    "--wfid", "-w", default=None, required=True, help="Execution history of workflow id"
-)
+@click.option("--wfid", "-w", default=None, help="Execution history of workflow id")
 @click.option("--last", "-l", default=1, help="The last executions")
 def historycli(from_file, url_service, last, wfid):
     """Examine the history and state of your workflows"""
     c = client.from_file(from_file, url_service=url_service)
+
     rsp = c.history_get_last(wfid, last)
     table = Table(title="History")
     # table.add_column("alias", style="cyan", no_wrap=True, justify="center")
