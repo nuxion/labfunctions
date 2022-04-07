@@ -71,6 +71,8 @@ class ExecutionNBTask(BaseModel):
     today: str
     timeout: int
     created_at: str
+    notifications_ok: Optional[List[str]] = None
+    notifications_fail: Optional[List[str]] = None
 
 
 class ExecutionResult(BaseModel):
