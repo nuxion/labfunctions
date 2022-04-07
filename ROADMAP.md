@@ -2,7 +2,7 @@
 
 This file is used only as kind of backlog or/and draft for ideas. 
 
-Current version: 0.6.0
+Current version: 0.7.0
 
 ## Next version 0.9.0
 
@@ -59,20 +59,20 @@ As a second goal, but maybe that's for a following release, is adding other stor
 - [ ] Doc: about architecture
 - [ ] Doc: branch and release strategy adopted
 - [ ] Doc: User guide
+- [ ] CI/CD: constraint merges to main branch
+- [ ] Doc: how to install client nb-workflows
+- [-] Notifications: slack and discord (*from previous release*)
 
 **Details**
 The goal of this release is adding support to autoscale machines for workers
 
 
-## Next version 0.7.0
+## version 0.7.0
 **MUST:**
 
 - [x] Executios: Namespacing Execution ID for tracking loads. 
 - [x] Executors: Execution ID injected from Web 
-- [-] Notifications: slack and discord **keep working on this for the next release**
-- [ ] Doc: about architecture
-- [-] Doc: how to install client nb-workflows
-- [ ] Doc: branch and release strategy adopted
+- [x] Notifications: slack and discord **keep working on this for the next release**
 - [x] Tests: >= 40%
 - [x] History: Execution result of a Workflow
 - [x] Web: API versioning
@@ -87,7 +87,6 @@ The goal of this release is adding support to autoscale machines for workers
 - [x] Custom Errors
 - [x] Example project using nb-workflows
 - [x] Split NBClient into UserClient and AgentClient
-- [ ] CI/CD: constraint merges to main branch
 - [x] Tracks dockerfiles versions.
 - [x] Types: NBTask as pydantic model.
 - [x] Types: ScheduleData as pydantic model.

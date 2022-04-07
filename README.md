@@ -21,10 +21,9 @@ for task distributions and coordination.
 
 :tada: Demo :tada: 
 
-See an example of NB Workflows
-:tv: [Demo video](https://www.youtube.com/watch?v=seXoFocUDFo)
 :floppy_disk: [Example project](
 https://github.com/nuxion/nbwf-demo2)
+
 
 ## :telescope: Philosophy
 
