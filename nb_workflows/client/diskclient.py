@@ -98,6 +98,7 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
 
     def projects_create(self) -> Union[ProjectData, None]:
         _key = secrets.generate_private_key()
+        _name = self.project_name
         pq = ProjectReq(
             name=self.state.project.name,
             private_key=_key,
@@ -110,14 +111,14 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
             json=asdict(pq),
         )
         if r.status_code == 200:
-            self.console.print("[bold yellow] Project already exist [/bold yellow]")
+            self.console.print(f"[bold red]Project with name {_name} already exist [/]")
         elif r.status_code == 201:
             # self.console.print(p)
             pd = ProjectData(**r.json())
             store_private_key(_key, pd.projectid)
             return pd
         else:
-            raise TypeError("Something went wrong creating the project %s", r.text)
+            raise errors.ProjectCreateError(pd.projectid)
         return None
 
     def projects_generate_dockerfile(self, docker_opts):
