@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import Tuple
+from typing import Tuple, Union
 
 import httpx
 from rich.console import Console
@@ -120,13 +120,8 @@ def workflow_state_init(projectid=None, name=None) -> WorkflowsState:
     wd_dict = {wd.alias: wd}
     runtime = default_runtime()
 
-    # projectid = settings.PROJECTID
-    # name = settings.PROJECT_NAME
-
+    name = _ask_project_name()
     if not projectid:
-        name = _ask_project_name()
-        # rsp = httpx.get(f"{url_service}/projects/_generateid")
-        # projectid = rsp.json()["projectid"]
         projectid = generate_random(defaults.PROJECTID_LEN)
 
     pd = ProjectData(name=name, projectid=projectid)
@@ -135,24 +130,30 @@ def workflow_state_init(projectid=None, name=None) -> WorkflowsState:
     return wf_state
 
 
-def create_on_the_server(dc: DiskClient):
+def create_on_the_server(dc: DiskClient) -> Union[str, None]:
     create = Confirm.ask("Create project in the server?", default=True)
     if create:
         dc.logincli()
-        dc.projects_create()
-        valid_agent = dc.projects_create_agent()
-        agent_creds = dc.projects_agent_token()
-        with open("local.nbvars", "w") as f:
-            f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
-            f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}")
-    p = Panel.fit(
-        "[bold magenta]:smile_cat: Congrats!!!" " Project created[/bold magenta]",
-        border_style="red",
-    )
-    console.print(
-        f"Agent for this project was created as: [bold magenta]{valid_agent}[/]"
-    )
-    console.print(p)
+        pd = None
+        keep = True
+        while not pd and keep:
+            pd = dc.projects_create()
+            if pd:
+                valid_agent = dc.projects_create_agent()
+                agent_creds = dc.projects_agent_token()
+                with open("local.nbvars", "w") as f:
+                    f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
+                    f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}")
+
+                return valid_agent
+            confirm = Confirm.ask(
+                "Do you want to try another name for the project?", default=True
+            )
+            if confirm:
+                state = workflow_state_init(projectid=dc.projectid)
+                dc.state = state
+            else:
+                keep = False
 
 
 def verify_pre_existent(root) -> bool:
@@ -163,6 +164,31 @@ def verify_pre_existent(root) -> bool:
     if exist or nb_tmp or wf_file:
         return True
     return False
+
+
+def final(dc: DiskClient, agent_name):
+    p = Panel.fit(
+        "[bold magenta]:smile_cat: Congrats!!!"
+        f" Project [cyan]{dc.project_name}[/cyan] created[/bold magenta]",
+        border_style="red",
+    )
+    if agent_name:
+        console.print(
+            f"Agent for this project was created as: [bold magenta]{agent_name}[/]"
+        )
+    console.print(p)
+
+    console.print("\n [bold underline magenta]Next steps:[/]")
+    console.print("\n\t1. init a git repository")
+    console.print("\t2. create a notebook inside of the notebook folder")
+    console.print("\t3. generate a workflow for that notebook")
+    console.print("\t4. and finally publish your work\n")
+
+    console.print(
+        " [bold magenta]To test if everything is working "
+        " you can run the following command:[/]\n"
+    )
+    console.print("\t[bold] nb exec notebook welcome --dev -p TIMEOUT=5[/]\n")
 
 
 def init(root, init_dirs=True, url_service=None):
@@ -180,7 +206,7 @@ def init(root, init_dirs=True, url_service=None):
         _empty_file(root / "local.nbvars")
         state = workflow_state_init()
         dc = DiskClient(url_service, wf_state=state)
-        create_on_the_server(dc)
+        agent_name = create_on_the_server(dc)
 
         init_setting_dir_app(
             root,
@@ -188,7 +214,8 @@ def init(root, init_dirs=True, url_service=None):
             project_name=dc.project_name,
             url_service=url_service,
         )
-
         generate_cicd_files(root)
         if init_dirs:
             create_dirs(root)
+
+        final(dc, agent_name)
