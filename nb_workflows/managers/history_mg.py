@@ -19,15 +19,24 @@ def select_history():
 
 
 async def get_last(
-    session, projectid: str, wfid: str, limit=1
+    session, projectid: str, wfid: Optional[str] = None, limit=1
 ) -> Union[HistoryLastResponse, None]:
-    stmt = (
-        select(HistoryModel)
-        .where(HistoryModel.wfid == wfid)
-        .where(HistoryModel.project_id == projectid)
-        .order_by(HistoryModel.created_at.desc())
-        .limit(limit)
-    )
+    if wfid:
+        stmt = (
+            select(HistoryModel)
+            .where(HistoryModel.wfid == wfid)
+            .where(HistoryModel.project_id == projectid)
+            .order_by(HistoryModel.created_at.desc())
+            .limit(limit)
+        )
+    else:
+        stmt = (
+            select(HistoryModel)
+            .where(HistoryModel.project_id == projectid)
+            .order_by(HistoryModel.created_at.desc())
+            .limit(limit)
+        )
+
     r = await session.execute(stmt)
     results = r.scalars()
     if not results:
@@ -37,7 +46,7 @@ async def get_last(
     for r in results:
         rsp.append(
             HistoryResult(
-                wfid=wfid,
+                wfid=r.wfid,
                 execid=r.execid,
                 status=r.status,
                 result=r.result,
@@ -45,15 +54,6 @@ async def get_last(
             )
         )
     return HistoryLastResponse(rows=rsp)
-
-
-async def get_exec_data(session, projectid: str, execid: str):
-    """WORKING"""
-    stmt = (
-        select_history()
-        .where(HistoryModel.project_id == projectid)
-        .where(HistoryModel.execid == execid)
-    )
 
 
 async def create(session, execution_result: ExecutionResult) -> HistoryModel:

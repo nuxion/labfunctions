@@ -41,6 +41,25 @@ async def history_create(request):
     return json(dict(msg="created"), 201)
 
 
+@history_bp.get("/<projectid>")
+@openapi.parameter("projectid", str, "path")
+@openapi.response(200, "Found")
+@openapi.response(404, dict(msg=str), "Not Found")
+@openapi.parameter("lt", int, "lt")
+@protected()
+async def history_get_all(request, projectid):
+    """Get the status of the last job executed"""
+    # pylint: disable=unused-argument
+    lt = get_query_param(request, "lt", 1)
+    session = request.ctx.session
+    async with session.begin():
+        h = await history_mg.get_last(session, projectid, limit=lt)
+        if h.rows:
+            return json(h.dict(), 200)
+
+    return json(dict(msg="not found"), 404)
+
+
 @history_bp.get("/<projectid>/<wfid>")
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("wfid", str, "path")
@@ -95,12 +114,12 @@ async def history_output_fail(request, projectid):
     fsrv = AsyncFileserver(settings.FILESERVER)
     today = today_string(format_="day")
     root = pathlib.Path(projectid)
-    fp = root / defaults.NB_OUTPUTS / "fail" / today
+    output_dir = root / defaults.NB_OUTPUTS / "errors" / today
 
     file_body = request.files["file"][0].body
     output_name = request.form["output_name"][0]
 
-    fp = str(root / output_name)
+    fp = str(output_dir / output_name)
     await fsrv.put(fp, file_body)
 
     return json(dict(msg="OK"), 201)
@@ -116,10 +135,9 @@ async def history_get_output(request, projectid):
     # pylint: disable=unused-argument
     uri = request.args.get("file")
     response = await request.respond(content_type="application/octet-stream")
+    fullurl = f"{settings.FILESERVER}/{projectid}/{uri}"
     async with httpx.AsyncClient() as client:
-        async with client.stream(
-            "GET", f"{settings.FILESERVER}/{projectid}/{uri}"
-        ) as r:
+        async with client.stream("GET", fullurl) as r:
             async for chunk in r.aiter_bytes():
                 await response.send(chunk)
 
