@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.executors import builder
-from nb_workflows.qworker import settings
 
 from .factories import DockerBuildCtxFactory, ProjectDataFactory
 

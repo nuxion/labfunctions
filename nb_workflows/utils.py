@@ -76,25 +76,6 @@ def run_sync(func, *args, **kwargs):
     return rsp
 
 
-def init_blueprints(app, blueprints_allowed):
-    """It import and mount each module inside `nb_workflows.web`
-    which ends with _bp.
-
-    """
-    blueprints = set()
-    mod = app.__module__
-    for mod_name in blueprints_allowed:
-        module = import_module(f"nb_workflows.web.{mod_name}_bp", mod)
-        for el in dir(module):
-            if el.endswith("_bp"):
-                bp = getattr(module, el)
-                blueprints.add(bp)
-
-    for bp in blueprints:
-        print("Adding blueprint: ", bp.name)
-        app.blueprint(bp)
-
-
 def get_query_param(request, key, default_val=None):
     val = request.args.get(key, [default_val])
     return val[0]
@@ -382,3 +363,11 @@ def open_publickey(fp) -> str:
     with open(fp, "r") as f:
         data = f.read()
     return data.strip()
+
+
+def get_external_ip(dns="8.8.8.8"):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect((dns, 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip

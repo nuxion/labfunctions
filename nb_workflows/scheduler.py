@@ -4,7 +4,7 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 
-from redis import Redis
+import redis
 from rq import Queue
 from rq.job import Job
 from rq.registry import FailedJobRegistry, StartedJobRegistry
@@ -53,7 +53,7 @@ def firm_or_new(execid, firm):
 
 
 def scheduler_dispatcher(
-    projectid: str, wfid: str, execid=None, redis=None, db=None, is_async=True
+    projectid: str, wfid: str, execid=None, redis_obj=None, db=None, is_async=True
 ) -> Union[Job, None]:
     """
     This is the entrypoint of any workflow or job to be executed by RQ and it
@@ -89,10 +89,11 @@ def scheduler_dispatcher(
     :rtype: an Union between Job or None.
     """
     _db = db or SQL(settings.SQL)
-    _cfg = settings.rq2dict()
-    _redis = redis or Redis(**_cfg)
+    _redis = redis_obj or redis.from_url(settings.RQ_REDIS)
 
-    scheduler = SchedulerExecutor(redis=_redis, qname=control_q(), is_async=is_async)
+    scheduler = SchedulerExecutor(
+        redis_obj=_redis, qname=control_q(), is_async=is_async
+    )
 
     logger = logging.getLogger(__name__)
 
@@ -129,8 +130,8 @@ class SchedulerExecutor:
     :param qname: configured by default from settings, it MUST BE consistent between the different control plane components.
     """
 
-    def __init__(self, redis: Redis, qname, is_async=True):
-        self.redis = redis
+    def __init__(self, redis_obj: redis.Redis, qname, is_async=True):
+        self.redis = redis_obj
         self.Q = Queue(qname, connection=self.redis, is_async=is_async)
         self.qname = qname
         # on_success=rq_job_ok, on_failure=rq_job_error)

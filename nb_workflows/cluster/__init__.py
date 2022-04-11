@@ -1,4 +1,4 @@
-from nb_workflows.conf.types import ServerSettings
+from nb_workflows.types import ServerSettings
 from nb_workflows.types.cluster import MachineOrm, SSHKey
 from nb_workflows.utils import open_yaml
 

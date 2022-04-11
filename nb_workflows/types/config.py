@@ -1,9 +1,8 @@
-from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from pydantic import BaseSettings
+from pydantic import BaseSettings, RedisDsn
 
-from .defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
+from nb_workflows.conf.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
 
 
 class ServerSettings(BaseSettings):
@@ -20,20 +19,17 @@ class ServerSettings(BaseSettings):
 
     # Folders:
     BASE_PATH: str
-    SERVER_DATA_FOLDER: str
     WORKER_DATA_FOLDER: str
     NB_WORKFLOWS: str
     NB_OUTPUT: str
-    NB_PROJECTS: str
-    DOCKER_RUNTIMES: str
     DOCKER_REGISTRY: Optional[str] = None
 
     DEV_MODE: bool = False
-    WEB_REDIS: Optional[str] = None
-    RQ_REDIS_HOST: Optional[str] = None
-    RQ_REDIS_PORT: Optional[str] = None
-    RQ_REDIS_DB: Optional[str] = None
+    WEB_REDIS: Optional[RedisDsn] = None
+    RQ_REDIS: Optional[RedisDsn] = None
     RQ_CONTROL_QUEUE: str = "control"
+
+    # ids generations
     EXECID_LEN: int = EXECID_LEN
     PROJECTID_LEN: int = PROJECTID_LEN
     WFID_LEN: int = WFID_LEN
@@ -57,13 +53,6 @@ class ServerSettings(BaseSettings):
     FILESERVER_BUCKET: Optional[str] = None
     SETTINGS_MODULE: Optional[str] = None
     DNS_IP_ADDRESS: str = "8.8.8.8"
-
-    def rq2dict(self):
-        return dict(
-            host=self.RQ_REDIS_HOST,
-            port=int(self.RQ_REDIS_PORT),
-            db=int(self.RQ_REDIS_DB),
-        )
 
     class Config:
         env_prefix = "NB_"

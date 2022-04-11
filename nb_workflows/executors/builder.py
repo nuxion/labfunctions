@@ -9,7 +9,7 @@ import httpx
 import docker
 from nb_workflows import client
 from nb_workflows.conf import defaults
-from nb_workflows.qworker import settings
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.types import ProjectData
 from nb_workflows.types.docker import (
     DockerBuildCtx,

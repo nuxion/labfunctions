@@ -1,7 +1,10 @@
+import os
+import sys
+
 import click
 
 from nb_workflows.conf import load_server
-from nb_workflows.utils import init_blueprints
+from nb_workflows.utils import get_external_ip
 
 settings = load_server()
 
@@ -26,10 +29,10 @@ settings = load_server()
 def webcli(host, port, workers, apps, auto_reload, access_log, debug):
     """Run API Web Server"""
     # pylint: disable=import-outside-toplevel
-    from nb_workflows.server import app
+    from nb_workflows.server import create_app
 
     list_bp = apps.split(",")
-    init_blueprints(app, list_bp)
+    app = create_app(settings, list_bp)
     w = int(workers)
     print("Debug mode: ", debug)
     app.run(
@@ -43,28 +46,22 @@ def webcli(host, port, workers, apps, auto_reload, access_log, debug):
 
 
 @click.command(name="rqscheduler")
-@click.option("--host", "-H", default=settings.RQ_REDIS_HOST, help="Redis host")
-@click.option("--port", "-p", default=settings.RQ_REDIS_PORT, help="Redis port")
-@click.option("--db", "-d", default=settings.RQ_REDIS_DB, help="Redis DB")
+@click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
 @click.option(
     "--interval", "-i", default=60, help="How often the scheduler checks for work"
 )
 @click.option("--log-level", "-L", default="INFO")
-def rqschedulercli(host, port, db, interval, log_level):
+def rqschedulercli(redis, interval, log_level):
     """Run RQ scheduler"""
     # pylint: disable=import-outside-toplevel
-    from redis import Redis
-    from rq_scheduler.scheduler import Scheduler
-    from rq_scheduler.utils import setup_loghandlers
+    from nb_workflows.control_plane import rqscheduler
 
-    connection = Redis(host, port, db)
-    setup_loghandlers(log_level)
-    scheduler = Scheduler(connection=connection, interval=interval)
-    scheduler.run()
+    rqscheduler.run(redis, interval, log_level)
 
 
 @click.command(name="rqworker")
-@click.option("--workers", "-w", default=2, help="How many workers spawn")
+@click.option("--workers", "-w", default=1, help="How many workers spawn")
+@click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
 @click.option(
     "--qnames",
     "-q",
@@ -83,14 +80,21 @@ def rqschedulercli(host, port, db, interval, log_level):
     default=None,
     help="Worker Name",
 )
-def rqworkercli(workers, qnames, ip_address, worker_name):
+def rqworkercli(redis, workers, qnames, ip_address, worker_name):
     """Run RQ worker"""
     # pylint: disable=import-outside-toplevel
-    from nb_workflows.qworker import run_workers
+    from nb_workflows.control_plane import worker
 
-    # from nb_workflows.conf import defaults
-    # queues = [defaults. for q in qnames.split(",")]
+    sys.path.append(settings.BASE_PATH)
+    os.environ["NB_AGENT_TOKEN"] = settings.AGENT_TOKEN
+    os.environ["NB_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
+    os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
+    ip_address = ip_address or get_external_ip(settings.DNS_IP_ADDRESS)
 
-    run_workers(
-        qnames.split(","), name=worker_name, ip_address=ip_address, workers_n=workers
+    worker.run(
+        redis,
+        qnames.split(","),
+        name=worker_name,
+        ip_address=ip_address,
+        workers_n=workers,
     )

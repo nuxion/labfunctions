@@ -1,4 +1,5 @@
 from .client import WorkflowsFile
+from .config import ClientSettings, ServerSettings
 from .core import (
     ExecutionNBTask,
     ExecutionResult,

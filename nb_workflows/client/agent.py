@@ -1,8 +1,7 @@
 import os
 from typing import Union
 
-from nb_workflows.conf.types import ServerSettings
-from nb_workflows.types import WorkflowData
+from nb_workflows.types import ServerSettings, WorkflowData
 
 from .base import BaseClient
 from .types import Credentials, ExecutionResult, WFCreateRsp

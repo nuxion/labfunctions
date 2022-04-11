@@ -5,7 +5,6 @@ from typing import List, NamedTuple
 
 from nb_workflows import errors
 from nb_workflows.conf import defaults
-from nb_workflows.conf.types import ServerSettings
 from nb_workflows.hashes import Hash96, generate_random
 from nb_workflows.types import (
     ExecutionNBTask,
@@ -13,6 +12,7 @@ from nb_workflows.types import (
     NBTask,
     ProjectData,
     ScheduleData,
+    ServerSettings,
     WorkflowDataWeb,
 )
 from nb_workflows.types.cluster import (
