@@ -1,6 +1,9 @@
 import os
+import socket
 import sys
 import time
+from datetime import datetime
+from typing import List
 
 from loky import get_reusable_executor
 from redis import Redis
@@ -19,31 +22,48 @@ os.environ["NB_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
 os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
 
 
-def worker(params):
+def get_external_ip(dns="8.8.8.8"):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect((dns, 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
+
+
+class NBWorker(Worker):
+    """Extensions of the default Worker class to set ip_address"""
+
+    def set_ip_addres(self, ip_address):
+        self.ip_address = ip_address
+
+    def inactive_time(self):
+        """it calculates in seconds, the total inactive time of a worker"""
+        working = self.total_working_time
+        now = datetime.utcnow()
+        birth_elapsed = (now - self.birth_date).seconds
+        return birth_elapsed - working
+
+
+def worker(queues: List[str], name=None, ip_address=None):
 
     cfg = settings.rq2dict()
     redis = Redis(**cfg)
     pid = os.getpid()
+    ip_address = ip_address or get_external_ip(dns=settings.DNS_IP_ADDRESS)
 
     with Connection(connection=redis):
-        print("Running in pid ", pid)
+        print(f"Running in {pid} with ip {ip_address}", pid)
         # qs = sys.argv[1:] or ['default']
-
-        w = Worker(params)
+        w = NBWorker(queues, name=name)
+        w.set_ip_addres(ip_address)
         w.work()
 
 
-def error():
-    print("Executing error")
-    time.sleep(6)
-    raise TypeError("Error")
+def run_workers(qnames: List[str], name=None, ip_address=None, workers_n=1):
 
-
-def run_workers(qnames, workers):
-
-    if workers > 1:
-        _executor = get_reusable_executor(max_workers=workers, kill_workers=True)
-        _results = [_executor.submit(worker, qnames) for _ in range(workers)]
+    if workers_n > 1:
+        _executor = get_reusable_executor(max_workers=workers_n, kill_workers=True)
+        _results = [_executor.submit(worker, qnames) for _ in range(workers_n)]
         print(len(_results))
     else:
         worker(qnames)

@@ -185,6 +185,30 @@ class RuntimeVersionModel(Base, ProjectRelationMixin):
     )
 
 
+class MachineModel(Base):
+
+    __tablename__ = "nb_machine"
+    __mapper_args__ = {"eager_defaults": True}
+    __table_args__ = (
+        UniqueConstraint("name", "provider", name="_nb_machine__name_provider"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(), unique=True, index=True, nullable=False)
+    desc = Column(String(), nullable=True)
+    provider = Column(String(), nullable=False, index=True)
+    machine_type = Column(JSON(), nullable=False)
+
+    created_at = Column(
+        DateTime(), server_default=functions.now(), nullable=False, index=True
+    )
+    updated_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        nullable=False,
+    )
+
+
 class UserModel(Base):
 
     __tablename__ = "nb_auth_user"

@@ -49,3 +49,5 @@ PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
 
 DOCKER_AUTHOR = "nbworkflows"
+GCLOUD_SIZE = "e2-micro"
+GCLOUD_IMG = "debian-11-bullseye-v20220406"

@@ -50,6 +50,7 @@ class ServerSettings(BaseSettings):
     FILESERVER: Optional[str] = None
     FILESERVER_BUCKET: Optional[str] = None
     SETTINGS_MODULE: Optional[str] = None
+    DNS_IP_ADDRESS: str = "8.8.8.8"
 
     def rq2dict(self):
         return dict(

@@ -40,6 +40,10 @@ psycopg2-binary = {version="^2.9.1", optional=true}
 asyncpg = { version="^0.24.0", optional=true}
 alembic = { version="^1.6.5", optional=true}
 rq-scheduler = { version="^0.11.0", optional=true }
+rq = {version="^1.10.0", optional=true}
+# cluster
+apache-libcloud = {version="^3.5.1", optional=true}
+asyncssh = {version=">2.0.0,<=2.10.0", optional=true}
 # both
 pytz = "^2021.1"
 click = "^8.0.1"
@@ -48,7 +52,6 @@ dateparser = "^1.1.0"
 nbconvert = "^6.2.0"
 papermill = "^2.3.3"
 jupytext = "^1.13.0"
-rq = "^1.10.0"
 loky = "^3.0.0"
 aioredis = {extras = ["hiredis"], version = "^2.0.1"}
 tqdm = "^4.62.3"
@@ -81,6 +84,11 @@ server = [
 	"asyncpg", 
 	"alembic",
 	"rq-scheduler",
+	"rq"
+]
+cluster = [
+	"apache-libcloud",
+	"asyncssh"
 ]
 
 [tool.poetry.dev-dependencies]

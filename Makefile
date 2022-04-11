@@ -22,7 +22,7 @@ BUILD := $(shell git rev-parse --short HEAD)
 PROJECTNAME := $(shell basename "$(PWD)")
 PACKAGE_DIR = $(shell basename "$(PWD)")
 DOCKERID = $(shell echo "nuxion")
-REGISTRY := registry.nyc1.algorinfo
+# REGISTRY := registry.nyc1.algorinfo
 # RANDOM := $(shell echo $RANDOM | md5sum | head -c 20; echo;)
 
 help:
@@ -145,9 +145,10 @@ docker-local:
 	docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION)
 
 .PHONY: release
-release:
-	docker tag ${DOCKERID}/${PROJECTNAME} ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:$(VERSION)
-	docker push ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:$(VERSION)
+release: 
+	# docker tag ${DOCKERID}/${PROJECTNAME} ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:$(VERSION)
+	docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION)
+	docker push ${DOCKERID}/${PROJECTNAME}:$(VERSION)
 
 .PHONY: publish
 publish:

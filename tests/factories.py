@@ -28,6 +28,7 @@ from nb_workflows.types import (
     WorkflowData,
     WorkflowDataWeb,
 )
+from nb_workflows.types.cluster import MachineOrm, MachineType, NodeInstance
 from nb_workflows.types.docker import (
     DockerBuildCtx,
     DockerfileImage,
@@ -192,6 +193,40 @@ class DockerfileImageFactory(factory.Factory):
 
     maintener = factory.Sequence(lambda n: "maintener-%d" % n)
     image = "python-3.7"
+
+
+class NodeInstanceFactory(factory.Factory):
+    class Meta:
+        model = NodeInstance
+
+    name = factory.Sequence(lambda n: "name-%d" % n)
+    size = factory.Sequence(lambda n: "size-%d" % n)
+    image = factory.Sequence(lambda n: "img-%d" % n)
+    location = factory.Sequence(lambda n: "location-%d" % n)
+    ssh_key_user = factory.LazyAttribute(lambda n: generate_random(24))
+    ssh_publickey = factory.LazyAttribute(lambda n: generate_random(24))
+    network = factory.Sequence(lambda n: "net-%d" % n)
+    tags = factory.LazyAttribute(lambda n: [f"tag-{r}" for r in range(5)])
+
+
+class MachineTypeFactory(factory.Factory):
+    class Meta:
+        model = MachineType
+
+    size = factory.Sequence(lambda n: "size-%d" % n)
+    image = factory.Sequence(lambda n: "img-%d" % n)
+    location = factory.Sequence(lambda n: "location-%d" % n)
+    network = factory.Sequence(lambda n: "net-%d" % n)
+
+
+class MachineOrmFactory(factory.Factory):
+    class Meta:
+        model = MachineOrm
+
+    name = factory.Sequence(lambda n: "name-%d" % n)
+    desc = factory.Sequence(lambda n: "desc-%d" % n)
+    provider = factory.Sequence(lambda n: "prov-%d" % n)
+    machine_type = factory.LazyAttribute(lambda n: MachineTypeFactory())
 
 
 class DockerBuildCtxFactory(factory.Factory):

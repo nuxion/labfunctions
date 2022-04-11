@@ -71,7 +71,19 @@ def rqschedulercli(host, port, db, interval, log_level):
     default="default",
     help="Comma separated list of queues to listen to",
 )
-def rqworkercli(workers, qnames):
+@click.option(
+    "--ip-address",
+    "-i",
+    default=None,
+    help="IP address of the host",
+)
+@click.option(
+    "--worker-name",
+    "-W",
+    default=None,
+    help="Worker Name",
+)
+def rqworkercli(workers, qnames, ip_address, worker_name):
     """Run RQ worker"""
     # pylint: disable=import-outside-toplevel
     from nb_workflows.qworker import run_workers
@@ -79,4 +91,6 @@ def rqworkercli(workers, qnames):
     # from nb_workflows.conf import defaults
     # queues = [defaults. for q in qnames.split(",")]
 
-    run_workers(qnames.split(","), workers)
+    run_workers(
+        qnames.split(","), name=worker_name, ip_address=ip_address, workers_n=workers
+    )
