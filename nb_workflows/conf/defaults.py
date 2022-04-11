@@ -47,7 +47,11 @@ WFID_LEN = 11  # ~139 thousand years 1% collision at 1000 jobs creation per hour
 EXECID_LEN = 14  # ~20 years %1 collision at 1000 execs per second
 PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
+NANO_MACHINE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 DOCKER_AUTHOR = "nbworkflows"
 GCLOUD_SIZE = "e2-micro"
 GCLOUD_IMG = "debian-11-bullseye-v20220406"
+
+WORKER_HOMEDIR = "/home/op"
+WORKER_DOCKER_IMG = "nuxion/nb_workflows"

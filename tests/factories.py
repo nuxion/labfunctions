@@ -203,8 +203,8 @@ class NodeInstanceFactory(factory.Factory):
     size = factory.Sequence(lambda n: "size-%d" % n)
     image = factory.Sequence(lambda n: "img-%d" % n)
     location = factory.Sequence(lambda n: "location-%d" % n)
-    ssh_key_user = factory.LazyAttribute(lambda n: generate_random(24))
-    ssh_publickey = factory.LazyAttribute(lambda n: generate_random(24))
+    ssh_public = factory.LazyAttribute(lambda n: generate_random(24))
+    ssh_user = factory.LazyAttribute(lambda n: generate_random(24))
     network = factory.Sequence(lambda n: "net-%d" % n)
     tags = factory.LazyAttribute(lambda n: [f"tag-{r}" for r in range(5)])
 

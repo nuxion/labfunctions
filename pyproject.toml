@@ -43,7 +43,6 @@ rq-scheduler = { version="^0.11.0", optional=true }
 rq = {version="^1.10.0", optional=true}
 # cluster
 apache-libcloud = {version="^3.5.1", optional=true}
-asyncssh = {version=">2.0.0,<=2.10.0", optional=true}
 # both
 pytz = "^2021.1"
 click = "^8.0.1"
@@ -69,6 +68,7 @@ ipython = "^8.1.1"
 ipykernel = "^6.9.1"
 rich = "^12.0.0"
 aiosqlite = "^0.17.0"
+asyncssh = "^2.10.0"
 
 [tool.poetry.extras]
 fsspec = ["fsspec"]

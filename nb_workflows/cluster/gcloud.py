@@ -8,12 +8,6 @@ from libcloud.compute.types import Provider
 from nb_workflows.types.cluster import GoogleConf, NodeInstance
 
 
-def open_publickey(fp) -> str:
-    with open(fp, "r") as f:
-        data = f.read()
-    return data.strip()
-
-
 def get_image(img_name, images: List[GCENodeImage]) -> Union[GCENodeImage, None]:
     img = [i for i in images if i.name == img_name]
     if not img:
@@ -42,9 +36,7 @@ def create_driver(conf: Optional[GoogleConf] = None) -> GCENodeDriver:
 
 def create_instance(driver: GCENodeDriver, node: NodeInstance) -> base.Node:
     metadata = {
-        "items": [
-            {"key": "ssh-keys", "value": f"{node.ssh_key_user}: {node.ssh_publickey}"}
-        ]
+        "items": [{"key": "ssh-keys", "value": f"{node.ssh_user}: {node.ssh_public}"}]
     }
     instance = driver.create_node(
         node.name,
@@ -58,5 +50,7 @@ def create_instance(driver: GCENodeDriver, node: NodeInstance) -> base.Node:
     return instance
 
 
-def destroy_instance(driver: GCENodeDriver, node: base.Node):
+def destroy_instance(driver: GCENodeDriver, name):
+    nodes = driver.list_nodes()
+    node = [n for n in nodes if n.name == name][0]
     driver.destroy_node(node)
