@@ -42,6 +42,12 @@ class ServerSettings(BaseSettings):
     EVENTS_BLOCK_MS: int = 10 * 1000
     EVENTS_STREAM_TTL_SECS: int = 60 * 60
 
+    # cluster
+    CLUSTER_SSH_KEY_USER: str = "op"
+    CLUSTER_SSH_PUBLIC_KEY: Optional[str] = None
+    WORKER_HOMEDIR: str = "/home/op"
+    WORKER_ENV_FILE: str = ".env.dev.docker"
+
     # Logs:
     LOGLEVEL: str = "INFO"
     LOGFORMAT: str = "%(asctime)s %(message)s"
