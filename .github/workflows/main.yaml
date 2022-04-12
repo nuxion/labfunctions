@@ -45,9 +45,7 @@ jobs:
         env:
           NB_SQL: postgresql://postgres:secret@127.0.0.1:5432/nb_workflows
           NB_ASQL: postgresql+asyncpg://postgres:secret@127.0.0.1:5432/nb_workflows
-          NB_RQ_REDIS_HOST: localhost
-          NB_RQ_REDIS_PORT: "6379"
-          NB_RQ_REDIS_DB: "2"
+          NB_RQ_REDIS: redis://localhost:6379/2
           NB_WEB_REDIS: redis://localhost:6379/0
         run: |
           pytest --cov=nb_workflows --cov-report=xml tests/

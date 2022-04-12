@@ -1,7 +1,9 @@
 from contextvars import ContextVar
+from importlib import import_module
+from typing import List
 
 import aioredis
-from redis import Redis
+import redis
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
@@ -9,32 +11,54 @@ from sanic_jwt import Initialize, inject_user, protected
 
 from nb_workflows import auth
 from nb_workflows.conf import defaults
-from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.events import EventManager
+from nb_workflows.types import ServerSettings
 from nb_workflows.utils import get_version
 
 version = get_version("__version__.py")
 
 
-def create_db_instance(url=settings.ASQL) -> AsyncSQL:
+def init_blueprints(app, blueprints_allowed):
+    """It import and mount each module inside `nb_workflows.web`
+    which ends with _bp.
+
+    """
+    blueprints = set()
+    mod = app.__module__
+    for mod_name in blueprints_allowed:
+        module = import_module(f"nb_workflows.web.{mod_name}_bp", mod)
+        for el in dir(module):
+            if el.endswith("_bp"):
+                bp = getattr(module, el)
+                blueprints.add(bp)
+
+    for bp in blueprints:
+        print("Adding blueprint: ", bp.name)
+        app.blueprint(bp)
+
+
+def create_db_instance(url) -> AsyncSQL:
     return AsyncSQL(url)
 
 
-def create_web_redis(url=settings.WEB_REDIS):
-    return aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+def create_web_redis(url):
+    return aioredis.from_url(url, decode_responses=True)
 
 
-def create_rq_redis(cfg=settings.rq2dict()):
-    return Redis(**cfg)
+def create_rq_redis(url):
+    return redis.from_url(url)
 
 
-def app_init(
+def create_app(
+    settings: ServerSettings,
+    list_bp: List[str],
     app_name=defaults.SANIC_APP_NAME,
     db_func=create_db_instance,
     web_redis_func=create_web_redis,
     rq_func=create_rq_redis,
-):
+) -> Sanic:
+    """Factory pattern like flask"""
 
     _app = Sanic(app_name)
 
@@ -60,14 +84,16 @@ def app_init(
 
     _base_model_session_ctx = ContextVar("session")
 
+    init_blueprints(_app, list_bp)
+
     @_app.listener("before_server_start")
     async def startserver(current_app, loop):
         """This function runs one time per worker"""
-        _db = db_func()
+        _db = db_func(settings.ASQL)
         _base_model_session_ctx = ContextVar("session")
 
-        current_app.ctx.web_redis = web_redis_func()
-        current_app.ctx.rq_redis = rq_func()
+        current_app.ctx.web_redis = web_redis_func(settings.WEB_REDIS)
+        current_app.ctx.rq_redis = rq_func(settings.RQ_REDIS)
         current_app.ctx.db = _db
         await current_app.ctx.db.init()
 
@@ -98,6 +124,3 @@ def app_init(
         return json(dict(msg="We are ok", version=version))
 
     return _app
-
-
-app = app_init()

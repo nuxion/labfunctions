@@ -49,7 +49,7 @@ def test_scheduler_dispatcher(mocker: MockerFixture, connection, redis):
         "nb_workflows.scheduler.SchedulerExecutor", return_value=scheduler_mock
     )
 
-    scheduler.scheduler_dispatcher("test", "test", redis=redis)
+    scheduler.scheduler_dispatcher("test", "test", redis_obj=redis)
 
     assert scheduler_mock.method_calls[0].args[0].execid == exec_ctx.execid
 

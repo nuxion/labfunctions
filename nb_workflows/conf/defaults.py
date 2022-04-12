@@ -30,7 +30,8 @@ CLIENT_TIMEOUT = 60
 
 DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
 DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
-DOCKERFILE_IMAGE = "python:3.8.10-slim"
+# DOCKERFILE_IMAGE = "python:3.8.10-slim"
+DOCKERFILE_IMAGE = "nuxion/nb_workflows:0.7.0"
 
 # Sanic
 SANIC_APP_NAME = "nb_workflows"

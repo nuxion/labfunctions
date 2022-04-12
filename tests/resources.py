@@ -11,12 +11,15 @@ from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.events import EventManager
 from nb_workflows.managers import users_mg
+from nb_workflows.server import init_blueprints
 from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
 
 
-def app_init(db, web_redis, rq_redis=None, app_name="test"):
+def create_app(bluprints, db, web_redis, rq_redis=None, app_name="test"):
 
     _app = Sanic(app_name)
+
+    init_blueprints(_app, bluprints)
 
     Initialize(
         _app,

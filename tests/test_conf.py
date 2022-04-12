@@ -2,7 +2,7 @@ import os
 from unittest import mock
 
 from nb_workflows.conf import defaults
-from nb_workflows.conf.types import ClientSettings
+from nb_workflows.types import ClientSettings
 
 
 @mock.patch.dict(os.environ, {defaults.BASE_PATH_ENV: "/tmp"})

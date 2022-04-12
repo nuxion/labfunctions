@@ -181,6 +181,25 @@ def runtimescli(ctx):
     console.print(table)
 
 
+@projectcli.command(name="list")
+@click.pass_context
+def listcli(ctx):
+    """List of runtimes available for this project"""
+    url_service = ctx.obj["URL"]
+    from_file = ctx.obj["WF_FILE"]
+    c = client.from_file(from_file, url_service)
+
+    projects = c.projects_list()
+
+    table = Table(title="Projects")
+    table.add_column("id", style="cyan", justify="center")
+    table.add_column("name", style="cyan", justify="center")
+    table.add_column("desc", style="yellow", justify="center")
+    for p in projects:
+        table.add_row(p.projectid, p.name, p.description)
+    console.print(table)
+
+
 @projectcli.command()
 @click.pass_context
 def info(ctx):

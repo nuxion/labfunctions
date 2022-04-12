@@ -18,5 +18,5 @@ class ProjectUploadError(Exception):
 
 class ProjectCreateError(Exception):
     def __init__(self, projectid):
-        msg = f"Project creation error for projectid: {projectid}"
+        msg = f"Project creation error for projectid or name: {projectid}"
         super().__init__(msg)

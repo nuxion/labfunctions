@@ -1,8 +1,9 @@
 import importlib
 import os
 
+from nb_workflows.types import ServerSettings
+
 from . import load_server
-from .types import ServerSettings
 
 # singleton pattern
 # https://github.com/samuelcolvin/pydantic/issues/586

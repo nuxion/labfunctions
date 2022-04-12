@@ -5,14 +5,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+from nb_workflows.types import ClientSettings, ServerSettings
+
 from . import defaults
-from .types import ClientSettings, ServerSettings
 
 # from nb_workflows.utils import define_base_path
-
-
 # from logging import NullHandler
-
 
 # Server defaults
 GLOBAL_MODULE = "nb_workflows.conf.global_settings"

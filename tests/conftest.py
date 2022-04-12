@@ -27,7 +27,7 @@ from .factories import (
     create_user_model,
     create_workflow_model,
 )
-from .resources import app_init
+from .resources import create_app
 
 # SQL_URI = os.getenv("SQLTEST")
 # ASQL_URI = os.getenv("ASQLTEST")
@@ -144,7 +144,7 @@ def tempdir():
 async def sanic_app(async_conn):
     # from nb_workflows.conf.server_settings import settings
     # from nb_workflows.server import app
-    from nb_workflows.utils import init_blueprints
+    # from nb_workflows.utils import init_blueprints
 
     settings.EVENTS_BLOCK_MS = 5
     settings.EVENTS_STREAM_TTL_SECS = 5
@@ -154,8 +154,8 @@ async def sanic_app(async_conn):
     # rweb = Redis("/tmp/RWeb.rdb")
 
     rqdb = Redis("/tmp/RQWeb.rdb")
-    app = app_init(async_conn, web_redis=rweb, rq_redis=rqdb)
-    init_blueprints(app, ["workflows", "history", "projects", "events", "runtimes"])
+    bp = ["workflows", "history", "projects", "events", "runtimes"]
+    app = create_app(bp, async_conn, rweb, rqdb)
 
     yield app
     await app.ctx.web_redis.close()
