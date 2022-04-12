@@ -14,7 +14,7 @@ def test_server_app():
 
 
 def test_server_init_bp():
-    app = Sanic("test_app")
+    app = Sanic("test_app_unique")
     server.init_blueprints(app, ["events", "workflows", "projects", "history"])
     assert len(app.blueprints) == 4
 

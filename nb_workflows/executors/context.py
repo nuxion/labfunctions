@@ -229,7 +229,7 @@ def create_machine_ctx(
     machine: MachineOrm,
     ssh_key: SSHKey,
     worker_env_file: str,
-    worker_homedir=defaults.WORKER_HOMEDIR,
+    worker_homedir=defaults.AGENT_HOMEDIR,
     tags: List[str] = [],
     dynamic_workers=True,
     docker_version="0.7.0",
@@ -297,7 +297,7 @@ def machine_from_settings(
     ssh = SSHKey(
         user=settings.CLUSTER_SSH_KEY_USER, public=settings.CLUSTER_SSH_PUBLIC_KEY
     )
-    worker_env_file = settings.WORKER_ENV_FILE
+    worker_env_file = settings.AGENT_ENV_FILE
     ctx = create_machine_ctx(m, ssh, worker_env_file, tags=tags)
     return ctx
 

@@ -14,8 +14,8 @@ from sanic_jwt import inject_user, protected
 from nb_workflows import defaults
 from nb_workflows.auth import get_auth
 from nb_workflows.client.types import Credentials
-from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.conf.server_settings import settings
+from nb_workflows.defaults import API_VERSION
 from nb_workflows.executors.context import build_upload_uri, create_build_ctx
 from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg

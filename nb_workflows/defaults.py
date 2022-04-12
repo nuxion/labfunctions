@@ -54,5 +54,5 @@ DOCKER_AUTHOR = "nbworkflows"
 GCLOUD_SIZE = "e2-micro"
 GCLOUD_IMG = "debian-11-bullseye-v20220406"
 
-WORKER_HOMEDIR = "/home/op"
-WORKER_DOCKER_IMG = "nuxion/nb_workflows"
+AGENT_HOMEDIR = "/home/op"
+AGENT_DOCKER_IMG = "nuxion/nb_workflows"

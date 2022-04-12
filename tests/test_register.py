@@ -87,9 +87,10 @@ def test_worker_start(mocker: MockerFixture, redis):
 
     # conn = mocker.MagicMock()
     mocker.patch("nb_workflows.control_plane.worker.redis.from_url", return_value=redis)
-    mocker.patch("nb_workflows.control_plane.worker.NBWorker.worker", return_value=None)
+    m = mocker.patch(
+        "nb_workflows.control_plane.worker.NBWorker.work", return_value=None
+    )
 
     worker.start_worker("redis://localhost:6379", ["test"], "127.0.0.1", name="test")
 
-    spy = mocker.spy(worker.NBWorker, "set_ip_address")
-    assert spy.call_args[0] == "127.0.0.1"
+    assert m.called

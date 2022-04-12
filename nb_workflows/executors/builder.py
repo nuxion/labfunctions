@@ -124,7 +124,7 @@ def _download_zip_project(ctx: DockerBuildCtx, project_dir):
 def prepare_files(ctx: DockerBuildCtx):
 
     root = Path(settings.BASE_PATH)
-    project_dir = root / settings.WORKER_DATA_FOLDER / ctx.projectid / "build"
+    project_dir = root / settings.AGENT_DATA_FOLDER / ctx.projectid / "build"
     project_dir.mkdir(parents=True, exist_ok=True)
 
     temp_dir = project_dir / "tmp"

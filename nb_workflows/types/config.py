@@ -12,6 +12,7 @@ class ServerSettings(BaseSettings):
     AGENT_TOKEN: str
     AGENT_REFRESH_TOKEN: str
     AGENT_TOKEN_EXP: int
+
     # Services
     SQL: str
     ASQL: str
@@ -19,7 +20,6 @@ class ServerSettings(BaseSettings):
 
     # Folders:
     BASE_PATH: str
-    WORKER_DATA_FOLDER: str
     NB_WORKFLOWS: str
     NB_OUTPUT: str
     DOCKER_REGISTRY: Optional[str] = None
@@ -39,10 +39,13 @@ class ServerSettings(BaseSettings):
     EVENTS_STREAM_TTL_SECS: int = 60 * 60
 
     # cluster
+    AGENT_DATA_FOLDER: str = ".worker_data/"
     CLUSTER_SSH_KEY_USER: str = "op"
     CLUSTER_SSH_PUBLIC_KEY: Optional[str] = None
-    WORKER_HOMEDIR: str = "/home/op"
-    WORKER_ENV_FILE: str = ".env.dev.docker"
+    AGENT_HOMEDIR: str = "/home/op"
+    AGENT_ENV_FILE: str = ".env.dev.docker"
+    AGENT_HEARTBEAT_CHECK: int = 60 * 5
+    AGENT_HEARTBEAT_TTL: int = 80 * 3
 
     # Logs:
     LOGLEVEL: str = "INFO"
