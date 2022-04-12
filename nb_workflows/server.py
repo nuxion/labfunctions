@@ -84,6 +84,8 @@ def create_app(
 
     _base_model_session_ctx = ContextVar("session")
 
+    init_blueprints(_app, list_bp)
+
     @_app.listener("before_server_start")
     async def startserver(current_app, loop):
         """This function runs one time per worker"""

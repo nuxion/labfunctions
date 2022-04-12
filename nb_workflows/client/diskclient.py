@@ -96,30 +96,30 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
         store_private_key(key, self.projectid)
         return key
 
-    def projects_create(self) -> Union[ProjectData, None]:
-        _key = secrets.generate_private_key()
-        _name = self.project_name
-        pq = ProjectReq(
-            name=self.state.project.name,
-            private_key=_key,
-            projectid=self.state.project.projectid,
-            description=self.state.project.description,
-            repository=self.state.project.repository,
-        )
-        r = self._http.post(
-            f"/projects",
-            json=asdict(pq),
-        )
-        if r.status_code == 200:
-            self.console.print(f"[bold red]Project with name {_name} already exist [/]")
-        elif r.status_code == 201:
-            # self.console.print(p)
-            pd = ProjectData(**r.json())
-            store_private_key(_key, pd.projectid)
-            return pd
-        else:
-            raise errors.ProjectCreateError(pd.projectid)
-        return None
+    # def projects_create(self) -> Union[ProjectData, None]:
+    #     _key = secrets.generate_private_key()
+    #     _name = self.project_name
+    #     pq = ProjectReq(
+    #         name=self.state.project.name,
+    #         private_key=_key,
+    #         projectid=self.state.project.projectid,
+    #         description=self.state.project.description,
+    #         repository=self.state.project.repository,
+    #     )
+    #     r = self._http.post(
+    #         f"/projects",
+    #         json=asdict(pq),
+    #     )
+    #     if r.status_code == 200:
+    #         self.console.print(f"[bold red]Project with name {_name} already exist [/]")
+    #     elif r.status_code == 201:
+    #         # self.console.print(p)
+    #         pd = ProjectData(**r.json())
+    #         store_private_key(_key, pd.projectid)
+    #         return pd
+    #     else:
+    #         raise errors.ProjectCreateError(pd.projectid)
+    #     return None
 
     def projects_generate_dockerfile(self, docker_opts):
         root = Path.cwd()

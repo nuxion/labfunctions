@@ -36,15 +36,17 @@ def test_init_script_empty_file(tempdir):
 
 def test_init_script_ask_prj(mocker: MockerFixture):
     mocker.patch("nb_workflows.client.init_script.Prompt.ask", return_value="demo test")
-    name = init_script._ask_project_name()
+    name = init_script.ask_project_name()
     assert name == "demo_test"
 
 
-def test_init_script_workflow_state(mocker: MockerFixture):
+def test_init_script_workflow_state(mocker: MockerFixture, tempdir):
     mocker.patch("nb_workflows.client.init_script.Prompt.ask", return_value="demo test")
     mocker.patch(
         "nb_workflows.client.init_script.WorkflowsState.write", return_value=None
     )
-    state = init_script.workflow_state_init(projectid="test")
+    state = init_script.workflow_state_init(
+        Path(tempdir), "demo_test", projectid="test"
+    )
     assert isinstance(state, WorkflowsState)
-    assert state.project_name == "demo_test"
+    assert state.project.name == "demo_test"

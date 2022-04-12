@@ -2,6 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from .core import ProjectData
+
 
 class ProjectBuildReq(BaseModel):
     """
@@ -17,3 +19,8 @@ class ProjectBuildReq(BaseModel):
 class ProjectBuildResp(BaseModel):
     msg: str
     execid: str
+
+
+class ProjectCreated(BaseModel):
+    pd: ProjectData
+    private_key: str

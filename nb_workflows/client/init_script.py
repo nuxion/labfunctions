@@ -1,6 +1,6 @@
 import os
-import pathlib
-from typing import Tuple, Union
+from pathlib import Path
+from typing import List, Optional, Tuple, Union
 
 import httpx
 from rich.console import Console
@@ -8,19 +8,44 @@ from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 
 from nb_workflows import client
+from nb_workflows.client import from_file
 from nb_workflows.client.diskclient import DiskClient
+from nb_workflows.client.nbclient import NBClient
 from nb_workflows.client.state import WorkflowsState
 from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import defaults, load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 from nb_workflows.hashes import generate_random
-from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowDataWeb
+from nb_workflows.types import (
+    ClientSettings,
+    NBTask,
+    ProjectData,
+    ScheduleData,
+    WorkflowDataWeb,
+)
 from nb_workflows.types.docker import DockerfileImage
-from nb_workflows.utils import get_parent_folder
+from nb_workflows.types.projects import ProjectCreated
+from nb_workflows.utils import get_parent_folder, mkdir_p
 
 from .utils import normalize_name
 
 console = Console()
+
+DIRECTORIES = [
+    "nb_app",
+    "data",
+    "models",
+    "outputs",
+    defaults.NOTEBOOKS_DIR,
+]
+
+PROJECT_FILES = [
+    {"tpl": "gitignore", "dst": ".gitignore"},
+    {"tpl": "dockerignore", "dst": ".dockerignore"},
+    {"tpl": "welcome.ipynb.j2", "dst": "notebooks/welcome.ipynb"},
+    {"tpl": "Makefile", "dst": "Makefile"},
+    {"tpl": "local.nbvars.j2", "dst": "local.nbvars"},
+]
 
 
 def _example_task() -> NBTask:
@@ -59,7 +84,7 @@ def _empty_file(filename):
     return True
 
 
-def _ask_project_name() -> str:
+def ask_project_name() -> str:
     parent = get_parent_folder()
     _default = normalize_name(parent)
     project_name = Prompt.ask(
@@ -74,14 +99,14 @@ def _ask_project_name() -> str:
     return name
 
 
-def init_setting_dir_app(root, projectid, project_name, url_service=None):
+def init_nb_app(root, projectid, project_name, url_service=None):
     # _pkg_dir = get_package_dir("nb_workflows")
     p = root / "nb_app"
 
     workflow_service = url_service or "http://localhost:8000"
 
-    p.mkdir(parents=True, exist_ok=True)
-    _empty_file(p / "__init__.py")
+    mkdir_p(root / "nb_app")
+    _empty_file(root / "nb_app" / "__init__.py")
     render_to_file(
         "client_settings.py.j2",
         str((p / "settings.py").resolve()),
@@ -93,67 +118,54 @@ def init_setting_dir_app(root, projectid, project_name, url_service=None):
     )
 
 
-def generate_cicd_files(root):
-
+def init_project_files(root, files):
     runtime = default_runtime()
     generate_dockerfile(root, runtime.dict())
-
-    render_to_file("Makefile", str((root / "Makefile").resolve()))
-    render_to_file("dockerignore", str((root / ".dockerignore").resolve()))
-    render_to_file("gitignore", str((root / ".gitignore").resolve()))
-
-
-def create_dirs(base_path):
-    root = pathlib.Path(base_path)
-    for dir_ in ["outputs", "models", defaults.NOTEBOOKS_DIR]:
-        (root / dir_).mkdir(parents=True, exist_ok=True)
-
-    render_to_file(
-        "welcome.ipynb.j2",
-        str((root / defaults.NOTEBOOKS_DIR / "welcome.ipynb").resolve()),
-    )
+    for f in files:
+        render_to_file(
+            f["tpl"],
+            str((root / f["dst"]).resolve()),
+        )
 
 
-def workflow_state_init(projectid=None, name=None) -> WorkflowsState:
+def create_folders(root, folders: List[str]):
+    for f in folders:
+        mkdir_p(root / f)
+
+
+def workflow_state_init(root, name, projectid=None) -> WorkflowsState:
 
     wd = _example_workflow()
     wd_dict = {wd.alias: wd}
     runtime = default_runtime()
 
-    name = _ask_project_name()
     if not projectid:
         projectid = generate_random(defaults.PROJECTID_LEN)
 
     pd = ProjectData(name=name, projectid=projectid)
     wf_state = WorkflowsState(pd, workflows=wd_dict, runtime=runtime, version="0.2.0")
-    wf_state.write()
+    wf_state.write(root / "workflows.yaml")
     return wf_state
 
 
-def create_on_the_server(dc: DiskClient) -> Union[str, None]:
-    create = Confirm.ask("Create project in the server?", default=True)
-    if create:
-        dc.logincli()
-        pd = None
-        keep = True
-        while not pd and keep:
-            pd = dc.projects_create()
-            if pd:
-                valid_agent = dc.projects_create_agent()
-                agent_creds = dc.projects_agent_token()
-                with open("local.nbvars", "w") as f:
-                    f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
-                    f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}")
-
-                return valid_agent
-            confirm = Confirm.ask(
-                "Do you want to try another name for the project?", default=True
-            )
-            if confirm:
-                state = workflow_state_init(projectid=dc.projectid)
-                dc.state = state
-            else:
-                keep = False
+def create_on_the_server(
+    root, dc: DiskClient, state: WorkflowsState
+) -> Union[ProjectCreated, None]:
+    rsp = dc.projects_create(
+        state.project_name,
+        desc=state.project.description,
+        repository=state.project.repository,
+        store_key=True,
+    )
+    if rsp:
+        dc.state.projectid = rsp.pd.projectid
+        valid_agent = dc.projects_create_agent()
+        agent_creds = dc.projects_agent_token()
+        with open(f"{root}/local.nbvars", "a") as f:
+            f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
+            f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}")
+        return rsp
+    return None
 
 
 def verify_pre_existent(root) -> bool:
@@ -166,10 +178,10 @@ def verify_pre_existent(root) -> bool:
     return False
 
 
-def final(dc: DiskClient, agent_name):
+def final_words(project_name, agent_name=None):
     p = Panel.fit(
         "[bold magenta]:smile_cat: Congrats!!!"
-        f" Project [cyan]{dc.project_name}[/cyan] created[/bold magenta]",
+        f" Project [cyan]{project_name}[/cyan] created[/bold magenta]",
         border_style="red",
     )
     if agent_name:
@@ -191,31 +203,34 @@ def final(dc: DiskClient, agent_name):
     console.print("\t[bold] nb exec notebook welcome --dev -p TIMEOUT=5[/]\n")
 
 
-def init(root, init_dirs=True, url_service=None):
-    settings = load_client()
-    url = url_service or settings.WORKFLOW_SERVICE
-
-    i_should_create = True
+def i_should_create(root):
+    ask = True
     if verify_pre_existent(root):
-        i_should_create = Confirm.ask(
+        ask = Confirm.ask(
             "[yellow]It seems that a project already exist, "
             "do you want to continue?[/yellow]",
             default=False,
         )
-    if i_should_create:
-        _empty_file(root / "local.nbvars")
-        state = workflow_state_init()
-        dc = DiskClient(url_service, wf_state=state)
-        agent_name = create_on_the_server(dc)
+    return ask
 
-        init_setting_dir_app(
-            root,
-            projectid=dc.projectid,
-            project_name=dc.project_name,
-            url_service=url_service,
-        )
-        generate_cicd_files(root)
-        if init_dirs:
-            create_dirs(root)
 
-        final(dc, agent_name)
+def init_automatic(
+    base_path: str,
+    project_name: str,
+    url_service: str,
+    settings: Optional[ClientSettings] = None,
+) -> WorkflowsState:
+    root = Path(base_path)
+    settings = settings or load_client()
+
+    create_folders(root, DIRECTORIES)
+    init_project_files(root, PROJECT_FILES)
+
+    state = workflow_state_init(root, project_name)
+    init_nb_app(root, state.projectid, project_name, url_service)
+    return state
+
+
+def refresh_project(root, pc: ProjectCreated, url_service: str):
+    state = workflow_state_init(root, pc.pd.name, pc.pd.projectid)
+    init_nb_app(root, state.projectid, pc.pd.name, url_service)

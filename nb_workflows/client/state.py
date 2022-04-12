@@ -42,6 +42,12 @@ class WorkflowsState:
             return self.project.projectid
         return None
 
+    @projectid.setter
+    def projectid(self, projectid):
+        if not self.project:
+            raise AttributeError("No project property")
+        self.project.projectid = projectid
+
     @property
     def project_name(self) -> Union[str, None]:
         if self.project:
