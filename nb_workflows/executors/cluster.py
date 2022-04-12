@@ -3,7 +3,7 @@ from typing import List
 import asyncssh
 from asyncssh.process import SSHCompletedProcess
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.hashes import generate_random
 from nb_workflows.types.cluster import ExecMachineResult, ExecutionMachine
 

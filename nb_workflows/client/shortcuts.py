@@ -6,8 +6,8 @@ from typing import Optional, Union
 
 import httpx
 
-from nb_workflows import secrets
-from nb_workflows.conf import defaults, load_client
+from nb_workflows import defaults, secrets
+from nb_workflows.conf import load_client
 from nb_workflows.executors import context
 from nb_workflows.io import MemoryStore
 from nb_workflows.types import (

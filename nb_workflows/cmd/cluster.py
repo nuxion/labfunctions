@@ -1,7 +1,8 @@
 import click
 from rich.console import Console
 
-from nb_workflows.conf import defaults, load_client
+from nb_workflows import defaults
+from nb_workflows.conf import load_client
 
 console = Console()
 

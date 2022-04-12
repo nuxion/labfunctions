@@ -5,9 +5,9 @@ import click
 from rich import print_json
 from rich.console import Console
 
-from nb_workflows import client
+from nb_workflows import client, defaults
 from nb_workflows.client.diskclient import DiskClient
-from nb_workflows.conf import defaults, load_client
+from nb_workflows.conf import load_client
 from nb_workflows.executors.context import pure_execid
 from nb_workflows.types import NBTask
 

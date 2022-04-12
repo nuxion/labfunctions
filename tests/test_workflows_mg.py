@@ -1,6 +1,6 @@
 import pytest
 
-from nb_workflows.conf import defaults as df
+from nb_workflows import defaults as df
 from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.managers import workflows_mg
 from nb_workflows.models import WorkflowModel

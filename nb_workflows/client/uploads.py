@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 from zipfile import ZipFile
 
-from nb_workflows import secrets
-from nb_workflows.conf import defaults
+from nb_workflows import defaults, secrets
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 from nb_workflows.errors import CommandExecutionException
 from nb_workflows.utils import execute_cmd

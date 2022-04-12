@@ -8,7 +8,7 @@ from sanic_jwt import Authentication, Claim, Configuration, Initialize, exceptio
 from sanic_jwt import initialize as sanic_initialize
 from sanic_jwt import utils
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.managers.users_mg import (
     get_user_async,

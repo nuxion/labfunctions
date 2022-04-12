@@ -14,8 +14,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+from nb_workflows import defaults as df
 from nb_workflows import errors
-from nb_workflows.conf import defaults as df
 
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf.server_settings import settings

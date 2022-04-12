@@ -5,7 +5,7 @@ from sanic.response import empty, json, stream
 from sanic_ext import openapi
 from sanic_jwt import inject_user, protected
 
-from nb_workflows.conf.defaults import API_VERSION
+from nb_workflows.defaults import API_VERSION
 from nb_workflows.managers import runtimes_mg
 from nb_workflows.types.docker import RuntimeVersionData, RuntimeVersionOrm
 from nb_workflows.web.utils import get_query_param2

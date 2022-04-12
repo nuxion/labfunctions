@@ -1,4 +1,4 @@
-from nb_workflows.conf import defaults as df
+from nb_workflows import defaults as df
 from nb_workflows.executors import context as ctx
 from nb_workflows.types import ProjectData, WorkflowDataWeb
 from tests import factories

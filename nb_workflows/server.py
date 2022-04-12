@@ -9,8 +9,7 @@ from sanic.response import json
 from sanic_ext import Extend
 from sanic_jwt import Initialize, inject_user, protected
 
-from nb_workflows import auth
-from nb_workflows.conf import defaults
+from nb_workflows import auth, defaults
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.events import EventManager
 from nb_workflows.types import ServerSettings

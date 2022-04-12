@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 from cryptography.fernet import Fernet
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.utils import Singleton
 
 logger = logging.getLogger(__name__)

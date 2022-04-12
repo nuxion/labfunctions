@@ -7,13 +7,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 
-from nb_workflows import client
+from nb_workflows import client, defaults
 from nb_workflows.client import from_file
 from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.client.nbclient import NBClient
 from nb_workflows.client.state import WorkflowsState
 from nb_workflows.client.uploads import generate_dockerfile
-from nb_workflows.conf import defaults, load_client
+from nb_workflows.conf import load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 from nb_workflows.hashes import generate_random
 from nb_workflows.types import (

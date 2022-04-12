@@ -9,8 +9,7 @@ from typing import Any, Dict, Union
 from rich.console import Console
 
 import docker
-from nb_workflows import client, secrets
-from nb_workflows.conf import defaults
+from nb_workflows import client, defaults, secrets
 from nb_workflows.executors import context
 from nb_workflows.io import Fileserver
 

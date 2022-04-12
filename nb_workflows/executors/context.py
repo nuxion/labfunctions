@@ -3,8 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, NamedTuple
 
-from nb_workflows import errors
-from nb_workflows.conf import defaults
+from nb_workflows import defaults, errors
 from nb_workflows.hashes import Hash96, generate_random
 from nb_workflows.types import (
     ExecutionNBTask,

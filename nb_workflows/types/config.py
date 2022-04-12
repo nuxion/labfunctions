@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseSettings, RedisDsn
 
-from nb_workflows.conf.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
+from nb_workflows.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
 
 
 class ServerSettings(BaseSettings):

@@ -19,7 +19,7 @@ import redis
 import toml
 import yaml
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.errors import CommandExecutionException
 
 _formats = {"hours": "%Y%m%d.%H%M%S", "day": "%Y%m%d", "month": "%Y%m"}

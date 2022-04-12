@@ -6,9 +6,9 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from nb_workflows import client, secrets
+from nb_workflows import client, defaults, secrets
 from nb_workflows.client.uploads import generate_dockerfile
-from nb_workflows.conf import defaults, load_client
+from nb_workflows.conf import load_client
 from nb_workflows.errors.client import ProjectUploadError
 from nb_workflows.utils import execute_cmd
 

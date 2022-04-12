@@ -2,10 +2,9 @@ import json
 import os
 from typing import Union
 
-from nb_workflows import client
+from nb_workflows import client, defaults
 from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.client.state import WorkflowsState
-from nb_workflows.conf import defaults
 from nb_workflows.conf.client_settings import settings
 from nb_workflows.secrets import load
 from nb_workflows.types import ExecutionNBTask, ExecutionResult, NBTask, ScheduleData

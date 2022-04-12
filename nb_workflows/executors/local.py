@@ -8,8 +8,8 @@ from typing import Union
 
 import papermill as pm
 
-from nb_workflows import client
-from nb_workflows.conf import defaults, load_client
+from nb_workflows import client, defaults
+from nb_workflows.conf import load_client
 
 # from nb_workflows.notebooks import nb_job_executor
 from nb_workflows.types import ExecutionNBTask, ExecutionResult, NBTask

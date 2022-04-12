@@ -1,7 +1,7 @@
 import os
 from unittest import mock
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.types import ClientSettings
 
 

@@ -6,7 +6,7 @@ from typing import Callable, Generator, List, Optional
 
 import httpx
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
 from nb_workflows.events import EventManager
 from nb_workflows.executors import context

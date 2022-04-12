@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from nb_workflows.conf import defaults as df
+from nb_workflows import defaults as df
 from nb_workflows.managers import projects_mg
 from nb_workflows.models import ProjectModel
 from nb_workflows.types import ProjectData

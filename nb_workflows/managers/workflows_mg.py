@@ -5,8 +5,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-from nb_workflows import errors
-from nb_workflows.conf import defaults
+from nb_workflows import defaults, errors
 from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.executors import context as ctx
 from nb_workflows.hashes import generate_random

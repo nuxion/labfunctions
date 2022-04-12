@@ -2,7 +2,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, BaseSettings
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 
 
 class GoogleConf(BaseSettings):
@@ -14,6 +14,14 @@ class GoogleConf(BaseSettings):
 
     class Config:
         env_prefix = "NB_G"
+
+
+class DigitalOceanConf(BaseSettings):
+    acces_token: str
+    api_version: str = "v2"
+
+    class Config:
+        env_prefix = "NB_DO"
 
 
 class SSHKey(BaseModel):

@@ -5,7 +5,7 @@ from sanic_jwt import exceptions
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import PasswordScript, generate_random
 

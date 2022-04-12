@@ -9,8 +9,8 @@ from sanic.response import json
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-from nb_workflows.conf.defaults import API_VERSION
 from nb_workflows.conf.server_settings import settings
+from nb_workflows.defaults import API_VERSION
 from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.executors.context import ExecID, create_notebook_ctx_ondemand
 from nb_workflows.managers import projects_mg, workflows_mg

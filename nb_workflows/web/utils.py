@@ -1,6 +1,6 @@
 from sanic import Blueprint, Request, Sanic
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.scheduler import SchedulerExecutor
 

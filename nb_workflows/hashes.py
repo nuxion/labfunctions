@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from nanoid import generate
 
-from nb_workflows.conf.defaults import NANO_ID_ALPHABET
+from nb_workflows.defaults import NANO_ID_ALPHABET
 
 
 def generate_random(size=10, strategy="nanoid", alphabet=NANO_ID_ALPHABET) -> str:

@@ -7,7 +7,7 @@ from typing import Union
 import httpx
 import jwt
 
-from nb_workflows.conf import defaults
+from nb_workflows import defaults
 from nb_workflows.types import NBTask, ScheduleData
 from nb_workflows.utils import get_parent_folder, secure_filename
 

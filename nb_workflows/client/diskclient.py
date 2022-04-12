@@ -8,8 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 from rich.console import Console
 from rich.panel import Panel
 
-from nb_workflows import errors, secrets
-from nb_workflows.conf import defaults
+from nb_workflows import defaults, errors, secrets
 from nb_workflows.conf.jtemplates import render_to_file
 from nb_workflows.types import (
     ExecutionResult,
