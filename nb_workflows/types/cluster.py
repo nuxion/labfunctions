@@ -17,11 +17,11 @@ class GoogleConf(BaseSettings):
 
 
 class DigitalOceanConf(BaseSettings):
-    acces_token: str
+    access_token: str
     api_version: str = "v2"
 
     class Config:
-        env_prefix = "NB_DO"
+        env_prefix = "NB_DO_"
 
 
 class SSHKey(BaseModel):
@@ -75,3 +75,15 @@ class ExecMachineResult(BaseModel):
     private_ips: List[str]
     public_ips: Optional[List[str]] = None
     node: NodeInstance
+
+
+class AgentNode(BaseModel):
+    """
+    A self register entity for each machine created
+    """
+
+    ip_address: str
+    name: str
+    qnames: List[str]
+    workers: List[str]
+    birthday: int

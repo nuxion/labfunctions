@@ -59,7 +59,7 @@ def rqschedulercli(redis, interval, log_level):
     rqscheduler.run(redis, interval, log_level)
 
 
-@click.command(name="rqworker")
+@click.command(name="agent")
 @click.option("--workers", "-w", default=1, help="How many workers spawn")
 @click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
 @click.option(
@@ -80,10 +80,10 @@ def rqschedulercli(redis, interval, log_level):
     default=None,
     help="Worker Name",
 )
-def rqworkercli(redis, workers, qnames, ip_address, worker_name):
-    """Run RQ worker"""
+def agentcli(redis, workers, qnames, ip_address, worker_name):
+    """Run N RQ workers"""
     # pylint: disable=import-outside-toplevel
-    from nb_workflows.control_plane import worker
+    from nb_workflows.control_plane import agent
 
     sys.path.append(settings.BASE_PATH)
     os.environ["NB_AGENT_TOKEN"] = settings.AGENT_TOKEN
@@ -91,7 +91,7 @@ def rqworkercli(redis, workers, qnames, ip_address, worker_name):
     os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
     ip_address = ip_address or get_external_ip(settings.DNS_IP_ADDRESS)
 
-    worker.run(
+    agent.run(
         redis,
         qnames.split(","),
         name=worker_name,

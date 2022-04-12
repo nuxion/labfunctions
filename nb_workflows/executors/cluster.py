@@ -1,13 +1,16 @@
 from typing import List
 
 import asyncssh
+import redis
 from asyncssh.process import SSHCompletedProcess
 
 from nb_workflows import defaults
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import generate_random
 from nb_workflows.types.cluster import ExecMachineResult, ExecutionMachine
 
 WORKER_INIT = "docker run --rm "
+REDIS_PREFIX = "nb.mch."
 
 
 def prepare_worker_cmd(
@@ -28,12 +31,18 @@ def prepare_worker_cmd(
     return cmd
 
 
-def create_gcloud(ctx: ExecutionMachine):
+def create_gcloud(ctx: ExecutionMachine) -> ExecMachineResult:
     from nb_workflows.cluster.gcloud import create_driver, create_instance
 
     driver = create_driver()
     node = create_instance(driver, ctx.node)
-    return node
+    res = ExecMachineResult(
+        execid=ctx.execid,
+        private_ips=node.private_ips,
+        public_ips=node.public_ips,
+        node=ctx.node,
+    )
+    return res
 
 
 def destroy_gcloud(name: str):
@@ -105,19 +114,15 @@ async def deploy_in_node(addr, ctx: ExecutionMachine) -> SSHCompletedProcess:
     return result
 
 
-def create_machine(ctx: ExecutionMachine) -> ExecMachineResult:
-    from nb_workflows.qworker import settings
+def create_machine_exec(ctx: ExecutionMachine):
 
     if ctx.provider == "gcloud":
-        node = create_gcloud(ctx)
+        exec_result = create_gcloud(ctx)
 
-    res = ExecMachineResult(
-        execid=ctx.execid,
-        private_ips=node.private_ips,
-        public_ips=node.public_ips,
-        node=ctx.node,
-    )
-    return res
+    rdb = redis.from_url(settings.WEB_REDIS)
+    rdb.set(f"{REDIS_PREFIX}.{exec_result.node.name}", exec_result.json())
+
+    return exec_result.dict()
 
 
 def destroy_machine(name: str):

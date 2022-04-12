@@ -1,10 +1,20 @@
 ---
 machines:
-  default-cpu:
-    name: default-cpu
-    desc: A default cpu machine for gcloud
+  gc-tiny-cpu:
+    name: tiny-cpu
+    desc: Tiny cpu machine for gcloud
     provider: gcloud
     machine_type:
       size: "e2-micro"
       image: "nbworker-2022-04-08"
       location: "us-central1-c"
+      vcpus: 1
+  do-tiny-cpu:
+    name: tiny-cpu
+    desc: Tiny cpu machine for DO
+    provider: do
+    machine_type:
+      size: "s-1vcpu-1gb"
+      image: "debian_docker.2021-08-13"
+      location: "nyc3"
+      vcpus: 1
