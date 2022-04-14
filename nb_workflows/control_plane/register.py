@@ -10,8 +10,10 @@ from nb_workflows.types.cluster import AgentNode
 
 class AgentRegister:
 
-    PREFIX = "nb.ag"
-    PREFIX_LIST = "nb.ag.set"
+    AGENT_PREFIX = "nb.ag"
+    AGENT_LIST = "nb.agents"
+    CLUSTERS = "nb.clusters"
+    CLUSTER_PREFIX = "nb.cluster"
 
     def __init__(self, rdb: redis.Redis):
         """
@@ -28,15 +30,29 @@ class AgentRegister:
         """
         Register a `AgentNode`
         """
-        key = f"{self.PREFIX}.{node.name}"
-        self.rdb.set(key, node.json())
-        # self.rdb.zadd(self.PREFIX_LIST, {node.name: now})
-        self.rdb.sadd(self.PREFIX_LIST, node.name)
+        key = f"{self.AGENT_PREFIX}.{node.name}"
+        pipe = self.rdb.pipeline()
+        for q in node.qnames:
+            pipe.sadd(self.CLUSTERS, q)
+            pipe.sadd(f"{self.CLUSTER_PREFIX}.{q}", node.name)
+        pipe.set(key, node.json())
+        pipe.sadd(self.AGENT_LIST, node.name)
+        pipe.execute()
+
+    def unregister(self, node: AgentNode):
+        key = f"{self.AGENT_PREFIX}.{node.name}"
+        pipe = self.rdb.pipeline()
+        for q in node.qnames:
+            # pipe.sadd(self.CLUSTERS, q)
+            pipe.srem(f"{self.CLUSTER_PREFIX}.{q}", node.name)
+        pipe.delete(key)
+        pipe.srem(self.AGENT_LIST, node.name)
+        pipe.execute()
 
     def get(self, name) -> Union[AgentNode, None]:
         """Get at an agent by name"""
 
-        key = f"{self.PREFIX}.{name}"
+        key = f"{self.AGENT_PREFIX}.{name}"
         jdata = self.rdb.get(key)
         if jdata:
             data = json.loads(jdata)
@@ -45,15 +61,23 @@ class AgentRegister:
 
     def remove(self, agent: str):
         """It removes agent by name from redis"""
-        key = f"{self.PREFIX}.{agent}"
+        key = f"{self.AGENT_PREFIX}.{agent}"
         pipe = self.rdb.pipeline()
-        pipe.srem(self.PREFIX_LIST, agent)
+        pipe.srem(self.AGENT_LIST, agent)
         pipe.delete(key)
         pipe.execute()
 
-    def list_agents(self) -> List[str]:
+    def list_agents(self, from_cluster=None) -> List[str]:
         """Return a list of the keys of all the agent registered"""
-        return [i.decode("utf-8") for i in self.rdb.sinter(self.PREFIX_LIST)]
+        query = self.AGENT_LIST
+        if from_cluster:
+            query = f"{self.CLUSTER_PREFIX}.{from_cluster}"
+        rsp = list(self.rdb.sinter(query))
+
+        if rsp and isinstance(rsp[0], str):
+            return rsp
+        else:
+            return [i.decode("utf-8") for i in rsp]
 
     def list_agents_by_queue(self, qname: str) -> Set[str]:
         """

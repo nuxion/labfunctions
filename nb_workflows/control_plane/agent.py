@@ -22,7 +22,7 @@ def run(conf: AgentConfig):
     """
 
     name = conf.name or generate_random(size=9)
-    rdb = redis.from_url(conf.redis_dsn)
+    rdb = redis.from_url(conf.redis_dsn, decode_responses=True)
 
     heart = HeartbeatThread(
         rdb,
@@ -61,3 +61,5 @@ def run(conf: AgentConfig):
             name=workers_names[0],
             ip_address=conf.ip_address,
         )
+    ag.unregister(node)
+    heart.unregister()
