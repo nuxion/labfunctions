@@ -47,6 +47,20 @@ def test_register_list_by_queue(mocker: MockerFixture, redis):
     assert len(data) == 1
 
 
+def test_register_list_agents(mocker: MockerFixture, redis):
+    # workers = [WorkerMocker(name="test")]
+    # mocker.patch(redis, "sinter", return_value=["test"])
+    ag = register.AgentRegister(redis)
+    redis.sinter = lambda x: ["test"]
+    data = ag.list_agents()
+    redis.sinter = lambda x: [b"test"]
+    bdata = ag.list_agents()
+
+    assert len(data) == 1
+    assert len(bdata) == 1
+    assert isinstance(bdata[0], str)
+
+
 def test_register_kill_workers(mocker: MockerFixture, redis):
     spy = mocker.spy(register, "send_shutdown_command")
 
