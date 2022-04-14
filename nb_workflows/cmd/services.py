@@ -3,10 +3,9 @@ import sys
 
 import click
 
-from nb_workflows.conf import load_server
+from nb_workflows.conf.server_settings import settings
+from nb_workflows.types.cluster import AgentConfig
 from nb_workflows.utils import get_external_ip
-
-settings = load_server()
 
 
 @click.command(name="web")
@@ -91,10 +90,14 @@ def agentcli(redis, workers, qnames, ip_address, worker_name):
     os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
     ip_address = ip_address or get_external_ip(settings.DNS_IP_ADDRESS)
 
-    agent.run(
-        redis,
-        qnames.split(","),
-        name=worker_name,
+    conf = AgentConfig(
+        redis_dsn=redis,
+        qnames=qnames.split(","),
         ip_address=ip_address,
+        heartbeat_ttl=settings.AGENT_HEARTBEAT_TTL,
+        heartbeat_check_every=settings.AGENT_HEARTBEAT_CHECK,
+        name=worker_name,
         workers_n=workers,
     )
+
+    agent.run(conf)

@@ -38,6 +38,10 @@ class ServerSettings(BaseSettings):
     EVENTS_BLOCK_MS: int = 10 * 1000
     EVENTS_STREAM_TTL_SECS: int = 60 * 60
 
+    # docker
+    DOCKER_UID: str = "1000"
+    DOCKER_GID: str = "997"
+
     # cluster
     AGENT_DATA_FOLDER: str = ".worker_data/"
     CLUSTER_SSH_KEY_USER: str = "op"

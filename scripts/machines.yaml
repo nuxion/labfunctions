@@ -1,20 +1,54 @@
 ---
+volumes:
+  datasets:
+    name: gce-datasets
+    location: "us-central1-c"
+    snapshot: "volume-ext4"
+    size: 10
+    kind: 'pd-standard'
+    mount: /mnt/disk0
+  local:
+    name: local
+    location: home
+    size: 10
+    kind: 'pd'
+    mount: /home/nuxion/data
+
 machines:
-  gc-tiny-cpu:
+  gce-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for gcloud
     provider: gcloud
+    location: "us-central1-c"
     machine_type:
       size: "e2-micro"
       image: "nbworker-2022-04-08"
-      location: "us-central1-c"
       vcpus: 1
+    volumes:
+      - datasets
   do-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for DO
     provider: do
+    location: "nyc3"
     machine_type:
       size: "s-1vcpu-1gb"
       image: "debian_docker.2021-08-13"
-      location: "nyc3"
       vcpus: 1
+  local:
+    name: local-cpu
+    desc: Local machine
+    provider: local
+    location: "home"
+    machine_type:
+      size: "s-1vcpu-1gb"
+      image: "debian_docker.2021-08-13"
+      vcpus: 1
+    gpu:
+      name: "nvidia"
+      gpu_type: "tesla"
+      number: 1
+    volumes:
+      # - "datasets:/data"
+      - datasets
+

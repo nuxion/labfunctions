@@ -251,6 +251,7 @@ def open_yaml(filepath: str):
 
 
 def write_yaml(filepath: str, data, *args, **kwargs):
+
     with open(filepath, "w") as f:
         dict_ = yaml.dump(data, *args, **kwargs)
         f.write(dict_)
@@ -283,6 +284,19 @@ def execute_cmd(cmd) -> str:
             raise CommandExecutionException(err.decode())
 
         return out.decode().strip()
+
+
+def execute_cmd_no_block(cmd: str, check=True):
+    """Wrapper around subprocess
+    :param cmd: a string with the command to execute
+    :param check: if True then it will checks if the command was ok or raise a
+    CalledProccessError.
+
+    """
+    res = subprocess.Popen(
+        cmd.split(), shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    return res
 
 
 def path_relative(fp):
@@ -371,3 +385,7 @@ def get_external_ip(dns="8.8.8.8"):
     ip = s.getsockname()[0]
     s.close()
     return ip
+
+
+def get_internal_ip() -> str:
+    return socket.gethostbyname(socket.gethostname())

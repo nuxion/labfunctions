@@ -131,5 +131,6 @@ See [Roadmap](/ROADMAP.md) *draft*
 - [Tensorflow metastore](https://www.tensorflow.org/tfx/guide/mlmd)
 - [Maintainable and collaborative pipelines](https://blog.jupyter.org/ploomber-maintainable-and-collaborative-pipelines-in-jupyter-acb3ad2101a7)
 - [The magic of Merlin](https://shopify.engineering/merlin-shopify-machine-learning-platform)
+- [Scale aware approach](https://queue.acm.org/detail.cfm?id=3025012)
 
 

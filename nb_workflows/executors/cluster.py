@@ -25,7 +25,7 @@ def prepare_worker_cmd(
         f"docker run -d -v /var/run/docker.sock:/var/run/docker.sock "
         f"-e NB_SERVER=true  --env-file={env_file} "
         f"{defaults.AGENT_DOCKER_IMG}:{version} "
-        f"nb rqworker -w {workers} -i {ip_address} -q {qnames} "
+        f"nb agent -w {workers} -i {ip_address} -q {qnames} "
     )
     return cmd
 

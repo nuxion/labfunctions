@@ -28,7 +28,13 @@ from nb_workflows.types import (
     WorkflowData,
     WorkflowDataWeb,
 )
-from nb_workflows.types.cluster import MachineOrm, MachineType, NodeInstance
+from nb_workflows.types.cluster import (
+    BlockStorage,
+    MachineGPU,
+    MachineOrm,
+    MachineType,
+    NodeInstance,
+)
 from nb_workflows.types.docker import (
     DockerBuildCtx,
     DockerfileImage,
@@ -215,7 +221,7 @@ class MachineTypeFactory(factory.Factory):
 
     size = factory.Sequence(lambda n: "size-%d" % n)
     image = factory.Sequence(lambda n: "img-%d" % n)
-    location = factory.Sequence(lambda n: "location-%d" % n)
+    vcpus = 1
     network = factory.Sequence(lambda n: "net-%d" % n)
 
 
@@ -226,7 +232,9 @@ class MachineOrmFactory(factory.Factory):
     name = factory.Sequence(lambda n: "name-%d" % n)
     desc = factory.Sequence(lambda n: "desc-%d" % n)
     provider = factory.Sequence(lambda n: "prov-%d" % n)
+    location = factory.Sequence(lambda n: "loc-%d" % n)
     machine_type = factory.LazyAttribute(lambda n: MachineTypeFactory())
+    gpu = factory.LazyAttribute(lambda n: MachineGPU(name="nvidia", gpu_type="tesla"))
 
 
 class DockerBuildCtxFactory(factory.Factory):

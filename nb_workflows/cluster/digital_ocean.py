@@ -4,8 +4,18 @@ import httpx
 from libcloud.compute import base
 from libcloud.compute.providers import get_driver
 from libcloud.compute.types import Provider
+from pydantic import BaseModel, BaseSettings
 
 from nb_workflows.types.cluster import DigitalOceanConf, NodeInstance
+
+
+class DigitalOceanConf(BaseSettings):
+    access_token: str
+    api_version: str = "v2"
+
+    class Config:
+        env_prefix = "NB_DO_"
+
 
 DO_URL = "https://api.digitalocean.com"
 

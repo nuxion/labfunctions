@@ -195,9 +195,12 @@ class MachineModel(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(), unique=True, index=True, nullable=False)
-    desc = Column(String(), nullable=True)
+    location = Column(String(), unique=False, index=True, nullable=False)
     provider = Column(String(), nullable=False, index=True)
+    desc = Column(String(), nullable=True)
     machine_type = Column(JSON(), nullable=False)
+    gpu = Column(JSON(), nullable=True)
+    volumes = Column(JSON(), nullable=True)
 
     created_at = Column(
         DateTime(), server_default=functions.now(), nullable=False, index=True
