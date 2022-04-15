@@ -155,6 +155,7 @@ class AgentNode(BaseModel):
 
     ip_address: str
     name: str
+    pid: str
     qnames: List[str]
     workers: List[str]
     birthday: int

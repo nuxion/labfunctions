@@ -67,6 +67,9 @@ class AgentRegister:
         pipe.delete(key)
         pipe.execute()
 
+    def list_clusters(self) -> Set[str]:
+        return self.rdb.sinter(self.CLUSTERS)
+
     def list_agents(self, from_cluster=None) -> List[str]:
         """Return a list of the keys of all the agent registered"""
         query = self.AGENT_LIST
@@ -98,6 +101,7 @@ class AgentRegister:
         for w in node.workers:
             send_shutdown_command(self.rdb, w)
             # self.remove_worker(w)
+        # self.unregister(node)
 
     def kill_workers_from_queue(self, qname: str):
         q = Queue(qname, connection=self.rdb)

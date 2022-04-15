@@ -17,8 +17,6 @@ class HeartbeatThread(threading.Thread):
         self.ttl_secs = ttl_secs
         self.check_every = check_every_secs
         self.shutdown_flag = threading.Event()
-        signal.signal(signal.SIGTERM, self.unregister)
-        signal.signal(signal.SIGINT, self.unregister)
 
     def run(self):
         key = f"{self.PREFIX}.{self.name}"

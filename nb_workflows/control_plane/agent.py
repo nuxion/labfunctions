@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List
 
@@ -36,9 +37,11 @@ def run(conf: AgentConfig):
     workers_names = [f"{name}.{x}" for x in range(conf.workers_n)]
 
     _now = int(datetime.utcnow().timestamp())
+    pid = os.getpid()
     node = AgentNode(
         ip_address=conf.ip_address,
         name=name,
+        pid=pid,
         qnames=conf.qnames,
         workers=workers_names,
         birthday=_now,
