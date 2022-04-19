@@ -13,6 +13,7 @@ from nb_workflows.types.machine import (
 )
 from nb_workflows.utils import get_version, open_publickey, open_yaml
 
+from .inventory import Inventory
 from .utils import get_local_machine, get_local_volume, ssh_from_settings
 
 
@@ -92,23 +93,21 @@ def machine_from_settings(
     qnames: List[str],
     settings: ServerSettings,
     docker_version=None,
-    inventory: Union[str, Dict[str, Any]] = "scripts/machines.yaml",
+    inventory: Optional[Inventory] = None,
 ) -> ExecutionMachine:
     """It will create a context from settings and the inventory file"""
 
-    data = inventory
-    if isinstance(inventory, str):
-        data = open_yaml(inventory)
+    inventory = inventory or Inventory()
 
-    m = get_local_machine(machine_name, data)
-    volumes = [get_local_volume(vol, data) for vol in m.volumes]
+    m = inventory.machines[machine_name]
+    volumes = [inventory.volumes[vol] for vol in m.volumes]
 
     ssh = ssh_from_settings(settings)
-    agent_env_file = settings.AGENT_ENV_FILE
+    # agent_env_file = settings.AGENT_ENV_FILE
     ctx = create_machine_ctx(
         m,
         qnames,
-        agent_env_file,
+        cluster,
         volumes=volumes,
         agent_homedir=settings.AGENT_HOMEDIR,
         ssh_key=ssh,

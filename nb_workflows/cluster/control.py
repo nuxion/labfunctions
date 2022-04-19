@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 
 import redis
@@ -8,22 +9,28 @@ from nb_workflows.types import ServerSettings
 from nb_workflows.types.agent import AgentNode
 from nb_workflows.types.cluster import (
     ClusterDiff,
+    ClusterFile,
     ClusterPolicy,
     ClusterSpec,
     ClusterState,
     ScaleIdle,
     ScaleItems,
 )
-from nb_workflows.types.machine import ExecMachineResult, ExecutionMachine
+from nb_workflows.types.machine import (
+    ExecMachineResult,
+    ExecutionMachine,
+    MachineInstance,
+)
 from nb_workflows.utils import open_yaml
 
 from . import deploy
 from .base import ProviderSpec
 from .context import machine_from_settings
+from .inventory import Inventory
 
 
 def apply_scale_items(state: ClusterState, scale: ScaleItems) -> ClusterState:
-    new_state = state.copy()
+    new_state = deepcopy(state)
     if state.queue_items[scale.qname] >= scale.items_gt:
         new_state.agents_n += scale.increase_by
     elif state.queue_items[scale.qname] <= scale.items_lt:
@@ -34,7 +41,7 @@ def apply_scale_items(state: ClusterState, scale: ScaleItems) -> ClusterState:
 
 
 def apply_idle(state: ClusterState, idle: ScaleIdle) -> ClusterState:
-    new_state = state.copy()
+    new_state = deepcopy(state)
     shutdown_agents = set()
     for agt in state.agents:
         if state.idle_by_agent[agt] >= idle.idle_time_gt:
@@ -47,7 +54,7 @@ def apply_idle(state: ClusterState, idle: ScaleIdle) -> ClusterState:
 
 
 def apply_minmax(state: ClusterState, policy: ClusterPolicy) -> ClusterState:
-    new_state = state.copy()
+    new_state = deepcopy(state)
     if state.agents_n < policy.min_nodes:
         new_state.agents_n = policy.min_nodes
     elif state.agents_n > policy.max_nodes:
@@ -65,11 +72,11 @@ class ClusterControl:
     }
     STRATEGIES = {"items": ScaleItems, "idle": ScaleIdle}
 
-    def __init__(self, rdb: redis.Redis, spec: ClusterSpec):
+    def __init__(self, rdb: redis.Redis, spec: ClusterSpec, inventory: Inventory):
         self.rdb = rdb
         self.name = spec.name
         self.spec = spec
-        self.inventory = open_yaml("scripts/machines.yaml")
+        self.inventory = inventory
         self.register = AgentRegister(rdb, cluster=spec.name)
         self.state = self.build_state()
 
@@ -77,20 +84,29 @@ class ClusterControl:
     def cluster_name(self):
         return self.name
 
+    def get_provider(self) -> ProviderSpec:
+        return self.inventory.get_provider(self.spec.provider)
+
     @classmethod
-    def load_spec(cls, yaml_path) -> Dict[str, ClusterSpec]:
+    def load_spec(cls, spec_data) -> ClusterSpec:
+        c = ClusterSpec(**spec_data)
+        strategies = []
+        for strategy in c.policy.strategies:
+            s = cls.STRATEGIES[strategy["name"]](**strategy)
+            strategies.append(s)
+        c.policy.strategies = strategies
+        return c
+
+    @classmethod
+    def load_cluster_file(cls, yaml_path) -> ClusterFile:
         data = open_yaml(yaml_path)
         clusters = {}
         for k, v in data["clusters"].items():
-            c = ClusterSpec(**v)
-            strategies = []
-            for strategy in c.policy.strategies:
-                s = cls.STRATEGIES[strategy["name"]](**strategy)
-                strategies.append(s)
-            c.policy.strategies = strategies
-            clusters[k] = c
+            spec = cls.load_spec(v)
+            clusters[k] = spec
+        inventory = data.get("inventory")
 
-        return clusters
+        return ClusterFile(clusters=clusters, inventory=inventory)
 
     def refresh(self):
         self.state = self.build_state()
@@ -141,9 +157,10 @@ class ClusterControl:
         self,
         provider: ProviderSpec,
         settings: ServerSettings,
+        do_deploy=True,
         use_public=False,
         deploy_local=False,
-    ):
+    ) -> MachineInstance:
         ctx = machine_from_settings(
             self.spec.machine,
             cluster=self.name,
@@ -165,12 +182,14 @@ class ClusterControl:
             worker_procs=ctx.worker_procs,
             docker_version=ctx.docker_version,
         )
-        if deploy_local:
+        if do_deploy and deploy_local:
             res = deploy.agent_local(req, settings.dict())
-        else:
+            print(res)
+        elif do_deploy:
             res = deploy.agent(req, settings.dict())
-        print(res)
+            print(res)
         self.register.register_machine(instance)
+        return instance
 
     def destroy_instance(self, provider: ProviderSpec, agent_name: str):
         agent = self.register.get(agent_name)
@@ -195,7 +214,9 @@ class ClusterControl:
 
         print(f"To create: {diff.to_create}")
         for _ in range(diff.to_create):
-            self.create_instance(provider, settings, deploy_local=deploy_local)
+            self.create_instance(
+                provider, settings, use_public=use_public, deploy_local=deploy_local
+            )
 
         for agt in diff.to_delete:
             print(f"Deleting agent {agt}")

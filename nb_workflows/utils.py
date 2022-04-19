@@ -327,14 +327,29 @@ def under_virtualenv() -> bool:
     return True
 
 
-def read(rel_path):
+def pkg_route() -> str:
+    """
+    Get the absoute path of the nb_workflows package whatever it is installed
+
+    It could be used to reference files inside of the package.
+
+    :return:
+    :type str:
+    """
     here = os.path.abspath(os.path.dirname(__file__))
+    return here
+
+
+def read_from_relative(rel_path) -> str:
+    here = pkg_route()
     with codecs.open(os.path.join(here, rel_path), "r") as fp:
         return fp.read()
 
 
 def get_version(rel_path="__version__.py"):
-    for line in read(rel_path).splitlines():
+    """It get the version of NB Workflows package, reading it
+    from __version__.py file"""
+    for line in read_from_relative(rel_path).splitlines():
         if line.startswith("__version__"):
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]

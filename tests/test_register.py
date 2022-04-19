@@ -5,13 +5,11 @@ from pytest_mock import MockerFixture
 from rq import command
 
 from nb_workflows.control_plane import register, worker
-from nb_workflows.types.cluster import AgentNode
+from nb_workflows.types.agent import AgentNode
+
+from .factories import AgentNodeFactory
 
 now = int(datetime.utcnow().timestamp())
-
-node_ag = AgentNode(
-    ip_address="1.1", name="test", qnames=["test"], workers=["test.0"], birthday=now
-)
 
 
 class WorkerMocker(BaseModel):
@@ -20,28 +18,29 @@ class WorkerMocker(BaseModel):
 
 def test_register_register(redis):
 
-    ag = register.AgentRegister(redis)
+    node_ag = AgentNodeFactory()
+    ag = register.AgentRegister(redis, "test")
     ag.register(node_ag)
-    data = redis.get("nb.ag.test")
-    node = ag.get("test")
+    key = f"{ag.AGENT_PREFIX}.{node_ag.name}"
+    data = redis.get(key)
+    node = ag.get(node_ag.name)
 
     nodes = ag.list_agents()
-    ag.remove("test")
-    removed = ag.get("test")
+    ag.remove(node_ag.name)
+    removed = ag.get(node_ag.name)
 
     assert data
     assert removed is None
     assert isinstance(node, AgentNode)
-    assert len(nodes) == 1
-    assert nodes[0] == "test"
+    assert node_ag.name in nodes
 
 
 def test_register_list_by_queue(mocker: MockerFixture, redis):
     workers = [WorkerMocker(name="test")]
     workers_m = mocker.MagicMock()
     workers_m.all.return_value = workers
-    mocker.patch("nb_workflows.control_plane.register.Worker", workers_m)
-    ag = register.AgentRegister(redis)
+    mocker.patch("nb_workflows.control_plane.register.NBWorker", workers_m)
+    ag = register.AgentRegister(redis, "test")
 
     data = ag.list_agents_by_queue("test")
     assert len(data) == 1
@@ -50,7 +49,7 @@ def test_register_list_by_queue(mocker: MockerFixture, redis):
 def test_register_list_agents(mocker: MockerFixture, redis):
     # workers = [WorkerMocker(name="test")]
     # mocker.patch(redis, "sinter", return_value=["test"])
-    ag = register.AgentRegister(redis)
+    ag = register.AgentRegister(redis, "test")
     redis.sinter = lambda x: ["test"]
     data = ag.list_agents()
     redis.sinter = lambda x: [b"test"]
@@ -61,28 +60,32 @@ def test_register_list_agents(mocker: MockerFixture, redis):
     assert isinstance(bdata[0], str)
 
 
-def test_register_kill_workers(mocker: MockerFixture, redis):
-    spy = mocker.spy(register, "send_shutdown_command")
+def test_register_kill_workers_ag(mocker: MockerFixture, redis):
+    spy = mocker.patch("nb_workflows.control_plane.register.send_shutdown_command")
 
-    workers = [WorkerMocker(name="test")]
-    mocker.patch("nb_workflows.control_plane.register.Worker.all", return_value=workers)
+    node_ag = AgentNodeFactory()
+    mocker.patch(
+        "nb_workflows.control_plane.register.AgentRegister.get", return_value=node_ag
+    )
 
-    ag = register.AgentRegister(redis)
+    ag = register.AgentRegister(redis, "test")
     ag.register(node_ag)
 
     ag.kill_workers_from_agent("test")
-    assert spy.call_args[0][1] == node_ag.workers[0]
+    assert spy.call_count == len(node_ag.workers)
 
 
 def test_register_kill_workers_q(mocker: MockerFixture, redis):
     spy = mocker.spy(register, "send_shutdown_command")
 
     workers = [WorkerMocker(name="test")]
-    mocker.patch("nb_workflows.control_plane.register.Worker.all", return_value=workers)
+    mocker.patch(
+        "nb_workflows.control_plane.register.NBWorker.all", return_value=workers
+    )
 
-    ag = register.AgentRegister(redis)
+    node_ag = AgentNodeFactory()
+    ag = register.AgentRegister(redis, "test")
     ag.register(node_ag)
-
     ag.kill_workers_from_queue("test")
     assert spy.call_args[0][1] == workers[0].name
 

@@ -1,10 +1,10 @@
 ---
-inventory: nb_workflows/config/machines.yaml
+inventory: tests/machines_test.yaml
 clusters:
-  default:
-    name: default
-    machine: gce-tiny-cpu
-    provider: gce
+  local:
+    name: local
+    machine: local
+    provider: local
     qnames:
       - "default"
       - "control"
@@ -15,7 +15,6 @@ clusters:
         - name: idle
           idle_time_gt: 1
         - name: items
-          qname: "default.default"
+          qname: "local.default"
           items_gt: 1
-        
-      
+  

@@ -1,4 +1,7 @@
 ---
+providers:
+  local: "nb_workflows.cluster.local_provider.LocalProvider"
+  gce: "nb_workflows.cluster.gcloud_provider.GCEProvider"
 volumes:
   datasets:
     name: gce-datasets
@@ -25,7 +28,7 @@ machines:
   snapshooter:
     name: snap
     desc: Snapshot machine only for disk intialization
-    provider: gcloud
+    provider: gce
     location: "us-central1-c"
     machine_type:
       size: "e2-micro"
@@ -35,8 +38,8 @@ machines:
       - snapshot-base
   gce-tiny-cpu:
     name: tiny-cpu
-    desc: Tiny cpu machine for gcloud
-    provider: gcloud
+    desc: Tiny cpu machine for gce
+    provider: gce
     location: "us-central1-c"
     machine_type:
       size: "e2-micro"

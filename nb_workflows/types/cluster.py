@@ -63,3 +63,8 @@ class ClusterSpec(BaseModel):
     qnames: List[str]
     policy: ClusterPolicy
     location: str = "test"
+
+
+class ClusterFile(BaseModel):
+    clusters: Dict[str, ClusterSpec]
+    inventory: Optional[str] = None

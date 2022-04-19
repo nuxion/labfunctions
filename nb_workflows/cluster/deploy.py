@@ -124,11 +124,10 @@ def agent_from_settings(
     machine_id,
     cluster,
     settings: ServerSettings,
-    qnames=None,
+    qnames: List[str],
     worker_procs=1,
     docker_version=None,
 ) -> AgentRequest:
-    qnames = qnames or [cluster]
     key = ssh_from_settings(settings)
     version = docker_version or get_version()
     return AgentRequest(

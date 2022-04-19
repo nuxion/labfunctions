@@ -127,25 +127,27 @@ class GCEProvider(ProviderSpec):
         nodes = self.driver.list_nodes(ex_zone=location)
         filtered_nodes = []
         if tags:
-            _tags = set(tags)
             for n in nodes:
-                if n.state == "running" and n["extra"]["tags"] in set(_tags):
-                    filtered_nodes.append(n)
+                if n.state == "running" and n.extra["tags"]:
+                    for t in tags:
+                        if t in n.extra["tags"]:
+                            filtered_nodes.append(n)
         else:
-            filtered_nodes = nodes
+            filtered_nodes = [n for n in nodes if n.state == "running"]
         final = []
         for n in filtered_nodes:
-            if n.state == "running":
-                _n = MachineInstance(
-                    node_id=n.id,
-                    machine_name=n.name,
-                    location=n.extra["zone"].name,
-                    tags=n.extra["tags"],
-                    main_addr=n.private_ips[0],
-                    private_ips=n.private_ips,
-                    public_ips=n.public_ips,
-                )
-                final.append(_n)
+            _lbl = n.extra["labels"] if n.extra["labels"] else {}
+            labels = {"tags": n.extra["tags"], **_lbl}
+            _n = MachineInstance(
+                machine_id=n.id,
+                machine_name=n.name,
+                location=n.extra["zone"].name,
+                labels=labels,
+                main_addr=n.private_ips[0],
+                private_ips=n.private_ips,
+                public_ips=n.public_ips,
+            )
+            final.append(_n)
         return final
 
     def destroy_machine(self, node: Union[str, MachineInstance]):

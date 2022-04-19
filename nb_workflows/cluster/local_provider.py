@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import signal
+from copy import deepcopy
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Dict, List, Optional, Union
@@ -43,12 +44,14 @@ class LocalProvider(ProviderSpec):
         external = get_external_ip()
         fp = self.working_dir / node.name
         mkdir_p(fp)
+
         res = MachineInstance(
             machine_id=f"/local/{node.location}/{node.name}",
             machine_name=node.name,
             location=node.location,
             private_ips=[internal],
             public_ips=[external],
+            labels=node.labels,
         )
         with open(fp / "machine.json", "w") as f:
             f.write(res.json())
@@ -59,7 +62,6 @@ class LocalProvider(ProviderSpec):
     ) -> List[MachineInstance]:
 
         machines = []
-        breakpoint()
         for node in glob.glob(f"{self.working_dir}/*/machine.json"):
             with open(node, "r") as f:
                 data = f.read()
