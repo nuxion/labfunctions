@@ -7,6 +7,13 @@ volumes:
     size: 10
     kind: 'pd-standard'
     mount: /mnt/disk0
+  snapshot-base:
+    name: snapshot-base
+    location: "us-central1-c"
+    size: 2
+    kind: "pd-standard"
+    mount: /mnt/snapshot
+    create_if_not_exist: true
   local:
     name: local
     location: home
@@ -15,6 +22,17 @@ volumes:
     mount: /home/nuxion/data
 
 machines:
+  snapshooter:
+    name: snap
+    desc: Snapshot machine only for disk intialization
+    provider: gcloud
+    location: "us-central1-c"
+    machine_type:
+      size: "e2-micro"
+      image: "nbworker-2022-04-08"
+      vcpus: 1
+    volumes:
+      - snapshot-base
   gce-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for gcloud
@@ -24,8 +42,6 @@ machines:
       size: "e2-micro"
       image: "nbworker-2022-04-08"
       vcpus: 1
-    volumes:
-      - datasets
   do-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for DO
@@ -48,7 +64,3 @@ machines:
       name: "nvidia"
       gpu_type: "tesla"
       number: 1
-    volumes:
-      # - "datasets:/data"
-      - datasets
-

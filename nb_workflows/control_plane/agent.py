@@ -6,7 +6,7 @@ import redis
 from loky import get_reusable_executor
 
 from nb_workflows.hashes import generate_random
-from nb_workflows.types.cluster import AgentConfig, AgentNode
+from nb_workflows.types.agent import AgentConfig, AgentNode
 
 from .heartbeat import HeartbeatThread
 from .register import AgentRegister
@@ -15,6 +15,13 @@ from .worker import start_worker
 
 def run(conf: AgentConfig):
     """
+    This is the main function which start workers by agent by machine.
+
+    To ack:
+    qnames: will be prepended with the name of the cluster, for instance:
+    qnames = ["default", "control"]; cluster = "gpu"
+    qnames_fit = ["gpu.default", "gpu.control"]
+
     :param redis_dsn: redis url connection like redis://localhost:6379/0
     :param qnames: a list of queues to listen to
     :param name: a custom name for this worker
@@ -22,7 +29,7 @@ def run(conf: AgentConfig):
     :param workers_n: how many worker to run
     """
 
-    name = conf.name or generate_random(size=9)
+    name = conf.agent_name or conf.machine_id.rsplit("/", maxsplit=1)[1]
     rdb = redis.from_url(conf.redis_dsn, decode_responses=True)
 
     heart = HeartbeatThread(
@@ -35,32 +42,35 @@ def run(conf: AgentConfig):
     heart.start()
 
     workers_names = [f"{name}.{x}" for x in range(conf.workers_n)]
+    cluster_queues = [f"{conf.cluster}.{q}" for q in conf.qnames]
 
     _now = int(datetime.utcnow().timestamp())
     pid = os.getpid()
     node = AgentNode(
         ip_address=conf.ip_address,
         name=name,
+        machine_id=conf.machine_id,
+        cluster=conf.cluster,
         pid=pid,
         qnames=conf.qnames,
         workers=workers_names,
         birthday=_now,
     )
-    ag = AgentRegister(rdb)
+    ag = AgentRegister(rdb, cluster=conf.cluster)
     ag.register(node)
 
     if conf.workers_n > 1:
         _executor = get_reusable_executor(max_workers=conf.workers_n, kill_workers=True)
         _results = [
             _executor.submit(
-                start_worker, conf.redis_dsn, conf.qnames, conf.ip_address, name_i
+                start_worker, conf.redis_dsn, cluster_queues, conf.ip_address, name_i
             )
             for name_i in workers_names
         ]
     else:
         start_worker(
             conf.redis_dsn,
-            conf.qnames,
+            cluster_queues,
             name=workers_names[0],
             ip_address=conf.ip_address,
         )

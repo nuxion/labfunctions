@@ -4,8 +4,10 @@ import sys
 import click
 
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.types.cluster import AgentConfig
-from nb_workflows.utils import get_external_ip
+from nb_workflows.types.agent import AgentConfig
+from nb_workflows.utils import get_external_ip, get_hostname
+
+hostname = get_hostname()
 
 
 @click.command(name="web")
@@ -68,19 +70,26 @@ def rqschedulercli(redis, interval, log_level):
     help="Comma separated list of queues to listen to",
 )
 @click.option(
+    "--cluster",
+    "-C",
+    default="default",
+    help="Cluster name, also it will be added as qname",
+)
+@click.option(
     "--ip-address",
     "-i",
     default=None,
     help="IP address of the host",
 )
 @click.option(
-    "--worker-name",
-    "-W",
+    "--agent-name",
+    "-a",
     default=None,
-    help="Worker Name",
+    help="Agent Name",
 )
-def agentcli(redis, workers, qnames, ip_address, worker_name):
-    """Run N RQ workers"""
+@click.option("--machine-id", "-m", default=f"localhost/ba/{hostname}")
+def agentcli(redis, workers, qnames, cluster, ip_address, agent_name, machine_id):
+    """Run the agent"""
     # pylint: disable=import-outside-toplevel
     from nb_workflows.control_plane import agent
 
@@ -89,14 +98,17 @@ def agentcli(redis, workers, qnames, ip_address, worker_name):
     os.environ["NB_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
     os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
     ip_address = ip_address or get_external_ip(settings.DNS_IP_ADDRESS)
+    queues = qnames.split(",")
 
     conf = AgentConfig(
         redis_dsn=redis,
-        qnames=qnames.split(","),
+        cluster=cluster,
+        qnames=queues,
         ip_address=ip_address,
+        machine_id=machine_id,
         heartbeat_ttl=settings.AGENT_HEARTBEAT_TTL,
         heartbeat_check_every=settings.AGENT_HEARTBEAT_CHECK,
-        name=worker_name,
+        agent_name=agent_name,
         workers_n=workers,
     )
 

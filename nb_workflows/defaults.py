@@ -3,6 +3,7 @@ from collections import namedtuple
 # Shared defaults by server, agent and client
 QueuesNS = namedtuple("QueuesNS", ["control", "machine", "build"])
 Q_NS = QueuesNS(control="ctrl", machine="mch", build="bui")
+CLOUD_TAG = "nbworkflows"
 
 REFRESH_TOKEN_PATH = "/auth/refresh"
 
@@ -54,3 +55,4 @@ NANO_MACHINE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 AGENT_HOMEDIR = "/home/op"
 AGENT_DOCKER_IMG = "nuxion/nb_workflows"
+AGENT_ENV_TPL = "agent.docker.envfile"

@@ -1,0 +1,1 @@
+docker run --rm -it --mount="type=volume,dst=/app/data,volume-driver=local,volume-opt=type=ext4,volume-opt=device=/dev/disk/by-id/google-testing" nuxion/nb_workflows:0.7.0 bash

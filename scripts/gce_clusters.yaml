@@ -1,0 +1,19 @@
+---
+clusters:
+  default:
+    name: default
+    machine: gce-tiny-cpu
+    provider: gce
+    qnames:
+      - "default"
+      - "control"
+    policy:
+      min_nodes: 1
+      max_nodes: 1
+      strategies:
+        - name: idle
+          idle_time_gt: 1
+        - name: items
+          items_gt: 1
+        
+      

@@ -69,6 +69,7 @@ ipykernel = "^6.9.1"
 rich = "^12.0.0"
 aiosqlite = "^0.17.0"
 asyncssh = "^2.10.0"
+tenacity = "^8.0.1"
 
 [tool.poetry.extras]
 fsspec = ["fsspec"]

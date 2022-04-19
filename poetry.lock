@@ -2764,7 +2764,7 @@ server = ["uvloop", "sanic", "sanic-openapi", "sanic-ext", "sanic-jwt", "SQLAlch
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "af19907fd2f1384840a551232223c0e0494849936f56a8b16dadb411c0831c92"
+content-hash = "7184b67ff253fe534a38df12a19983e6b895d508388b590fa5eb3f579288eb3e"
 
 [metadata.files]
 aiofiles = [

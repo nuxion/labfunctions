@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -9,22 +10,19 @@ from libcloud.compute.providers import get_driver
 from libcloud.compute.types import Provider
 from pydantic import BaseSettings
 
-from nb_workflows.types.cluster import (
+from nb_workflows.types.machine import (
     BlockInstance,
     BlockStorage,
     ExecMachineResult,
     ExecutionMachine,
-    NodeInstance,
-    NodeRequest,
+    MachineInstance,
+    MachineRequest,
 )
-from nb_workflows.utils import run_sync
 
-from . import ssh
 from .base import ProviderSpec
-from .utils import prepare_docker_cmd
 
 
-class GConf(BaseSettings):
+class GCConf(BaseSettings):
     service_account: str
     project: str
     pem_file: Optional[str] = None
@@ -45,8 +43,8 @@ def generic_zone(name, driver) -> NodeLocation:
 
 
 class GCEProvider(ProviderSpec):
-    def __init__(self, conf: Optional[GConf] = None):
-        self.conf = conf or GConf()
+    def __init__(self, conf: Optional[GCConf] = None):
+        self.conf = conf or GCConf()
         G = get_gce_driver()
         # _env_creds = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         # if _env_creds:
@@ -71,18 +69,33 @@ class GCEProvider(ProviderSpec):
             v = self._get_volume(vol.name)
             if v:
                 to_attach.append(v)
+            if not v and vol.create_if_not_exist:
+                created = self.driver.create_volume(
+                    vol.size,
+                    vol.name,
+                    location=vol.location,
+                    snapshot=vol.snapshot,
+                    ex_disk_type=vol.kind,
+                )
+                to_attach.append(created)
         if to_attach:
             return to_attach
         return None
 
-    def create_machine(self, node: NodeRequest) -> NodeInstance:
+    def create_machine(self, node: MachineRequest) -> MachineInstance:
         metadata = {
             "items": [
                 {"key": "ssh-keys", "value": f"{node.ssh_user}: {node.ssh_public_cert}"}
             ]
         }
+        volumes = None
         if node.volumes:
             volumes = self._get_volumes_to_attach(node.volumes)
+
+        tags = node.labels.get("tags")
+        _labels = deepcopy(node.labels)
+        del _labels["tags"]
+        labels = _labels
 
         instance = self.driver.create_node(
             node.name,
@@ -91,63 +104,57 @@ class GCEProvider(ProviderSpec):
             location=node.location,
             ex_network=node.network,
             ex_metadata=metadata,
-            ex_tags=node.tags,
+            ex_tags=tags,
+            ex_labels=labels,
         )
         if volumes:
             for v in volumes:
                 self.driver.attach_volume(instance, v)
 
-        res = NodeInstance(
-            node_id=instance.id,
-            node_name=node.name,
+        res = MachineInstance(
+            machine_id=f"/gce/{node.location}/{node.name}",
+            machine_name=node.name,
             location=node.location,
             main_addr=instance.private_ips[0],
             private_ips=instance.private_ips,
             public_ips=instance.public_ips,
-            extra=instance.extra,
         )
         return res
 
-    def destroy_machine(self, node: Union[str, NodeInstance]):
+    def list_machines(
+        self, location: Optional[str] = None, tags: Optional[List[str]] = None
+    ) -> List[MachineInstance]:
+        nodes = self.driver.list_nodes(ex_zone=location)
+        filtered_nodes = []
+        if tags:
+            _tags = set(tags)
+            for n in nodes:
+                if n.state == "running" and n["extra"]["tags"] in set(_tags):
+                    filtered_nodes.append(n)
+        else:
+            filtered_nodes = nodes
+        final = []
+        for n in filtered_nodes:
+            if n.state == "running":
+                _n = MachineInstance(
+                    node_id=n.id,
+                    machine_name=n.name,
+                    location=n.extra["zone"].name,
+                    tags=n.extra["tags"],
+                    main_addr=n.private_ips[0],
+                    private_ips=n.private_ips,
+                    public_ips=n.public_ips,
+                )
+                final.append(_n)
+        return final
+
+    def destroy_machine(self, node: Union[str, MachineInstance]):
         name = node
-        if isinstance(node, NodeInstance):
-            name = node.node_name
+        if isinstance(node, MachineInstance):
+            name = node.machine_name
         nodes = self.driver.list_nodes()
         _node = [n for n in nodes if n.name == name][0]
         _node.destroy()
-
-    def deploy(self, node: NodeInstance, ctx: ExecutionMachine) -> Dict[str, Any]:
-        key = ctx.ssh_key.private_path
-        run_sync(
-            ssh.scp_from_local,
-            remote_addr=node.main_addr,
-            remote_dir=ctx.agent_homedir,
-            local_file=ctx.agent_env_file,
-            keys=[key],
-        )
-
-        if ctx.node.volumes:
-            v = ctx.node.volumes[0]
-            mount_cmd = (
-                f"sudo mkdir -p {v.mount} && "
-                f"sudo mount /dev/sdb  {v.mount} && "
-                f"sudo mkdir -p {v.mount}/data && "
-                f"sudo chown {ctx.docker_uid}:{ctx.docker_gid} {v.mount}/data"
-            )
-            run_sync(ssh.run_cmd, node.main_addr, mount_cmd, keys=[key])
-
-        cmd = prepare_docker_cmd(
-            node.main_addr,
-            qnames=",".join(ctx.qnames),
-            docker_image=ctx.docker_image,
-            env_file=f"{ctx.agent_homedir}/{ctx.agent_env_file}",
-            workers=ctx.worker_procs,
-            docker_version=ctx.docker_version,
-        )
-
-        result = run_sync(ssh.run_cmd, node.main_addr, cmd, keys=[key])
-        r = {"result": result}
-        return r
 
     def create_volume(self, disk: BlockStorage) -> BlockInstance:
         vol = self.driver.create_volume(
@@ -161,20 +168,23 @@ class GCEProvider(ProviderSpec):
         block.extra = vol.extra
         return block
 
-    def destroy_volume(self, disk: BlockStorage) -> bool:
-        vol = [v for v in self.driver.list_volumes() if v.name == disk.name]
+    def destroy_volume(self, disk: Union[str, BlockStorage]) -> bool:
+        name = disk
+        if isinstance(disk, BlockStorage):
+            name = disk.name
+        vol = [v for v in self.driver.list_volumes() if v.name == name][0]
         rsp = self.driver.destroy_volume(vol)
         return rsp
 
-    def attach_volume(self, node: NodeInstance, disk: BlockStorage):
-        _node = [n for n in self.driver.list_nodes() if n.name == node.node_name][0]
+    def attach_volume(self, node: MachineInstance, disk: BlockStorage) -> bool:
+        _node = [n for n in self.driver.list_nodes() if n.name == node.machine_name][0]
         vol = [v for v in self.driver.list_volumes() if v.name == disk.name]
 
         res = self.driver.attach_volume(_node, vol)
         return res
 
-    def detach_volume(self, node: NodeInstance, disk: BlockStorage) -> bool:
-        _node = [n for n in self.driver.list_nodes() if n.name == node.node_name][0]
+    def detach_volume(self, node: MachineInstance, disk: BlockStorage) -> bool:
+        _node = [n for n in self.driver.list_nodes() if n.name == node.machine_name][0]
         vol = [v for v in self.driver.list_volumes() if v.name == disk.name]
         res = self.driver.detach_volume(vol, _node)
         return res

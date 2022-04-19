@@ -46,6 +46,7 @@ class ServerSettings(BaseSettings):
     AGENT_DATA_FOLDER: str = ".worker_data/"
     CLUSTER_SSH_KEY_USER: str = "op"
     CLUSTER_SSH_PUBLIC_KEY: Optional[str] = None
+    CLUSTER_SPEC: str = "scripts/clusters.yaml"
     AGENT_HOMEDIR: str = "/home/op"
     AGENT_ENV_FILE: str = ".env.dev.docker"
     AGENT_HEARTBEAT_CHECK: int = 60 * 5

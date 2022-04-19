@@ -1,14 +1,14 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from nb_workflows import defaults, errors
 from nb_workflows.hashes import generate_random
 from nb_workflows.types import ServerSettings
-from nb_workflows.types.cluster import (
+from nb_workflows.types.machine import (
     BlockStorage,
     ExecutionMachine,
     MachineGPU,
     MachineOrm,
-    NodeRequest,
+    MachineRequest,
     SSHKey,
 )
 from nb_workflows.utils import get_version, open_publickey, open_yaml
@@ -19,11 +19,10 @@ from .utils import get_local_machine, get_local_volume, ssh_from_settings
 def create_machine_ctx(
     machine: MachineOrm,
     qnames: List[str],
-    agent_env_file: str,
+    cluster: str,
     agent_homedir=defaults.AGENT_HOMEDIR,
     volumes: List[BlockStorage] = [],
     ssh_key: Optional[SSHKey] = None,
-    tags: List[str] = [],
     dynamic_workers=True,
     docker_uid=defaults.DOCKER_UID,
     docker_gid=defaults.DOCKER_GID,
@@ -43,7 +42,7 @@ def create_machine_ctx(
     execid = f"mch.{generate_random(8)}"
     version = docker_version or get_version()
 
-    _id = generate_random(size=10, alphabet=defaults.NANO_MACHINE_ALPHABET)
+    _id = generate_random(size=6, alphabet=defaults.NANO_MACHINE_ALPHABET)
     name = f"{machine.name}-{_id}"
     type_ = machine.machine_type
     worker_procs = 1
@@ -56,7 +55,9 @@ def create_machine_ctx(
         public_key = open_publickey(ssh_key.public_path)
         ssh_user = ssh_key.user
 
-    node = NodeRequest(
+    labels = {"cluster": cluster, "tags": [defaults.CLOUD_TAG]}
+
+    req = MachineRequest(
         name=name,
         ssh_public_cert=public_key,
         ssh_user=ssh_user,
@@ -65,18 +66,20 @@ def create_machine_ctx(
         size=type_.size,
         location=machine.location,
         network=type_.network,
-        tags=tags,
+        labels=labels,
     )
     ctx = ExecutionMachine(
         execid=execid,
         machine_name=name,
+        machine=req,
         provider=machine.provider,
-        node=node,
+        cluster=cluster,
         qnames=qnames,
-        agent_env_file=agent_env_file,
         agent_homedir=agent_homedir,
-        ssh_key=ssh_key,
         worker_procs=worker_procs,
+        ssh_key=ssh_key,
+        docker_uid=docker_uid,
+        docker_gid=docker_gid,
         docker_image=docker_image,
         docker_version=version,
     )
@@ -85,14 +88,18 @@ def create_machine_ctx(
 
 def machine_from_settings(
     machine_name: str,
+    cluster: str,
     qnames: List[str],
     settings: ServerSettings,
-    tags: List[str] = [],
     docker_version=None,
-    fp="scripts/machines.yaml",
+    inventory: Union[str, Dict[str, Any]] = "scripts/machines.yaml",
 ) -> ExecutionMachine:
+    """It will create a context from settings and the inventory file"""
 
-    data = open_yaml(fp)
+    data = inventory
+    if isinstance(inventory, str):
+        data = open_yaml(inventory)
+
     m = get_local_machine(machine_name, data)
     volumes = [get_local_volume(vol, data) for vol in m.volumes]
 
@@ -108,6 +115,5 @@ def machine_from_settings(
         docker_version=docker_version,
         docker_uid=settings.DOCKER_UID,
         docker_gid=settings.DOCKER_GID,
-        tags=tags,
     )
     return ctx

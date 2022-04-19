@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from nb_workflows.models import MachineModel
-from nb_workflows.types.cluster import MachineOrm, MachineType, NodeInstance
+from nb_workflows.types.machine import MachineOrm, MachineType
 
 
 def _insert(machine: MachineOrm):

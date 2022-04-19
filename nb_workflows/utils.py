@@ -389,3 +389,14 @@ def get_external_ip(dns="8.8.8.8"):
 
 def get_internal_ip() -> str:
     return socket.gethostbyname(socket.gethostname())
+
+
+def get_hostname() -> str:
+    return socket.gethostname()
+
+
+def get_class(fullclass_path):
+    module, class_ = fullclass_path.rsplit(".", maxsplit=1)
+    mod = import_module(module)
+    cls = getattr(mod, class_)
+    return cls
