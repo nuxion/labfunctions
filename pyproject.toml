@@ -85,11 +85,9 @@ server = [
 	"asyncpg", 
 	"alembic",
 	"rq-scheduler",
-	"rq"
-]
-cluster = [
+	"rq",
 	"apache-libcloud",
-	"asyncssh"
+	"asyncssh",
 ]
 
 [tool.poetry.dev-dependencies]
