@@ -1,7 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from nb_workflows.conf.defaults import API_VERSION
+from nb_workflows.defaults import API_VERSION
 from nb_workflows.managers import history_mg
 from nb_workflows.managers.history_mg import HistoryLastResponse
 from nb_workflows.models import HistoryModel

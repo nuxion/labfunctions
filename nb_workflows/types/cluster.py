@@ -1,77 +1,70 @@
-from typing import List, Optional, Union
+from typing import Any, Dict, List, NewType, Optional, Set, Tuple, Union
 
 from pydantic import BaseModel, BaseSettings
 
 from nb_workflows import defaults
 
 
-class GoogleConf(BaseSettings):
-    service_account: str
-    pem_file: str
-    project: str
-    datacenter: str
-    default_image: str = defaults.GCLOUD_IMG
-
-    class Config:
-        env_prefix = "NB_G"
-
-
-class DigitalOceanConf(BaseSettings):
-    acces_token: str
-    api_version: str = "v2"
-
-    class Config:
-        env_prefix = "NB_DO"
-
-
-class SSHKey(BaseModel):
-    public: str
-    private: Optional[str] = None
-    user: str = "op"
-
-
-class NodeInstance(BaseModel):
-    name: str
-    size: str
-    image: str
-    location: str  # zone
-    ssh_public: Optional[str] = None
-    ssh_user: str = "op"
-    network: str = "default"
-    tags: Optional[List[str]] = None
-
-
-class MachineType(BaseModel):
-    size: str
-    image: str
-    location: str  # zone
-    vcpus: int = 1
-    network: str = "default"
-
-
-class MachineOrm(BaseModel):
+class DataFolder(BaseModel):
+    projectid: str
     name: str
     provider: str
-    machine_type: MachineType
-    desc: Optional[str] = None
+    location: str
+    volume_name: str
 
 
-class ExecutionMachine(BaseModel):
-    execid: str
-    machine_name: str
+class ScaleItems(BaseModel):
+    """It scale by items enqueue in Redis queue"""
+
+    qname: str
+    items_gt: int
+    items_lt: int = -1
+    increase_by: int = 1
+    decrease_by: int = 1
+    name: str = "items"
+
+
+class ScaleIdle(BaseModel):
+    """idle_time in minutes"""
+
+    idle_time_gt: int
+    idle_time_lt: Optional[int] = None
+    name: str = "idle"
+
+
+class ScaleTimeframe(BaseModel):
+    pass
+
+
+class ClusterState(BaseModel):
+    agents_n: int
+    agents: Set[str]
+    queue_items: Dict[str, int]
+    idle_by_agent: Dict[str, int]
+    # machines:
+
+
+class ClusterPolicy(BaseModel):
+    min_nodes: int
+    max_nodes: int
+    strategies: List[Any] = []
+    default_nodes: Optional[int] = None
+
+
+class ClusterDiff(BaseModel):
+    to_delete: List[str]
+    to_create: int
+
+
+class ClusterSpec(BaseModel):
+    name: str
+    machine: str
     provider: str
-    ssh_key: SSHKey
-    node: NodeInstance
-    qnames: str
-    docker_version: str
-    worker_homedir: str
-    worker_env_file: str
-    # worker_name: str
-    worker_procs: int = 1
+    qnames: List[str]
+    policy: ClusterPolicy
+    location: str = "test"
 
 
-class ExecMachineResult(BaseModel):
-    execid: str
-    private_ips: List[str]
-    public_ips: Optional[List[str]] = None
-    node: NodeInstance
+class ClusterFile(BaseModel):
+    clusters: Dict[str, ClusterSpec]
+    inventory: Optional[str] = None

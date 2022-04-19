@@ -1,6 +1,6 @@
 import pytest
 
-from nb_workflows.conf.defaults import API_VERSION
+from nb_workflows.defaults import API_VERSION
 from nb_workflows.managers import runtimes_mg
 from nb_workflows.types.docker import RuntimeVersionData, RuntimeVersionOrm
 

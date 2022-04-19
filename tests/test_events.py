@@ -4,7 +4,7 @@ import aioredis
 import pytest
 from pytest_mock import MockerFixture
 
-from nb_workflows.conf.defaults import API_VERSION
+from nb_workflows.defaults import API_VERSION
 from nb_workflows.events import EventManager
 from nb_workflows.types.events import EventSSE
 

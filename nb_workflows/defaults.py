@@ -3,6 +3,7 @@ from collections import namedtuple
 # Shared defaults by server, agent and client
 QueuesNS = namedtuple("QueuesNS", ["control", "machine", "build"])
 Q_NS = QueuesNS(control="ctrl", machine="mch", build="bui")
+CLOUD_TAG = "nbworkflows"
 
 REFRESH_TOKEN_PATH = "/auth/refresh"
 
@@ -30,8 +31,10 @@ CLIENT_TIMEOUT = 60
 
 DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
 DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
-# DOCKERFILE_IMAGE = "python:3.8.10-slim"
 DOCKERFILE_IMAGE = "nuxion/nb_workflows:0.7.0"
+DOCKER_AUTHOR = "nbworkflows"
+DOCKER_UID = "1000"
+DOCKER_GID = "997"
 
 # Sanic
 SANIC_APP_NAME = "nb_workflows"
@@ -50,9 +53,6 @@ PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
 NANO_MACHINE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 
-DOCKER_AUTHOR = "nbworkflows"
-GCLOUD_SIZE = "e2-micro"
-GCLOUD_IMG = "debian-11-bullseye-v20220406"
-
-WORKER_HOMEDIR = "/home/op"
-WORKER_DOCKER_IMG = "nuxion/nb_workflows"
+AGENT_HOMEDIR = "/home/op"
+AGENT_DOCKER_IMG = "nuxion/nb_workflows"
+AGENT_ENV_TPL = "agent.docker.envfile"

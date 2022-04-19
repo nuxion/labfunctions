@@ -251,6 +251,7 @@ def open_yaml(filepath: str):
 
 
 def write_yaml(filepath: str, data, *args, **kwargs):
+
     with open(filepath, "w") as f:
         dict_ = yaml.dump(data, *args, **kwargs)
         f.write(dict_)
@@ -285,6 +286,19 @@ def execute_cmd(cmd) -> str:
         return out.decode().strip()
 
 
+def execute_cmd_no_block(cmd: str, check=True):
+    """Wrapper around subprocess
+    :param cmd: a string with the command to execute
+    :param check: if True then it will checks if the command was ok or raise a
+    CalledProccessError.
+
+    """
+    res = subprocess.Popen(
+        cmd.split(), shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    return res
+
+
 def path_relative(fp):
     """Given a  filepath returns a normalized a path"""
     return str(Path(fp))
@@ -313,14 +327,29 @@ def under_virtualenv() -> bool:
     return True
 
 
-def read(rel_path):
+def pkg_route() -> str:
+    """
+    Get the absoute path of the nb_workflows package whatever it is installed
+
+    It could be used to reference files inside of the package.
+
+    :return:
+    :type str:
+    """
     here = os.path.abspath(os.path.dirname(__file__))
+    return here
+
+
+def read_from_relative(rel_path) -> str:
+    here = pkg_route()
     with codecs.open(os.path.join(here, rel_path), "r") as fp:
         return fp.read()
 
 
 def get_version(rel_path="__version__.py"):
-    for line in read(rel_path).splitlines():
+    """It get the version of NB Workflows package, reading it
+    from __version__.py file"""
+    for line in read_from_relative(rel_path).splitlines():
         if line.startswith("__version__"):
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]
@@ -371,3 +400,18 @@ def get_external_ip(dns="8.8.8.8"):
     ip = s.getsockname()[0]
     s.close()
     return ip
+
+
+def get_internal_ip() -> str:
+    return socket.gethostbyname(socket.gethostname())
+
+
+def get_hostname() -> str:
+    return socket.gethostname()
+
+
+def get_class(fullclass_path):
+    module, class_ = fullclass_path.rsplit(".", maxsplit=1)
+    mod = import_module(module)
+    cls = getattr(mod, class_)
+    return cls

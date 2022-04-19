@@ -1,0 +1,19 @@
+---
+clusters:
+  local:
+    name: local
+    machine: local
+    provider: local
+    qnames:
+      - "default"
+      - "control"
+    policy:
+      min_nodes: 1
+      max_nodes: 1
+      strategies:
+        - name: idle
+          idle_time_gt: 1
+        - name: items
+          qname: "local.default"
+          items_gt: 1
+  

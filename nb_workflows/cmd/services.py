@@ -3,10 +3,11 @@ import sys
 
 import click
 
-from nb_workflows.conf import load_server
-from nb_workflows.utils import get_external_ip
+from nb_workflows.conf.server_settings import settings
+from nb_workflows.types.agent import AgentConfig
+from nb_workflows.utils import get_external_ip, get_hostname
 
-settings = load_server()
+hostname = get_hostname()
 
 
 @click.command(name="web")
@@ -59,7 +60,7 @@ def rqschedulercli(redis, interval, log_level):
     rqscheduler.run(redis, interval, log_level)
 
 
-@click.command(name="rqworker")
+@click.command(name="agent")
 @click.option("--workers", "-w", default=1, help="How many workers spawn")
 @click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
 @click.option(
@@ -69,32 +70,46 @@ def rqschedulercli(redis, interval, log_level):
     help="Comma separated list of queues to listen to",
 )
 @click.option(
+    "--cluster",
+    "-C",
+    default="default",
+    help="Cluster name, also it will be added as qname",
+)
+@click.option(
     "--ip-address",
     "-i",
     default=None,
     help="IP address of the host",
 )
 @click.option(
-    "--worker-name",
-    "-W",
+    "--agent-name",
+    "-a",
     default=None,
-    help="Worker Name",
+    help="Agent Name",
 )
-def rqworkercli(redis, workers, qnames, ip_address, worker_name):
-    """Run RQ worker"""
+@click.option("--machine-id", "-m", default=f"localhost/ba/{hostname}")
+def agentcli(redis, workers, qnames, cluster, ip_address, agent_name, machine_id):
+    """Run the agent"""
     # pylint: disable=import-outside-toplevel
-    from nb_workflows.control_plane import worker
+    from nb_workflows.control_plane import agent
 
     sys.path.append(settings.BASE_PATH)
     os.environ["NB_AGENT_TOKEN"] = settings.AGENT_TOKEN
     os.environ["NB_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
     os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
     ip_address = ip_address or get_external_ip(settings.DNS_IP_ADDRESS)
+    queues = qnames.split(",")
 
-    worker.run(
-        redis,
-        qnames.split(","),
-        name=worker_name,
+    conf = AgentConfig(
+        redis_dsn=redis,
+        cluster=cluster,
+        qnames=queues,
         ip_address=ip_address,
+        machine_id=machine_id,
+        heartbeat_ttl=settings.AGENT_HEARTBEAT_TTL,
+        heartbeat_check_every=settings.AGENT_HEARTBEAT_CHECK,
+        agent_name=agent_name,
         workers_n=workers,
     )
+
+    agent.run(conf)

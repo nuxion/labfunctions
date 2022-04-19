@@ -108,3 +108,8 @@ def test_utils_get_version():
     ver = utils.get_version("__version__.py")
     py_dict = utils.open_toml("pyproject.toml")
     assert ver == py_dict["tool"]["poetry"]["version"]
+
+
+def test_utils_pkg_route():
+    here = utils.pkg_route()
+    assert here.endswith("nb_workflows")

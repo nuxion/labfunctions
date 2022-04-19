@@ -5,9 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from nb_workflows import defaults
 from nb_workflows.types import ClientSettings, ServerSettings
-
-from . import defaults
 
 # from nb_workflows.utils import define_base_path
 # from logging import NullHandler

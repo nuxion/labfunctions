@@ -26,7 +26,7 @@ LOGFORMAT = detailed_format
 
 # General Folders for the server
 BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
-WORKER_DATA_FOLDER = ".worker_data/"
+AGENT_DATA_FOLDER = ".worker_data/"
 
 NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
 NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")

@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 
 import factory
@@ -27,8 +28,10 @@ from nb_workflows.types import (
     ScheduleData,
     WorkflowData,
     WorkflowDataWeb,
+    agent,
+    cluster,
+    machine,
 )
-from nb_workflows.types.cluster import MachineOrm, MachineType, NodeInstance
 from nb_workflows.types.docker import (
     DockerBuildCtx,
     DockerfileImage,
@@ -195,38 +198,83 @@ class DockerfileImageFactory(factory.Factory):
     image = "python-3.7"
 
 
-class NodeInstanceFactory(factory.Factory):
+class MachineRequestFactory(factory.Factory):
     class Meta:
-        model = NodeInstance
+        model = machine.MachineRequest
 
     name = factory.Sequence(lambda n: "name-%d" % n)
     size = factory.Sequence(lambda n: "size-%d" % n)
     image = factory.Sequence(lambda n: "img-%d" % n)
     location = factory.Sequence(lambda n: "location-%d" % n)
-    ssh_public = factory.LazyAttribute(lambda n: generate_random(24))
+    internal_ip = "dynamic"
+    external_ip = "dynamic"
+    ssh_public_cert = factory.LazyAttribute(lambda n: generate_random(24))
     ssh_user = factory.LazyAttribute(lambda n: generate_random(24))
     network = factory.Sequence(lambda n: "net-%d" % n)
-    tags = factory.LazyAttribute(lambda n: [f"tag-{r}" for r in range(5)])
+    labels = factory.LazyAttribute(lambda n: {"tag-{r}": f"{r}" for r in range(5)})
+
+
+class MachineInstanceFactory(factory.Factory):
+    class Meta:
+        model = machine.MachineInstance
+
+    machine_id = factory.Sequence(lambda n: "id-%d" % n)
+    machine_name = factory.LazyAttribute(lambda n: generate_random(5))
+    location = factory.Sequence(lambda n: "loc-%d" % n)
+    location = factory.Sequence(lambda n: "location-%d" % n)
+    private_ips = ["127.0.0.1"]
+    public_ips = ["200.43.33.188"]
+    volumes = []
+    labels = factory.LazyAttribute(lambda n: {"tag-{r}": f"{r}" for r in range(5)})
 
 
 class MachineTypeFactory(factory.Factory):
     class Meta:
-        model = MachineType
+        model = machine.MachineType
 
     size = factory.Sequence(lambda n: "size-%d" % n)
     image = factory.Sequence(lambda n: "img-%d" % n)
-    location = factory.Sequence(lambda n: "location-%d" % n)
+    vcpus = 1
     network = factory.Sequence(lambda n: "net-%d" % n)
+
+
+class AgentNodeFactory(factory.Factory):
+    class Meta:
+        model = agent.AgentNode
+
+    ip_address = factory.Sequence(lambda n: "10.10.2.%d" % n)
+    name = factory.LazyAttribute(lambda n: generate_random(5))
+    pid = factory.Sequence(lambda n: "90%d" % n)
+    qnames = factory.LazyAttribute(lambda n: [f"qname-{r}" for r in range(2)])
+    cluster = factory.Sequence(lambda n: "cluster-%d" % n)
+    workers = factory.LazyAttribute(lambda n: [f"qname-{r}" for r in range(5)])
+    birthday = factory.LazyAttribute(lambda n: int(datetime.utcnow().timestamp()))
+    machine_id = factory.LazyAttribute(lambda n: generate_random(5))
 
 
 class MachineOrmFactory(factory.Factory):
     class Meta:
-        model = MachineOrm
+        model = machine.MachineOrm
 
     name = factory.Sequence(lambda n: "name-%d" % n)
     desc = factory.Sequence(lambda n: "desc-%d" % n)
     provider = factory.Sequence(lambda n: "prov-%d" % n)
+    location = factory.Sequence(lambda n: "loc-%d" % n)
     machine_type = factory.LazyAttribute(lambda n: MachineTypeFactory())
+    gpu = factory.LazyAttribute(
+        lambda n: machine.MachineGPU(name="nvidia", gpu_type="tesla")
+    )
+
+
+class ClusterStateFactory(factory.Factory):
+    class Meta:
+        model = cluster.ClusterState
+
+    # agents_n = factory.LazyAttribute(lambda n: random.randint(0, 10))
+    agents_n = 2
+    agents = factory.LazyAttribute(lambda n: [f"agent-{r}" for r in range(2)])
+    queue_items = {"default": 5}
+    idle_by_agent = {"agent-0": 5, "agent-1": 0}
 
 
 class DockerBuildCtxFactory(factory.Factory):

@@ -3,10 +3,10 @@ import pytest
 from nb_workflows.executors import context
 from nb_workflows.managers import machine_mg
 from nb_workflows.models import MachineModel
-from nb_workflows.types.cluster import (
+from nb_workflows.types.machine import (
     ExecutionMachine,
+    MachineInstance,
     MachineOrm,
-    NodeInstance,
     SSHKey,
 )
 
@@ -61,12 +61,3 @@ def test_machine_insert():
     mo = MachineOrmFactory()
     stmt = machine_mg._insert(mo)
     assert "machine" in str(stmt)
-
-
-def test_machine_create_machine_ctx():
-    mo = MachineOrmFactory()
-    ssh = SSHKey(public="tests/dummy_rsa.pub", user="op")
-    ctx = context.create_machine_ctx(mo, ssh, worker_env_file="test.txt")
-    assert isinstance(ctx, ExecutionMachine)
-    assert ctx.qnames == mo.name
-    assert isinstance(ctx.node, NodeInstance)

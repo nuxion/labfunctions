@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from nb_workflows.models import MachineModel
-from nb_workflows.types.cluster import MachineOrm, MachineType, NodeInstance
+from nb_workflows.types.machine import MachineOrm, MachineType
 
 
 def _insert(machine: MachineOrm):
@@ -49,15 +49,7 @@ async def get_list(session, limit=1) -> List[MachineOrm]:
     stmt = _select_machine().order_by(MachineModel.created_at.desc()).limit(limit)
     rows = await session.execute(stmt)
 
-    return [
-        MachineOrm(
-            name=r[0].name,
-            provider=r[0].provider,
-            machine_type=MachineType(**r[0].machine_type),
-            desc=r[0].desc,
-        )
-        for r in rows
-    ]
+    return [MachineOrm.from_orm(r[0]) for r in rows]
 
 
 async def get_one(session, name: str) -> MachineModel:
