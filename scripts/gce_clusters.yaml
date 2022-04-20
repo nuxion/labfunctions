@@ -1,5 +1,5 @@
 ---
-inventory: nb_workflows/config/machines.yaml
+inventory: nb_workflows/conf/machines.yaml
 clusters:
   default:
     name: default
