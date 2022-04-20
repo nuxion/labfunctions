@@ -23,6 +23,14 @@ volumes:
     size: 10
     kind: 'pd'
     mount: /home/nuxion/data
+  gce-boot-small:
+    name: gce-boot-small
+    image: "nbworker-2022-04-08"
+    description: to use as boot disk
+    location: "us-central1-c"
+    size: 20
+    kind: 'pd-standard'
+    mount: /
 
 machines:
   snapshooter:
@@ -45,6 +53,17 @@ machines:
       size: "e2-micro"
       image: "nbworker-2022-04-08"
       vcpus: 1
+  gce-small-cpu:
+    name: gce-small-cpu
+    desc: Small cpu machine for gce
+    provider: gce
+    location: "us-central1-c"
+    machine_type:
+      size: "e2-small"
+      image: "nbworker-2022-04-08"
+      vcpus: 2
+    volumes:
+      - gce-boot-small
   do-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for DO

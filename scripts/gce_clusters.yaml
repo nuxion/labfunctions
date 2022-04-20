@@ -1,5 +1,6 @@
 ---
 inventory: nb_workflows/conf/machines.yaml
+default_cluster: default
 clusters:
   default:
     name: default
@@ -17,5 +18,22 @@ clusters:
         - name: items
           qname: "default.default"
           items_gt: 1
-        
-      
+  small:
+    name: small
+    machine: gce-small-cpu
+    provider: gce
+    qnames:
+    - "default"
+    - "control"
+    policy:
+      min_nodes: 1
+      max_nodes: 1
+      strategies:
+        - name: idle
+          idle_time_gt: 1
+        - name: items
+          qname: "small.default"
+          items_gt: 1
+
+
+

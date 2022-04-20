@@ -50,6 +50,7 @@ class BlockStorage(BaseModel):
     mount: str = "/mnt/disk0"
     create_if_not_exist: bool = False
     snapshot: Optional[str] = None
+    image: Optional[str] = None
     permissions: Optional[List[str]] = None
     description: Optional[str] = None
     kind: Optional[str] = None
@@ -139,7 +140,7 @@ class MachineInstance(BaseModel):
     location: str
     private_ips: List[str]
     public_ips: Optional[List[str]] = None
-    volumes: List[BlockStorage] = []
+    volumes: List[str] = []
     labels: Optional[Dict[str, Any]] = None
     extra: Optional[ExtraField] = None
 
@@ -151,6 +152,7 @@ class BlockInstance(BaseModel):
     location: str
     mount: Optional[str] = None
     snapshot: Optional[str] = None
+    image: Optional[str] = None
     permissions: Optional[List[str]] = None
     description: Optional[str] = None
     kind: Optional[str] = None

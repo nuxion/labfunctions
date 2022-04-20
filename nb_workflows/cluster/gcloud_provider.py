@@ -10,6 +10,8 @@ from libcloud.compute.providers import get_driver
 from libcloud.compute.types import Provider
 from pydantic import BaseSettings
 
+from nb_workflows import defaults
+from nb_workflows.hashes import generate_random
 from nb_workflows.types.machine import (
     BlockInstance,
     BlockStorage,
@@ -82,6 +84,20 @@ class GCEProvider(ProviderSpec):
             return to_attach
         return None
 
+    def _create_boot_disk(
+        self, volumes: List[BlockStorage]
+    ) -> Union[BlockInstance, None]:
+        instance = None
+        for v in volumes:
+            if v.mount == "/":
+                random_name = generate_random(
+                    size=6, alphabet=defaults.NANO_MACHINE_ALPHABET
+                )
+                v.name = f"boot-{random_name}"
+                instance = self.create_volume(v)
+                break
+        return instance
+
     def create_machine(self, node: MachineRequest) -> MachineInstance:
         metadata = {
             "items": [
@@ -90,7 +106,10 @@ class GCEProvider(ProviderSpec):
         }
         volumes = None
         if node.volumes:
-            volumes = self._get_volumes_to_attach(node.volumes)
+            non_boot = [v for v in node.volumes if v.mount != "/"]
+            volumes = self._get_volumes_to_attach(non_boot)
+
+        boot = self._create_boot_disk(node.volumes)
 
         tags = node.labels.get("tags")
         _labels = deepcopy(node.labels)
@@ -102,19 +121,27 @@ class GCEProvider(ProviderSpec):
             size=node.size,
             image=node.image,
             location=node.location,
+            ex_boot_disk=boot.name,
             ex_network=node.network,
             ex_metadata=metadata,
             ex_tags=tags,
             ex_labels=labels,
         )
+
+        attached = []
         if volumes:
             for v in volumes:
-                self.driver.attach_volume(instance, v)
+                _attached = self.driver.attach_volume(instance, v)
+                if _attached:
+                    attached.append(v.name)
+            if boot:
+                attached.append(boot.name)
 
         res = MachineInstance(
             machine_id=f"/gce/{node.location}/{node.name}",
             machine_name=node.name,
             location=node.location,
+            volumes=attached,
             main_addr=instance.private_ips[0],
             private_ips=instance.private_ips,
             public_ips=instance.public_ips,
@@ -163,6 +190,7 @@ class GCEProvider(ProviderSpec):
             disk.size,
             disk.name,
             location=disk.location,
+            image=disk.image,
             snapshot=disk.snapshot,
             ex_disk_type=disk.kind,
         )
