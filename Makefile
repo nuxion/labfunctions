@@ -17,7 +17,8 @@ export USAGE
 .EXPORT_ALL_VARIABLES:
 VERSION := $(shell git describe --tags)
 VERSION_POETRY := $(shell poetry version | awk '{print $2}')
-FULLPY_PKG:= $(shell python scripts/poetry_version.py)
+FULLPY_PKG := $(shell python scripts/get_package_name.py)
+API_VERSION := "v1"
 BUILD := $(shell git rev-parse --short HEAD)
 PROJECTNAME := $(shell basename "$(PWD)")
 PACKAGE_DIR = $(shell basename "$(PWD)")
@@ -60,7 +61,11 @@ prepare: lock
 	echo ${PWD}
 	tar xvfz dist/${FULLPY_PKG}.tar.gz -C dist/
 	cp dist/${FULLPY_PKG}/setup.py .
-	# rm -Rf dist/
+
+prerelease: prepare
+	poetry version prerelease
+	./scripts/update_versions.sh ${API_VERSION}
+	# poetry publish -r test
 
 black:
 	black --config ./.black.toml nb_workflows tests
@@ -87,29 +92,9 @@ e2e:
 install:
 	poetry install --dev
 
-.PHONY: run
-run:
-	docker run --rm -p 127.0.0.1:8100:8000 -p 127.0.0.1:8110:8001 ${DOCKERID}/${PROJECTNAME}
-
 .PHONY: web
 web:
 	poetry run nb web --apps workflows,history,projects -A --workers 1 -L
-
-.PHONY: rqworker
-rqworker:
-	poetry run nb rqworker -w 1
-
-.PHONY: rqscheduler
-rqscheduler:
-	poetry run nb rqscheduler
-
-.PHONY: jupyter
-jupyter:
-	poetry run jupyter lab --NotebookApp.token=testing
-
-.PHONY: docker
-docker:
-	docker build -t ${DOCKERID}/${PROJECTNAME} .
 
 .PHONY: docker-client
 docker-client:
@@ -139,16 +124,17 @@ client-env:
 	cd $($@_TMP)
 
 
-.PHONY: docker-local
-docker-local:
+.PHONY: docker
+docker:
 	docker build -t ${DOCKERID}/${PROJECTNAME} .
 	docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION)
 
-.PHONY: release
-release: 
+.PHONY: docker-release
+docker-release: docker
 	# docker tag ${DOCKERID}/${PROJECTNAME} ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:$(VERSION)
 	docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION)
 	docker push ${DOCKERID}/${PROJECTNAME}:$(VERSION)
+	docker push ${DOCKERID}/${PROJECTNAME}:latest
 
 .PHONY: publish
 publish:

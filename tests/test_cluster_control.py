@@ -31,13 +31,13 @@ def test_cluster_control_inventory_init():
 def test_cluster_control_inventory_machines_by():
     i = Inventory()
 
-    machines = i.machines_by_provider("gce")
+    machines = i.machines_by_provider("local")
     assert machines
 
 
 def test_inventory_provider():
     i = Inventory()
-    p = i.get_provider("gce")
+    p = i.get_provider("local")
     assert isinstance(p, ProviderSpec)
 
 
