@@ -105,8 +105,11 @@ class ClusterControl:
             spec = cls.load_spec(v)
             clusters[k] = spec
         inventory = data.get("inventory")
+        default_cluster = data.get("default_cluster")
 
-        return ClusterFile(clusters=clusters, inventory=inventory)
+        return ClusterFile(
+            clusters=clusters, inventory=inventory, default_cluster=default_cluster
+        )
 
     def refresh(self):
         self.state = self.build_state()

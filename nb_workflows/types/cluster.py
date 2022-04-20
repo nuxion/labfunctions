@@ -68,3 +68,4 @@ class ClusterSpec(BaseModel):
 class ClusterFile(BaseModel):
     clusters: Dict[str, ClusterSpec]
     inventory: Optional[str] = None
+    default_cluster: Optional[str] = None
