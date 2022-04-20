@@ -1,10 +1,12 @@
 # :rocket: NB Workflows
 
-[![nb-workflows](https://github.com/nuxion/nb_workflows/actions/workflows/main.yaml/badge.svg)](https://github.com/nuxion/nb_workflows/actions/workflows/main.yaml)
-![readthedocs](https://readthedocs.org/projects/nb_workflows/badge/?version=latest)
-![PyPI - Format](https://img.shields.io/pypi/format/nb_workflows)
-![PyPI - Status](https://img.shields.io/pypi/status/nb_workflows)
 
+[![nb-workflows](https://github.com/nuxion/nb_workflows/actions/workflows/main.yaml/badge.svg)](https://github.com/nuxion/nb_workflows/actions/workflows/main.yaml)
+[![readthedocs](https://readthedocs.org/projects/nb_workflows/badge/?version=latest)](https://nb-workflows.readthedocs.io/en/latest/)
+[![PyPI - Version](https://img.shields.io/pypi/v/nb-workflows)](https://pypi.org/project/nb-workflows/)
+[![PyPI - Format](https://img.shields.io/pypi/format/nb_workflows)](https://pypi.org/project/nb-workflows/)
+[![PyPI - Status](https://img.shields.io/pypi/status/nb_workflows)](https://pypi.org/project/nb-workflows/)
+[![Docker last](https://img.shields.io/docker/v/nuxion/nb_workflows/0.7.0)](https://hub.docker.com/r/nuxion/nb_workflows/tags)
 [![codecov](https://codecov.io/gh/nuxion/nb_workflows/branch/main/graph/badge.svg?token=F025Y1BF9U)](https://codecov.io/gh/nuxion/nb_workflows)
 
 
