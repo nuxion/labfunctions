@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nb_workflows"
-version = "0.7.0"
+version = "0.8.0-alpha.4"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [

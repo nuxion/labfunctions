@@ -357,6 +357,15 @@ def get_version(rel_path="__version__.py"):
         raise RuntimeError("Unable to find version string.")
 
 
+def get_api_version(rel_path="__version__.py"):
+    for line in read_from_relative(rel_path).splitlines():
+        if line.startswith("__api_version__"):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError("Unable to find version string.")
+
+
 def parse_var_line(line):
     """
     This regex works only if spaces are not used

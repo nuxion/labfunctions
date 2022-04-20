@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-
 jobs:
   build-n-test:
     runs-on: ubuntu-latest
@@ -37,18 +36,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements/requirements_dev.txt ]; then pip install -r requirements/requirements_dev.txt; fi
-          # - name: Lint with pylint
-          #   run: |
-          #     # stop the build if there are Python syntax errors or undefined names
-          #     pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
+      - name: Lint with pylint
+        run: |
+            # stop the build if there are Python syntax errors or undefined names
+            pylint --disable=R,C,W --ignore=rqjobs_bp.py,registers.py nb_workflows/
       - name: Test with pytest
         env:
           NB_SQL: postgresql://postgres:secret@127.0.0.1:5432/nb_workflows
           NB_ASQL: postgresql+asyncpg://postgres:secret@127.0.0.1:5432/nb_workflows
           NB_RQ_REDIS: redis://localhost:6379/2
           NB_WEB_REDIS: redis://localhost:6379/0
-          NB_GCE_SERVICE_ACCOUNT: test
+          NB_GCE_SERVICE_ACCOUNT: 999999999-compute@developer.gserviceaccount.com
           NB_GCE_PROJECT: test
+          NB_GCE_DATACENTER: us-central1-c
+          NB_GCE_PEM_FILE: tests/dummy_gce_creds.json
+          NB_CLUSTER_SSH_PUBLIC_KEY: tests/dummy_rsa.pub
           NB_LCL_WORKING_DIR: /tmp/machines
 
         run: |
