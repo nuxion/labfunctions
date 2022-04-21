@@ -44,6 +44,15 @@ machines:
       vcpus: 1
     volumes:
       - snapshot-base
+  gce-tiny-default:
+    name: tiny-cpu
+    desc: Tiny cpu machine for gce
+    provider: gce
+    location: "us-central1-c"
+    machine_type:
+      size: "e2-micro"
+      image: "debian-11-bullseye-v20220406"
+      vcpus: 1
   gce-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for gce
@@ -64,6 +73,18 @@ machines:
       vcpus: 2
     volumes:
       - gce-boot-small
+  gce-small-gpu:
+    name: gce-small-gpu
+    desc: It includes a nvidia-tesla-t4
+    provider: gce
+    location: us-east1-c
+    machine_type:
+      size: n1-standard-1
+      image: "debian-11-bullseye-v20220406"
+      vcpus: 1
+    volumes:
+      - gce-boot-small
+        # gpu:
   do-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for DO

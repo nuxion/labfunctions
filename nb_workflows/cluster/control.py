@@ -72,12 +72,13 @@ class ClusterControl:
     }
     STRATEGIES = {"items": ScaleItems, "idle": ScaleIdle}
 
-    def __init__(self, rdb: redis.Redis, spec: ClusterSpec, inventory: Inventory):
-        self.rdb = rdb
+    def __init__(
+        self, register: AgentRegister, spec: ClusterSpec, inventory: Inventory
+    ):
         self.name = spec.name
         self.spec = spec
         self.inventory = inventory
-        self.register = AgentRegister(rdb, cluster=spec.name)
+        self.register = register
         self.state = self.build_state()
 
     @property
@@ -171,7 +172,7 @@ class ClusterControl:
             settings=settings,
             inventory=self.inventory,
         )
-        print(f"Creating machine: {ctx.machine.name}")
+        print(f"=> Creating machine: {ctx.machine.name}")
         instance = provider.create_machine(ctx.machine)
         ip = instance.private_ips[0]
         if use_public:
@@ -187,10 +188,10 @@ class ClusterControl:
         )
         if do_deploy and deploy_local:
             res = deploy.agent_local(req, settings.dict())
-            print(res)
+            print("=> ", res)
         elif do_deploy:
             res = deploy.agent(req, settings.dict())
-            print(res)
+            print("=> ", res)
         self.register.register_machine(instance)
         return instance
 
@@ -215,12 +216,12 @@ class ClusterControl:
         new_state = self.apply_policies()
         diff = self.difference(new_state)
 
-        print(f"To create: {diff.to_create}")
+        print(f"=> To create: {diff.to_create}")
         for _ in range(diff.to_create):
             self.create_instance(
                 provider, settings, use_public=use_public, deploy_local=deploy_local
             )
 
         for agt in diff.to_delete:
-            print(f"Deleting agent {agt}")
+            print(f"=> Deleting agent {agt}")
             self.destroy_instance(provider, agt)

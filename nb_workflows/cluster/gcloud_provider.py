@@ -110,6 +110,9 @@ class GCEProvider(ProviderSpec):
             volumes = self._get_volumes_to_attach(non_boot)
 
         boot = self._create_boot_disk(node.volumes)
+        boot_name = None
+        if boot:
+            boot_name = boot.name
 
         tags = node.labels.get("tags")
         _labels = deepcopy(node.labels)
@@ -121,7 +124,7 @@ class GCEProvider(ProviderSpec):
             size=node.size,
             image=node.image,
             location=node.location,
-            ex_boot_disk=boot.name,
+            ex_boot_disk=boot_name,
             ex_network=node.network,
             ex_metadata=metadata,
             ex_tags=tags,

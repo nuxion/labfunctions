@@ -34,7 +34,8 @@ def test_cli_cluster_machine_create(mocker: MockerFixture, redis):
     cc_mock.create_instance.return_value = m
 
     result = runner.invoke(
-        cluster.create_machinecli, ["--from-file", "tests/clusters_test.yaml", "local"]
+        cluster.create_machinecli,
+        ["--from-file", "tests/clusters_test.yaml", "-C", "local"],
     )
     assert result.exit_code == 0
 
@@ -43,7 +44,7 @@ def test_cli_cluster_machine_create_error(mocker: MockerFixture, redis):
     runner = CliRunner()
     result = runner.invoke(
         cluster.create_machinecli,
-        ["--from-file", "tests/clusters_test.yaml", "non-exist"],
+        ["--from-file", "tests/clusters_test.yaml", "-C", "non-exist"],
     )
     assert result.exit_code == -1
 
