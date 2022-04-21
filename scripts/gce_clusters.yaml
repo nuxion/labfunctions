@@ -4,7 +4,8 @@ default_cluster: default
 clusters:
   default:
     name: default
-    machine: gce-tiny-cpu
+    #machine: gce-tiny-cpu
+    machine: gce-tiny-default
     provider: gce
     qnames:
       - "default"

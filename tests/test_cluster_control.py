@@ -1,6 +1,7 @@
 from nb_workflows.cluster import Inventory, ProviderSpec
 from nb_workflows.cluster.control import ClusterControl, apply_scale_items
 from nb_workflows.cluster.inventory import Inventory
+from nb_workflows.control_plane.register import AgentRegister
 from nb_workflows.types.cluster import (
     ClusterFile,
     ClusterPolicy,
@@ -53,7 +54,8 @@ def test_cluster_control_load():
 def test_cluster_control_init(redis):
     clusters = ClusterControl.load_cluster_file("tests/clusters_test.yaml")
     inventory = Inventory(clusters.inventory)
-    cc = ClusterControl(redis, clusters.clusters["local"], inventory)
+    are = AgentRegister(redis, "local")
+    cc = ClusterControl(are, clusters.clusters["local"], inventory)
     policy = cc.policy
 
     assert cc.cluster_name == "local"
