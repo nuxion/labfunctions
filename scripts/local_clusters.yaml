@@ -4,6 +4,7 @@ clusters:
   local:
     name: local
     machine: local
+    location: home
     provider: local
     qnames:
       - "default"

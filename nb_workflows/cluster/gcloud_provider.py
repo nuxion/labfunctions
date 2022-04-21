@@ -140,6 +140,14 @@ class GCEProvider(ProviderSpec):
             if boot:
                 attached.append(boot.name)
 
+        maintence_policy = None
+        accelerator_type = None
+        accelerator_count = None
+        if node.gpu:
+            maintence_policy = "TERMINATE"
+            accelerator_type = node.gpu.gpu_type
+            accelerator_count = node.gpu.count
+
         res = MachineInstance(
             machine_id=f"/gce/{node.location}/{node.name}",
             machine_name=node.name,
@@ -148,6 +156,11 @@ class GCEProvider(ProviderSpec):
             main_addr=instance.private_ips[0],
             private_ips=instance.private_ips,
             public_ips=instance.public_ips,
+            ex_accelerator_type=accelerator_type,
+            ex_accelerator_count=accelerator_count,
+            ex_on_host_maintenance=maintence_policy,
+            ex_labels=labels,
+            ex_tags=tags,
         )
         return res
 

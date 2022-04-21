@@ -35,6 +35,26 @@ clusters:
         - name: items
           qname: "small.default"
           items_gt: 1
+  small-gpu:
+    name: small-gpu
+    machine: gce-small-gpu
+    provider: gce
+    qnames:
+    - "default"
+    - "control"
+    policy:
+      min_nodes: 1
+      max_nodes: 1
+      strategies:
+        - name: idle
+          idle_time_gt: 1
+        - name: items
+          qname: "small-gpu.default"
+          items_gt: 1
+
+
+
+
 
 
 

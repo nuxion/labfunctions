@@ -70,7 +70,6 @@ class ClusterControl:
         "idle": apply_idle,
         # "minmax": apply_minmax
     }
-    STRATEGIES = {"items": ScaleItems, "idle": ScaleIdle}
 
     def __init__(
         self, register: AgentRegister, spec: ClusterSpec, inventory: Inventory
@@ -80,6 +79,7 @@ class ClusterControl:
         self.inventory = inventory
         self.register = register
         self.state = self.build_state()
+        self.provider = self.get_provider()
 
     @property
     def cluster_name(self):
@@ -87,30 +87,6 @@ class ClusterControl:
 
     def get_provider(self) -> ProviderSpec:
         return self.inventory.get_provider(self.spec.provider)
-
-    @classmethod
-    def load_spec(cls, spec_data) -> ClusterSpec:
-        c = ClusterSpec(**spec_data)
-        strategies = []
-        for strategy in c.policy.strategies:
-            s = cls.STRATEGIES[strategy["name"]](**strategy)
-            strategies.append(s)
-        c.policy.strategies = strategies
-        return c
-
-    @classmethod
-    def load_cluster_file(cls, yaml_path) -> ClusterFile:
-        data = open_yaml(yaml_path)
-        clusters = {}
-        for k, v in data["clusters"].items():
-            spec = cls.load_spec(v)
-            clusters[k] = spec
-        inventory = data.get("inventory")
-        default_cluster = data.get("default_cluster")
-
-        return ClusterFile(
-            clusters=clusters, inventory=inventory, default_cluster=default_cluster
-        )
 
     def refresh(self):
         self.state = self.build_state()
@@ -159,7 +135,6 @@ class ClusterControl:
 
     def create_instance(
         self,
-        provider: ProviderSpec,
         settings: ServerSettings,
         do_deploy=True,
         use_public=False,
@@ -169,11 +144,13 @@ class ClusterControl:
             self.spec.machine,
             cluster=self.name,
             qnames=self.spec.qnames,
+            network=self.spec.network,
+            location=self.spec.location,
             settings=settings,
             inventory=self.inventory,
         )
         print(f"=> Creating machine: {ctx.machine.name}")
-        instance = provider.create_machine(ctx.machine)
+        instance = self.provider.create_machine(ctx.machine)
         ip = instance.private_ips[0]
         if use_public:
             ip = instance.public_ips[0]
@@ -195,7 +172,7 @@ class ClusterControl:
         self.register.register_machine(instance)
         return instance
 
-    def destroy_instance(self, provider: ProviderSpec, agent_name: str):
+    def destroy_instance(self, agent_name: str):
         agent = self.register.get(agent_name)
         if agent:
             self.register.kill_workers_from_agent(agent.name)
@@ -204,11 +181,10 @@ class ClusterControl:
             self.register.unregister_machine(agent.machine_id)
         else:
             machine = agent_name
-        provider.destroy_machine(machine)
+        self.provider.destroy_machine(machine)
 
     def scale(
         self,
-        provider: ProviderSpec,
         settings: ServerSettings,
         use_public=False,
         deploy_local=False,
@@ -219,9 +195,9 @@ class ClusterControl:
         print(f"=> To create: {diff.to_create}")
         for _ in range(diff.to_create):
             self.create_instance(
-                provider, settings, use_public=use_public, deploy_local=deploy_local
+                settings, use_public=use_public, deploy_local=deploy_local
             )
 
         for agt in diff.to_delete:
             print(f"=> Deleting agent {agt}")
-            self.destroy_instance(provider, agt)
+            self.destroy_instance(agt)

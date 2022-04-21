@@ -56,7 +56,11 @@ def create_machine_ctx(
         public_key = open_publickey(ssh_key.public_path)
         ssh_user = ssh_key.user
 
-    labels = {"cluster": cluster, "tags": [defaults.CLOUD_TAG]}
+    gpu = "no"
+    if machine.gpu:
+        gpu = "yes"
+
+    labels = {"cluster": cluster, "gpu": gpu, "tags": [defaults.CLOUD_TAG]}
 
     req = MachineRequest(
         name=name,
@@ -92,14 +96,23 @@ def machine_from_settings(
     cluster: str,
     qnames: List[str],
     settings: ServerSettings,
+    network: Optional[str] = None,
+    location: Optional[str] = None,
     docker_version=None,
     inventory: Optional[Inventory] = None,
 ) -> ExecutionMachine:
-    """It will create a context from settings and the inventory file"""
+    """It will create a context from settings and the inventory file
+    if network or location are set (mainly from the clusterspec) then
+    it will will overwrite the definition from inventory.
+    """
 
     inventory = inventory or Inventory()
 
-    m = inventory.machines[machine_name]
+    m: MachineOrm = inventory.machines[machine_name]
+    if network:
+        m.machine_type.network = network
+    if location:
+        m.location = location
     volumes = [inventory.volumes[vol] for vol in m.volumes]
 
     ssh = ssh_from_settings(settings)

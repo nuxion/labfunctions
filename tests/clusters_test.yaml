@@ -6,6 +6,7 @@ clusters:
     name: local
     machine: local
     provider: local
+    location: "unittest"
     qnames:
       - "default"
       - "control"
@@ -18,4 +19,23 @@ clusters:
         - name: items
           qname: "local.default"
           items_gt: 1
+  external:
+    name: external
+    machine: gce-tiny-cpu
+    provider: gce
+    location: "us"
+    network: "non-default"
+    qnames:
+      - "control"
+    policy:
+      min_nodes: 1
+      max_nodes: 1
+      strategies:
+        - name: idle
+          idle_time_gt: 1
+        - name: items
+          qname: "control.default"
+          items_gt: 1
+  
+
   

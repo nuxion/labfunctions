@@ -34,7 +34,7 @@ class MachineGPU(BaseModel):
 
     name: str
     gpu_type: str
-    number: int = 1
+    count: int = 1
     extra: ExtraField = None
 
 

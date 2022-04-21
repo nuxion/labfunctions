@@ -214,6 +214,16 @@ class MachineRequestFactory(factory.Factory):
     labels = factory.LazyAttribute(lambda n: {"tag-{r}": f"{r}" for r in range(5)})
 
 
+class BlockStorageFactory(factory.Factory):
+    class Meta:
+        model = machine.BlockStorage
+
+    name = factory.Sequence(lambda n: "name-%d" % n)
+    size = factory.LazyAttribute(lambda n: random.randint(10, 20))
+    location = factory.Sequence(lambda n: "loc-%d" % n)
+    mount = factory.Sequence(lambda n: "/mnt/disk%d" % n)
+
+
 class MachineInstanceFactory(factory.Factory):
     class Meta:
         model = machine.MachineInstance
@@ -224,6 +234,7 @@ class MachineInstanceFactory(factory.Factory):
     location = factory.Sequence(lambda n: "location-%d" % n)
     private_ips = ["127.0.0.1"]
     public_ips = ["200.43.33.188"]
+    # volumes = factory.LazyAttribute(lambda n: [BlockStorageFactory()])
     volumes = []
     labels = factory.LazyAttribute(lambda n: {"tag-{r}": f"{r}" for r in range(5)})
 
