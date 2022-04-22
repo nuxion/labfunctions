@@ -7,6 +7,7 @@ clusters:
     #machine: gce-tiny-cpu
     machine: gce-tiny-default
     provider: gce
+    location: "us-central1-c"
     qnames:
       - "default"
       - "control"
@@ -23,9 +24,10 @@ clusters:
     name: small
     machine: gce-small-cpu
     provider: gce
+    location: "us-central1-c"
     qnames:
-    - "default"
-    - "control"
+      - "default"
+      - "control"
     policy:
       min_nodes: 1
       max_nodes: 1
@@ -39,9 +41,10 @@ clusters:
     name: small-gpu
     machine: gce-small-gpu
     provider: gce
+    location: "us-east1-c"
     qnames:
-    - "default"
-    - "control"
+      - "default"
+      - "control"
     policy:
       min_nodes: 1
       max_nodes: 1

@@ -66,6 +66,7 @@ def create_machine_ctx(
         name=name,
         ssh_public_cert=public_key,
         ssh_user=ssh_user,
+        gpu=machine.gpu,
         image=type_.image,
         volumes=volumes,
         size=type_.size,

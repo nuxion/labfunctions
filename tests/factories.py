@@ -268,13 +268,13 @@ class MachineOrmFactory(factory.Factory):
         model = machine.MachineOrm
 
     name = factory.Sequence(lambda n: "name-%d" % n)
-    desc = factory.Sequence(lambda n: "desc-%d" % n)
     provider = factory.Sequence(lambda n: "prov-%d" % n)
     location = factory.Sequence(lambda n: "loc-%d" % n)
     machine_type = factory.LazyAttribute(lambda n: MachineTypeFactory())
     gpu = factory.LazyAttribute(
         lambda n: machine.MachineGPU(name="nvidia", gpu_type="tesla")
     )
+    desc = factory.Sequence(lambda n: "desc-%d" % n)
 
 
 class ClusterStateFactory(factory.Factory):

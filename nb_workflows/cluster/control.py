@@ -188,6 +188,7 @@ class ClusterControl:
         settings: ServerSettings,
         use_public=False,
         deploy_local=False,
+        do_deploy=True,
     ):
         new_state = self.apply_policies()
         diff = self.difference(new_state)
@@ -195,7 +196,10 @@ class ClusterControl:
         print(f"=> To create: {diff.to_create}")
         for _ in range(diff.to_create):
             self.create_instance(
-                settings, use_public=use_public, deploy_local=deploy_local
+                settings,
+                use_public=use_public,
+                deploy_local=deploy_local,
+                do_deploy=do_deploy,
             )
 
         for agt in diff.to_delete:

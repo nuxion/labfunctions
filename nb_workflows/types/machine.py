@@ -128,7 +128,7 @@ class MachineRequest(BaseModel):
     volumes: List[BlockStorage] = []
     gpu: Optional[MachineGPU] = None
     ssh_public_cert: Optional[str] = None
-    ssh_user: str = "op"
+    ssh_user: Optional[str] = "op"
     network: str = "default"
     labels: Optional[Dict[str, Any]] = None
     extra: Optional[ExtraField] = None

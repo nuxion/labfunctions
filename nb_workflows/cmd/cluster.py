@@ -112,8 +112,12 @@ def list_machinescli(from_file, tags, cluster, filter_by_cluster):
         sys.exit(-1)
 
     driver = cc.inventory.get_provider(cc.spec.provider)
-
-    nodes = driver.list_machines(location=cc.spec.location, tags=tags.split(","))
+    with progress:
+        task = progress.add_task(
+            f"Getting machines in cluster {cc.cluster_name}", start=False, total=1
+        )
+        nodes = driver.list_machines(location=cc.spec.location, tags=tags.split(","))
+        progress.advance(task)
     title = "Machines"
     if filter_by_cluster:
         filtered = [n for n in nodes if n.labels["cluster"] == cc.cluster_name]
@@ -146,7 +150,8 @@ def list_machinescli(from_file, tags, cluster, filter_by_cluster):
 @click.option("--cluster", "-C", default=None, help="Cluster where it will run")
 @click.option("--use-public", "-P", is_flag=True, default=False, help="Use public ip")
 @click.option("--deploy-local", "-L", is_flag=True, default=False, help="Run locally")
-def upcli(from_file, use_public, deploy_local, cluster):
+@click.option("--do-deploy", "-D", is_flag=True, default=True, help="Deploy agent")
+def upcli(from_file, use_public, deploy_local, cluster, do_deploy):
     """Create a cluster"""
     try:
         cc = create_cluster_control(from_file, settings.RQ_REDIS, cluster)
@@ -156,7 +161,12 @@ def upcli(from_file, use_public, deploy_local, cluster):
 
     with progress:
         progress.add_task(f"Starting {cc.cluster_name}...", start=False)
-        cc.scale(settings, use_public=use_public, deploy_local=deploy_local)
+        cc.scale(
+            settings,
+            use_public=use_public,
+            deploy_local=deploy_local,
+            do_deploy=do_deploy,
+        )
 
     console.print(f"=> [green bold]Cluster {cc.cluster_name} started[/]")
 
@@ -183,7 +193,9 @@ def destroycli(from_file, cluster, hard):
     with progress:
         progress.add_task(f"Destroying cluster {cc.cluster_name}")
         if hard:
-            nodes = cc.provider.list_machines(tags=[defaults.CLOUD_TAG])
+            nodes = cc.provider.list_machines(
+                location=cc.spec.location, tags=[defaults.CLOUD_TAG]
+            )
             filtered = [n for n in nodes if n.labels["cluster"] == cluster]
             for n in filtered:
                 progress.add_task(f"Destroying {n.machine_name}")

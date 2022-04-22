@@ -4,21 +4,57 @@ from nb_workflows.cluster import deploy
 from nb_workflows.cluster.context import create_machine_ctx, machine_from_settings
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.types.agent import AgentNode, AgentRequest
-from nb_workflows.types.machine import ExecutionMachine
+from nb_workflows.types.machine import (
+    ExecutionMachine,
+    MachineGPU,
+    MachineRequest,
+    SSHKey,
+)
 from nb_workflows.utils import get_version
 
-# def test_machine_create_machine_ctx():
-#     mo = MachineOrmFactory()
-#     ssh = SSHKey(public="tests/dummy_rsa.pub", user="op")
-#     ctx = context.create_machine_ctx(mo, ssh, worker_env_file="test.txt")
-#     assert isinstance(ctx, ExecutionMachine)
-#     assert ctx.qnames == mo.name
-#     assert isinstance(ctx.node, NodeInstance)
+from .factories import MachineOrmFactory
 
 
-def test_cluster_deploy_machine_from_settings():
-    execm = machine_from_settings("local", "local", ["default"], settings)
+def test_cluster_create_machine_ctx():
+    m1 = MachineOrmFactory(gpu=None)
+    m1.machine_type.vcpus = 5
+
+    ssh = SSHKey(public_path="tests/dummy_rsa.pub", user="pytest")
+    ctx = create_machine_ctx(m1, ["default"], "test")
+
+    gpu = MachineGPU(name="test", gpu_type="tesla", count=1)
+    m2 = MachineOrmFactory(gpu=gpu)
+    ctx_full = create_machine_ctx(
+        m2, ["default"], "test", ssh_key=ssh, dynamic_workers=False
+    )
+    assert isinstance(ctx, ExecutionMachine)
+    assert isinstance(ctx.machine, MachineRequest)
+    assert ctx.worker_procs == 5
+    assert ctx.ssh_key is None
+    assert ctx.machine.ssh_user is None
+    assert ctx.machine.labels["gpu"] == "no"
+    assert isinstance(ctx_full.ssh_key, SSHKey)
+    assert ctx_full.machine.ssh_user == "pytest"
+    assert isinstance(ctx_full.machine.gpu, MachineGPU)
+    assert ctx_full.machine.labels["gpu"] == "yes"
+    assert ctx.machine.labels["tags"][0] == "nbworkflows"
+
+
+def test_cluster_machine_from_settings():
+    execm = machine_from_settings("gce-small-gpu", "default", ["default"], settings)
+    ctx_net = machine_from_settings(
+        "gce-small-gpu",
+        "default",
+        ["default"],
+        settings,
+        network="pytest",
+        location="new-york",
+    )
     assert isinstance(execm, ExecutionMachine)
+    assert isinstance(execm.machine.gpu, MachineGPU)
+    assert execm.machine.gpu.gpu_type == "nvidia-tesla-t4"
+    assert ctx_net.machine.network == "pytest"
+    assert ctx_net.machine.location == "new-york"
 
 
 def test_cluster_deploy_prepare_agent_cmd():
