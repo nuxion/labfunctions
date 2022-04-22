@@ -82,9 +82,10 @@ machines:
       size: n1-standard-1
       image: "debian-11-bullseye-v20220406"
       vcpus: 1
-    volumes:
-      - gce-boot-small
-        # gpu:
+    gpu:
+      name: tesla
+      gpu_type: nvidia-tesla-t4
+      count: 1
   do-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for DO

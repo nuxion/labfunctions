@@ -23,6 +23,14 @@ volumes:
     size: 10
     kind: 'pd'
     mount: /home/nuxion/data
+  gce-boot-small:
+    name: gce-boot-small
+    image: "nbworker-2022-04-08"
+    description: to use as boot disk
+    location: "us-central1-c"
+    size: 20
+    kind: 'pd-standard'
+    mount: /
 
 machines:
   snapshooter:
@@ -36,6 +44,15 @@ machines:
       vcpus: 1
     volumes:
       - snapshot-base
+  gce-tiny-default:
+    name: tiny-cpu
+    desc: Tiny cpu machine for gce
+    provider: gce
+    location: "us-central1-c"
+    machine_type:
+      size: "e2-micro"
+      image: "debian-11-bullseye-v20220406"
+      vcpus: 1
   gce-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for gce
@@ -45,6 +62,30 @@ machines:
       size: "e2-micro"
       image: "nbworker-2022-04-08"
       vcpus: 1
+  gce-small-cpu:
+    name: gce-small-cpu
+    desc: Small cpu machine for gce
+    provider: gce
+    location: "us-central1-c"
+    machine_type:
+      size: "e2-small"
+      image: "nbworker-2022-04-08"
+      vcpus: 2
+    volumes:
+      - gce-boot-small
+  gce-small-gpu:
+    name: gce-small-gpu
+    desc: It includes a nvidia-tesla-t4
+    provider: gce
+    location: us-east1-c
+    machine_type:
+      size: n1-standard-1
+      image: "debian-11-bullseye-v20220406"
+      vcpus: 1
+    gpu:
+      name: tesla
+      gpu_type: nvidia-tesla-t4
+      count: 1
   do-tiny-cpu:
     name: tiny-cpu
     desc: Tiny cpu machine for DO

@@ -119,6 +119,14 @@ class GCEProvider(ProviderSpec):
         del _labels["tags"]
         labels = _labels
 
+        maintence_policy = None
+        accelerator_type = None
+        accelerator_count = None
+        if node.gpu:
+            maintence_policy = "TERMINATE"
+            accelerator_type = node.gpu.gpu_type
+            accelerator_count = node.gpu.count
+
         instance = self.driver.create_node(
             node.name,
             size=node.size,
@@ -129,6 +137,9 @@ class GCEProvider(ProviderSpec):
             ex_metadata=metadata,
             ex_tags=tags,
             ex_labels=labels,
+            ex_accelerator_type=accelerator_type,
+            ex_accelerator_count=accelerator_count,
+            ex_on_host_maintenance=maintence_policy,
         )
 
         attached = []

@@ -58,11 +58,12 @@ class ClusterDiff(BaseModel):
 
 class ClusterSpec(BaseModel):
     name: str
-    machine: str
     provider: str
+    machine: str
+    location: str
     qnames: List[str]
     policy: ClusterPolicy
-    location: str = "test"
+    network: str = "default"
 
 
 class ClusterFile(BaseModel):

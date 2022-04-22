@@ -11,13 +11,7 @@ from rich.prompt import Confirm
 from rich.table import Table
 
 from nb_workflows import defaults
-from nb_workflows.cluster import (
-    ClusterControl,
-    Inventory,
-    ProviderSpec,
-    machine_from_settings,
-)
-from nb_workflows.conf import load_client
+from nb_workflows.cluster import create_cluster_control
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.control_plane.register import AgentRegister
 from nb_workflows.errors.cluster import ClusterSpecNotFound
@@ -28,25 +22,6 @@ progress = Progress(
     SpinnerColumn(),
     "[progress.description]{task.description}",
 )
-
-
-def create_cluster_control(
-    from_file: str, cluster: Optional[str] = None
-) -> ClusterControl:
-    cluster_file = ClusterControl.load_cluster_file(from_file)
-    try:
-        cluster = cluster or cluster_file.default_cluster
-        spec = cluster_file.clusters[cluster]
-    except KeyError:
-        console.print(f"[bold red] Cluster {cluster} not found in {from_file}")
-        console.print(f"Clusters availables: {list(cluster_file.clusters.keys())}")
-        raise ClusterSpecNotFound(cluster, from_file)
-
-    inventory = Inventory(cluster_file.inventory)
-    rdb = redis.from_url(settings.RQ_REDIS, decode_responses=True)
-    registry = AgentRegister(rdb, cluster)
-    cc = ClusterControl(registry, spec=spec, inventory=inventory)
-    return cc
 
 
 @click.group(name="cluster")
@@ -76,17 +51,13 @@ def clustercli():
 @click.option("--deploy-local", "-L", is_flag=True, default=False, help="Run locally")
 def create_machinecli(from_file, cluster, deploy, use_public, deploy_local):
     """It will create a new machine in a provider choosen, inside of a cluster"""
-
     try:
-        cc = create_cluster_control(from_file, cluster)
-        console.print(
-            f"=> Creating a new machine for cluster [magenta bold]{cc.cluster_name}[/]"
-        )
-    except ClusterSpecNotFound:
+        cc = create_cluster_control(from_file, settings.RQ_REDIS, cluster)
+    except ClusterSpecNotFound as e:
+        console.print(f"[bold red]{e}[/]")
         sys.exit(-1)
 
-    driver = cc.get_provider()
-    instance = cc.create_instance(driver, settings, deploy, use_public, deploy_local)
+    instance = cc.create_instance(settings, deploy, use_public, deploy_local)
     print_json(data=instance.dict())
 
 
@@ -103,16 +74,16 @@ def destroy_machinecli(from_file, machine_name, cluster):
     """Destroy a machine by name"""
 
     try:
-        cc = create_cluster_control(from_file, cluster)
+        cc = create_cluster_control(from_file, settings.RQ_REDIS, cluster)
         console.print(
             f"=> Destroying [magenta bold]{machine_name}[/] in "
             f"[cyan bold]{cc.cluster_name}[/]"
         )
-    except ClusterSpecNotFound:
+    except ClusterSpecNotFound as e:
+        console.print(f"[bold red]{e}[/]")
         sys.exit(-1)
 
-    driver = cc.inventory.get_provider(cc.spec.provider)
-    cc.destroy_instance(driver, machine_name)
+    cc.destroy_instance(machine_name)
     console.print(f"[green bold]{machine_name}[/] [green]destroyed[/]")
 
 
@@ -135,13 +106,18 @@ def destroy_machinecli(from_file, machine_name, cluster):
 def list_machinescli(from_file, tags, cluster, filter_by_cluster):
     """List machines in a cluster"""
     try:
-        cc = create_cluster_control(from_file, cluster)
-    except ClusterSpecNotFound:
+        cc = create_cluster_control(from_file, settings.RQ_REDIS, cluster)
+    except ClusterSpecNotFound as e:
+        console.print(f"[bold red]{e}[/]")
         sys.exit(-1)
 
     driver = cc.inventory.get_provider(cc.spec.provider)
-
-    nodes = driver.list_machines(tags=tags.split(","))
+    with progress:
+        task = progress.add_task(
+            f"Getting machines in cluster {cc.cluster_name}", start=False, total=1
+        )
+        nodes = driver.list_machines(location=cc.spec.location, tags=tags.split(","))
+        progress.advance(task)
     title = "Machines"
     if filter_by_cluster:
         filtered = [n for n in nodes if n.labels["cluster"] == cc.cluster_name]
@@ -174,18 +150,23 @@ def list_machinescli(from_file, tags, cluster, filter_by_cluster):
 @click.option("--cluster", "-C", default=None, help="Cluster where it will run")
 @click.option("--use-public", "-P", is_flag=True, default=False, help="Use public ip")
 @click.option("--deploy-local", "-L", is_flag=True, default=False, help="Run locally")
-def upcli(from_file, use_public, deploy_local, cluster):
+@click.option("--do-deploy", "-D", is_flag=True, default=True, help="Deploy agent")
+def upcli(from_file, use_public, deploy_local, cluster, do_deploy):
     """Create a cluster"""
     try:
-        cc = create_cluster_control(from_file, cluster)
-    except ClusterSpecNotFound:
+        cc = create_cluster_control(from_file, settings.RQ_REDIS, cluster)
+    except ClusterSpecNotFound as e:
+        console.print(f"[bold red]{e}[/]")
         sys.exit(-1)
-
-    driver = cc.inventory.get_provider(cc.spec.provider)
 
     with progress:
         progress.add_task(f"Starting {cc.cluster_name}...", start=False)
-        cc.scale(driver, settings, use_public=use_public, deploy_local=deploy_local)
+        cc.scale(
+            settings,
+            use_public=use_public,
+            deploy_local=deploy_local,
+            do_deploy=do_deploy,
+        )
 
     console.print(f"=> [green bold]Cluster {cc.cluster_name} started[/]")
 
@@ -204,25 +185,26 @@ def upcli(from_file, use_public, deploy_local, cluster):
 def destroycli(from_file, cluster, hard):
     """Destroy a cluster"""
     try:
-        cc = create_cluster_control(from_file, cluster)
-    except ClusterSpecNotFound:
+        cc = create_cluster_control(from_file, settings.RQ_REDIS, cluster)
+    except ClusterSpecNotFound as e:
+        console.print(f"[bold red]{e}[/]")
         sys.exit(-1)
-
-    driver = cc.inventory.get_provider(cc.spec.provider)
 
     with progress:
         progress.add_task(f"Destroying cluster {cc.cluster_name}")
         if hard:
-            nodes = driver.list_machines(tags=[defaults.CLOUD_TAG])
+            nodes = cc.provider.list_machines(
+                location=cc.spec.location, tags=[defaults.CLOUD_TAG]
+            )
             filtered = [n for n in nodes if n.labels["cluster"] == cluster]
             for n in filtered:
                 progress.add_task(f"Destroying {n.machine_name}")
-                driver.destroy_machine(n)
+                cc.provider.destroy_machine(n)
         else:
             agents = cc.register.list_agents(cluster)
             for agt in agents:
                 progress.add_task(f"Destroying {agt}")
-                cc.destroy_instance(driver, agt)
+                cc.destroy_instance(agt)
     console.print(
         f"[bold]Cluster [magenta bold]{cc.cluster_name}[/magenta bold] destroyed[/]"
     )
@@ -296,9 +278,11 @@ def list_clusters(from_file, cluster):
 @click.option("--provider", "-p", default=None, help="From a provider")
 def catalogcli(from_file, provider):
     """List machine types"""
+
     try:
-        cc = create_cluster_control(from_file)
-    except ClusterSpecNotFound:
+        cc = create_cluster_control(from_file, settings.RQ_REDIS)
+    except ClusterSpecNotFound as e:
+        console.print(f"[bold red]{e}[/]")
         sys.exit(-1)
 
     inventory = cc.inventory

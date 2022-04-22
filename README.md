@@ -52,6 +52,19 @@ The last point to clarify and it could challange the common sense or the way tha
 - Define a notebook like a function, and execute it on demand or scheduled it
 - Automatic Dockerfile generation. A project should share a unique environment but could use different versions of the same environment
 - Execution History, Notifications to Slack or Discord.
+- Cluster creation applying scaling policies by idle time or/and enqueued items
+
+## Cluster options
+
+It is possible to run different cluster configurations with custom auto scalling policies
+
+![GPU CLUSTER DEMO](https://media.giphy.com/media/OnhmnYiCJpe2FsTmaP/giphy.gif)
+
+Instances inside a cluster could be created manually or automatically
+
+See a simple demo of a gpu cluster creation
+
+[https://www.youtube.com/watch?v=-R7lJ4dGI9s](https://www.youtube.com/watch?v=-R7lJ4dGI9s)
 
 
 ## Installation
