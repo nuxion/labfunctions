@@ -27,7 +27,8 @@ class ServerSettings(BaseSettings):
     DEV_MODE: bool = False
     WEB_REDIS: Optional[RedisDsn] = None
     RQ_REDIS: Optional[RedisDsn] = None
-    RQ_CONTROL_QUEUE: str = "control"
+    RQ_CONTROL_QUEUE: str = "default.control"
+    RQ_BUILD_QUEUE: str = "default.build"
 
     # ids generations
     EXECID_LEN: int = EXECID_LEN

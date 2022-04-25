@@ -41,18 +41,17 @@ As a second goal, but maybe that's for a following release, is adding other stor
 ## Next version 0.8.0
 
 **MUST**
-- [ ] Notifications: slack and discord 
-- [ ] NBTask docker_name and version fields
+- [ ] NBTask args refactor 
 - [ ] Does runtimes struct need a name to be associated with? 
-- [ ] RQWorker: Overwrite worker self ip discovery logic
-- [ ] RQWorker: Activity time
+- [x] RQWorker: Overwrite worker self ip discovery logic
+- [x] RQWorker: Activity time
 - [ ] RQWorker: Agent token generation for workers
 - [ ] Workflows: Allows workflows execution by alias (the same for history)
-- [ ] Review settings strategy for server/worker
-- [ ] A machine types registry by cloud vendor (gcloud / digitalocean)
-- [ ] Autoscaling workers
+- [x] Review settings strategy for server/worker
+- [x] A machine types registry by cloud vendor (gcloud / digitalocean)
+- [x] Autoscaling workers
 - [ ] Doc: how to install client nb-workflows
-- [ ] Tests: >= 55%
+- [x] Tests: >= 55%
 
 **MAY**
 - [ ] CI/CD: constraint merges to main branch

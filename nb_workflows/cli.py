@@ -19,13 +19,14 @@ def load_client_cli(cli):
 
 
 def load_server_cli(cli):
+    from nb_workflows.cmd.agent import agentcli
     from nb_workflows.cmd.cluster import clustercli
     from nb_workflows.cmd.manager import managercli
-    from nb_workflows.cmd.services import agentcli, rqschedulercli, webcli
+    from nb_workflows.cmd.services import schedulercli, webcli
 
     cli.add_command(managercli)
     cli.add_command(webcli)
-    cli.add_command(rqschedulercli)
+    cli.add_command(schedulercli)
     cli.add_command(agentcli)
     cli.add_command(clustercli)
 
