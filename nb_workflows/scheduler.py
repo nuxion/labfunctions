@@ -90,10 +90,8 @@ def scheduler_dispatcher(
     """
     _db = db or SQL(settings.SQL)
     _redis = redis_obj or redis.from_url(settings.RQ_REDIS)
-
-    scheduler = SchedulerExecutor(
-        redis_obj=_redis, qname=control_q(), is_async=is_async
-    )
+    _q = settings.RQ_CONTROL_QUEUE  # control_q
+    scheduler = SchedulerExecutor(redis_obj=_redis, qname=_q, is_async=is_async)
 
     logger = logging.getLogger(__name__)
 
@@ -202,8 +200,8 @@ class SchedulerExecutor:
         TODO: design internal, onpremise or external docker registries.
         """
 
-        # Q = Queue(qname, connection=self.redis)
-        job = self.Q.enqueue(
+        Q = Queue(settings.RQ_BUILD_QUEUE, connection=self.redis)
+        job = Q.enqueue(
             builder_exec,
             build_ctx,
             job_id=build_ctx.execid,

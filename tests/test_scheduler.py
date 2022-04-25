@@ -12,7 +12,7 @@ from .factories import ExecutionNBTaskFactory, WorkflowDataFactory
 
 def test_scheduler_control_q():
     qname = control_q()
-    assert qname == "ctrl.control"
+    assert qname == "ctrl.default.control"
 
 
 def test_scheduler_machine_q():

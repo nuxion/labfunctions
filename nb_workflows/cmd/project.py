@@ -117,7 +117,7 @@ def upload(ctx, only_zip, env_file, current, all, watch):
     # prepare secrets
     pv = c.get_private_key()
     if not pv:
-        print("Not private key found or authentication error")
+        console.print("[red bold]Not private key found or authentication error[/]")
         sys.exit(-1)
 
     # _agent_token = c.projects_agent_token()
