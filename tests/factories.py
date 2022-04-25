@@ -9,7 +9,6 @@ from nb_workflows import utils
 from nb_workflows.client.state import WorkflowsState
 from nb_workflows.client.types import Credentials
 from nb_workflows.hashes import generate_random
-from nb_workflows.managers.users_mg import password_manager
 from nb_workflows.models import (
     HistoryModel,
     ProjectModel,
@@ -17,6 +16,8 @@ from nb_workflows.models import (
     UserModel,
     WorkflowModel,
 )
+from nb_workflows.security import auth_from_settings
+from nb_workflows.security.password import PasswordScript
 from nb_workflows.types import (
     ExecutionNBTask,
     ExecutionResult,
@@ -32,13 +33,14 @@ from nb_workflows.types import (
     cluster,
     machine,
 )
+from nb_workflows.types.config import SecuritySettings
 from nb_workflows.types.docker import (
     DockerBuildCtx,
     DockerfileImage,
     RuntimeVersionData,
 )
 from nb_workflows.types.events import EventSSE
-from nb_workflows.types.users import UserData
+from nb_workflows.types.user import UserOrm
 from nb_workflows.utils import run_sync
 
 
@@ -88,16 +90,17 @@ class NBTaskFactory(factory.Factory):
     params = {"TEST": True, "TIMEOUT": 5}
 
 
-class UserFactory(factory.Factory):
+class UserOrmFactory(factory.Factory):
     class Meta:
-        model = UserData
+        model = UserOrm
 
-    user_id = factory.Sequence(lambda n: n)
+    id = factory.Sequence(lambda n: n)
     username = factory.Sequence(lambda n: "u-name%d" % n)
+    email = False
     is_superuser = False
     is_active = True
-    scopes = ["tester"]
-    projects = None
+    scopes = "tester"
+    # projects = None
 
 
 class ExecutionNBTaskFactory(factory.Factory):
@@ -317,13 +320,13 @@ def create_runtime_model(project: ProjectModel, *args, **kwargs) -> RuntimeVersi
     return rm
 
 
-def create_user_model(*args, **kwargs) -> UserModel:
-    uf = UserFactory(*args, **kwargs)
-    pm = password_manager()
+def create_user_model2(*args, **kwargs) -> UserModel:
+    uf = UserOrmFactory(*args, **kwargs)
+    pm = PasswordScript(salt=kwargs.get("salt", "test"))
     _pass = kwargs.get("password", "meolvide")
     key = pm.encrypt(_pass)
     user = UserModel(
-        id=uf.user_id,
+        id=uf.id,
         username=uf.username,
         password=key,
         is_superuser=uf.is_superuser,
@@ -377,16 +380,19 @@ def create_history_model(project_id: str, *args, **kwargs) -> HistoryModel:
     return row
 
 
-def token_generator(auth, user=None, *args, **kwargs):
-    _user = user or create_user_model(*args, **kwargs)
-    tkn = run_sync(auth.generate_access_token, UserData.from_model(_user))
+def token_generator(settings: SecuritySettings, username: str, scopes=["user:r:w"]):
+    auth = auth_from_settings(settings)
+
+    tkn = auth.encode({"usr": username, "scopes": scopes})
     return tkn
 
 
-def credentials_generator(auth, user=None, *args, **kwargs):
-    _user = user or create_user_model(*args, **kwargs)
-    obj = UserData.from_model(_user)
-    tkn = run_sync(auth.generate_access_token, obj)
+def credentials_generator(settings: SecuritySettings, user=None, *args, **kwargs):
+    _user = user or create_user_model2(*args, **kwargs)
+
+    auth = auth_from_settings(settings)
+
+    tkn = auth.encode({"usr": _user.username, "scopes": _user.scopes.split(",")})
     return Credentials(access_token=tkn, refresh_token="12345")
 
 

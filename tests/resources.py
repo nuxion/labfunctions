@@ -6,11 +6,11 @@ from sanic.response import json
 from sanic_ext import Extend
 from sanic_jwt import Initialize
 
-from nb_workflows import auth
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.events import EventManager
 from nb_workflows.managers import users_mg
+from nb_workflows.security import auth_from_settings, sanic_init_auth
 from nb_workflows.server import init_blueprints
 from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
 
@@ -21,15 +21,9 @@ def create_app(bluprints, db, web_redis, rq_redis=None, app_name="test"):
 
     init_blueprints(_app, bluprints)
 
-    Initialize(
-        _app,
-        authentication_class=auth.NBAuthWeb,
-        secret=settings.SECRET_KEY,
-        refresh_token_enabled=True,
-        # retrieve_refresh_token=users.retrieve_refresh_token,
-        # store_refresh_token=users.store_refresh_token,
-        # retrieve_user=users.retrieve_user,
-    )
+    auth = auth_from_settings(settings.SECURITY)
+    sanic_init_auth(_app, auth, settings.SECURITY)
+    init_blueprints(_app, ["auth"], "nb_workflows.security")
 
     _app.config.CORS_ORIGINS = "*"
     Extend(_app)

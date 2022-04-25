@@ -8,23 +8,23 @@ import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.auth import (
-    NBAuthStandalone,
-    ProjectClaim,
-    initialize,
-    scope_extender_sync,
-)
+# from nb_workflows.auth import (
+#     NBAuthStandalone,
+#     ProjectClaim,
+#     initialize,
+#     scope_extender_sync,
+# )
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
 from nb_workflows.models import HistoryModel, UserModel, WorkflowModel
-from nb_workflows.types.users import UserData
+from nb_workflows.security import AuthSpec, auth_from_settings, sanic_init_auth
 
 from .factories import (
     create_history_model,
     create_project_model,
     create_runtime_model,
-    create_user_model,
+    create_user_model2,
     create_workflow_model,
 )
 from .resources import create_app
@@ -54,7 +54,7 @@ def connection():
 @pytest.fixture(scope="module", autouse=True)
 def setupdb(connection):
     s = Session(bind=connection)
-    um = create_user_model(username="admin_test", password="meolvide")
+    um = create_user_model2(username="admin_test", password="meolvide")
     pm = create_project_model(um, projectid="test", name="test")
     wm = create_workflow_model(pm, wfid="wfid-test", alias="alias_test")
     rm = create_runtime_model(pm, project_id="test")
@@ -171,19 +171,13 @@ async def async_redis_web():
 
 @pytest.fixture(scope="session")
 def auth_helper():
-    auth = initialize("testing")
+    auth = auth_from_settings(settings.SECURITY)
     yield auth
 
 
 @pytest.fixture
 def access_token():
-    um = create_user_model()
-    nb = NBAuthStandalone(
-        secret=secret_auth,
-        custom_claims=[ProjectClaim()],
-        add_scopes_to_payload=scope_extender_sync,
-    )
+    auth = auth_from_settings(settings.SECURITY)
+    encoded = auth.encode({"usr": "test_user", "scopes": ["user:r:w"]})
 
-    ud = UserData.from_model(um)
-    p = nb.generate_access_token(ud)
-    yield p
+    yield encoded

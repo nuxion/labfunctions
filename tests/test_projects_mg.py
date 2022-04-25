@@ -11,7 +11,7 @@ from .factories import (
     ProjectDataFactory,
     ProjectReqFactory,
     create_project_model,
-    create_user_model,
+    create_user_model2,
 )
 
 

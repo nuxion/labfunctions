@@ -9,27 +9,29 @@ from sanic.response import json
 from sanic_ext import Extend
 from sanic_jwt import Initialize, inject_user, protected
 
-from nb_workflows import auth, defaults
+from nb_workflows import defaults
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.events import EventManager
+from nb_workflows.security import auth_from_settings, sanic_init_auth
 from nb_workflows.types import ServerSettings
-from nb_workflows.utils import get_version
+from nb_workflows.utils import get_class, get_version
 
 version = get_version("__version__.py")
 
 
-def init_blueprints(app, blueprints_allowed):
-    """It import and mount each module inside `nb_workflows.web`
-    which ends with _bp.
-
+def init_blueprints(app, blueprints_allowed, package_dir="nb_workflows.web"):
+    """
+    It will import bluprints from modules that ends with "_bp" and belongs
+    to the package declared in `changeme.defaults.SANIC_BLUPRINTS_DIR`
+    by default it will be `changeme.services`
     """
     blueprints = set()
     mod = app.__module__
     for mod_name in blueprints_allowed:
-        module = import_module(f"nb_workflows.web.{mod_name}_bp", mod)
-        for el in dir(module):
+        modules = import_module(f"{package_dir}.{mod_name}_bp", mod)
+        for el in dir(modules):
             if el.endswith("_bp"):
-                bp = getattr(module, el)
+                bp = getattr(modules, el)
                 blueprints.add(bp)
 
     for bp in blueprints:
@@ -56,36 +58,36 @@ def create_app(
     db_func=create_db_instance,
     web_redis_func=create_web_redis,
     rq_func=create_rq_redis,
+    with_auth=True,
+    with_auth_bp=True,
 ) -> Sanic:
     """Factory pattern like flask"""
 
-    _app = Sanic(app_name)
+    app = Sanic(app_name)
 
-    Initialize(
-        _app,
-        authentication_class=auth.NBAuthWeb,
-        secret=settings.SECRET_KEY,
-        refresh_token_enabled=True,
-        add_scopes_to_payload=auth.scope_extender,
-        custom_claims=[auth.ProjectClaim],
-    )
+    app.config.CORS_ORIGINS = "*"
 
-    _app.config.CORS_ORIGINS = "*"
-    Extend(_app)
-    _app.ext.openapi.add_security_scheme(
+    Extend(app)
+    app.ext.openapi.add_security_scheme(
         "token",
         "http",
         scheme="bearer",
         bearer_format="JWT",
     )
-    # _app.ext.openapi.secured()
-    _app.ext.openapi.secured("token")
+    # app.ext.openapi.secured()
+    app.ext.openapi.secured("token")
 
     _base_model_session_ctx = ContextVar("session")
 
-    init_blueprints(_app, list_bp)
+    init_blueprints(app, list_bp)
 
-    @_app.listener("before_server_start")
+    if with_auth:
+        auth = auth_from_settings(settings.SECURITY)
+        sanic_init_auth(app, auth, settings.SECURITY)
+    if with_auth and with_auth_bp:
+        init_blueprints(app, ["auth"], "nb_workflows.security")
+
+    @app.listener("before_server_start")
     async def startserver(current_app, loop):
         """This function runs one time per worker"""
         _db = db_func(settings.ASQL)
@@ -96,7 +98,7 @@ def create_app(
         current_app.ctx.db = _db
         await current_app.ctx.db.init()
 
-    @_app.middleware("request")
+    @app.middleware("request")
     async def inject_session(request):
         current_app = Sanic.get_app(defaults.SANIC_APP_NAME)
 
@@ -107,19 +109,19 @@ def create_app(
 
         request.ctx.dbconn = current_app.ctx.db.engine
 
-    @_app.middleware("response")
+    @app.middleware("response")
     async def close_session(request, response):
         if hasattr(request.ctx, "session_ctx_token"):
             _base_model_session_ctx.reset(request.ctx.session_ctx_token)
             await request.ctx.session.close()
 
-    @_app.listener("after_server_stop")
+    @app.listener("after_server_stop")
     async def shutdown(current_app, loop):
         await current_app.ctx.db.engine.dispose()
         # await current_app.ctx.redis.close()
 
-    @_app.get("/status")
+    @app.get("/status")
     async def status_handler(request):
         return json(dict(msg="We are ok", version=version))
 
-    return _app
+    return app

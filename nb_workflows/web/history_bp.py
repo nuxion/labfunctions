@@ -7,7 +7,6 @@ import httpx
 from sanic import Blueprint
 from sanic.response import json
 from sanic_ext import openapi
-from sanic_jwt import inject_user, protected
 
 from nb_workflows import defaults
 from nb_workflows.conf.server_settings import settings
@@ -15,6 +14,7 @@ from nb_workflows.core.registers import register_history_db
 from nb_workflows.defaults import API_VERSION
 from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import history_mg
+from nb_workflows.security.web import protected
 from nb_workflows.types import ExecutionResult, HistoryRequest, NBTask
 from nb_workflows.utils import get_query_param, today_string
 

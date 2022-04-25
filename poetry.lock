@@ -2093,21 +2093,6 @@ dev = ["black (>=21.4b2)", "flake8 (>=3.7.7)", "isort (>=5.0.0)", "sanic-testing
 test = ["sanic-testing (>=0.8)", "coverage", "pytest", "pytest-cov", "tox"]
 
 [[package]]
-name = "sanic-jwt"
-version = "1.7.0"
-description = "JWT oauth flow for Sanic"
-category = "main"
-optional = true
-python-versions = "*"
-
-[package.dependencies]
-pyjwt = ">=2.1.0,<2.2.0"
-
-[package.extras]
-all = ["sphinx"]
-docs = ["sphinx"]
-
-[[package]]
 name = "sanic-openapi"
 version = "21.12.0"
 description = "Easily document your Sanic API with a UI."
@@ -2761,12 +2746,12 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 
 [extras]
 fsspec = ["fsspec"]
-server = ["uvloop", "sanic", "sanic-openapi", "sanic-ext", "sanic-jwt", "SQLAlchemy", "SQLAlchemy-serializer", "psycopg2-binary", "asyncpg", "alembic", "rq-scheduler", "rq", "apache-libcloud", "asyncssh"]
+server = ["uvloop", "sanic", "sanic-openapi", "sanic-ext", "SQLAlchemy", "SQLAlchemy-serializer", "psycopg2-binary", "asyncpg", "alembic", "rq-scheduler", "rq", "apache-libcloud", "asyncssh"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "c8870c3ec3f65b1a2c30b86e36e70c16ab3e25ab6bf194b6156c6a143bbc7e13"
+content-hash = "af8023d9f0587d2d3ed6c695cd169c8ef0378693215436ff8d909ca715a0baaa"
 
 [metadata.files]
 aiofiles = [
@@ -4337,10 +4322,6 @@ sanic = [
 sanic-ext = [
     {file = "sanic-ext-21.12.3.tar.gz", hash = "sha256:cfd8552c059cced19b93f659a8fb140c916b913e39367003b2412d2ad337741a"},
     {file = "sanic_ext-21.12.3-py3-none-any.whl", hash = "sha256:ec6791456c43c95f784a959621820bd6583113970c8141752ffe9b9ed2e462c2"},
-]
-sanic-jwt = [
-    {file = "sanic-jwt-1.7.0.tar.gz", hash = "sha256:427a898338c77c314910c949c3ea9f397d093050453740492051df98b7c4cdbb"},
-    {file = "sanic_jwt-1.7.0-py3-none-any.whl", hash = "sha256:1dbcfec93cef77a41835aa38eae27780fc4255b9c1b067674ce2f0d2f5d45353"},
 ]
 sanic-openapi = [
     {file = "sanic-openapi-21.12.0.tar.gz", hash = "sha256:7cda62234d08c965f739eaac6b059e8f244d87061d97335c57287fd6ae16bf52"},

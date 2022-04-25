@@ -1,19 +1,22 @@
 import httpx
 
 from nb_workflows.client.base import AuthFlow
+from nb_workflows.types.config import SecuritySettings
 
 from .factories import token_generator
 
+settings = SecuritySettings()
 
-def test_client_auth_nbauth(auth_helper):
-    tkn = token_generator(auth_helper, username="test")
+
+def test_client_auth_nbauth():
+    tkn = token_generator(settings, username="test")
     a = AuthFlow(
         access_token=tkn,
         refresh_token="test-refresh",
         refresh_url="http://localhost:8000/auth/refresh",
     )
 
-    new_tkn = token_generator(auth_helper, username="test")
+    new_tkn = token_generator(settings, username="test")
 
     def handler(request):
         if (

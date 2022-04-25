@@ -27,6 +27,13 @@ LOGFORMAT = detailed_format
 # General Folders for the server
 BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
 AGENT_DATA_FOLDER = ".worker_data/"
+SECURITY = {
+    "JWT_ALG": "ES512",
+    "JWT_EXP": 30,
+    "JWT_PUBLIC": ".secrets/ecdsa.pub.pem",
+    "AUTH_CLASS": "nb_workflows.security.authentication.Auth",
+    "AUTH_FUNCTION": "nb_workflows.managers.users_mg.authenticate",
+}
 
 NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
 NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")

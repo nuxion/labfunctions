@@ -25,7 +25,7 @@ from nb_workflows.types.projects import (
     ProjectBuildResp,
     ProjectCreated,
 )
-from nb_workflows.types.users import AgentReq
+from nb_workflows.types.user import AgentReq
 from nb_workflows.utils import binary_file_reader, parse_var_line
 
 from .base import BaseClient

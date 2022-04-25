@@ -1,15 +1,20 @@
 import importlib
+import sys
 from getpass import getpass
 
 import click
 from alembic import command
 from alembic.config import Config as AlembicConfig
+from rich.console import Console
+from rich.prompt import Confirm, Prompt
 
 from nb_workflows.conf import load_server
 from nb_workflows.db.sync import SQL
 from nb_workflows.managers import users_mg
+from nb_workflows.types.user import UserOrm
 
 settings = load_server()
+console = Console()
 
 
 @click.group(name="manager")
@@ -62,15 +67,27 @@ def users(sql, superuser, scopes, username, action):
     """Manage users"""
     db = SQL(sql)
     if action == "create":
-        _u = input("username: ")
-        _p = getpass()
+        name = Prompt.ask("Username")
+        email = Prompt.ask("Email (optional)", default=None)
+        password = getpass("Password: ")
+        repeat = getpass("Password (repeat): ")
+        if password != repeat:
+            console.print("[bold red]Paswords doesn't match[/]")
+            sys.exit(-1)
+        key = users_mg.encrypt_password(password, salt=settings.SECURITY.AUTH_SALT)
 
         S = db.sessionmaker()
         with S() as session:
-            u = users_mg.create_user(session, _u, _p, scopes, superuser, is_active=True)
+            obj = UserOrm(
+                username=name,
+                password=key,
+                email=email,
+                scopes=scopes,
+                is_superuser=superuser,
+            )
+            user = users_mg.create(session, obj)
             session.commit()
-
-        click.echo(f"User {_u} created")
+        console.print(f"[bold magenta]Congrats!! user {name} created")
 
     elif action == "disable":
         S = db.sessionmaker()
@@ -82,32 +99,31 @@ def users(sql, superuser, scopes, username, action):
             else:
                 click.echo(f"{username} not found")
 
-    elif action == "change-scopes":
-        S = db.sessionmaker()
-        with S() as session:
-            u = users_mg.change_scopes(session, username, scopes)
-            session.commit()
-            if u:
-                click.echo(f"{username} scopes changed")
-            else:
-                click.echo(f"{username} not found")
+    # elif action == "change-scopes":
+    #     S = db.sessionmaker()
+    #     with S() as session:
+    #         u = users_mg.change_scopes(session, username, scopes)
+    #         session.commit()
+    #         if u:
+    #             click.echo(f"{username} scopes changed")
+    #         else:
+    #             click.echo(f"{username} not found")
 
     elif action == "reset":
+        name = Prompt.ask("Username")
+        _p = getpass("Password: ")
         S = db.sessionmaker()
         with S() as session:
-            pm = users_mg.password_manager()
-            u = users_mg.get_user(session, username)
-            if u:
-                _p = getpass()
-                key = pm.encrypt(_p)
-                u.password = key
-                session.add(u)
-                session.commit()
-            else:
-                click.echo("Invalid user...")
-
+            changed = users_mg.change_pass(
+                session, name, _p, salt=settings.SECURITY.AUTH_SALT
+            )
+            session.commit()
+        if changed:
+            console.print("[bold magenta]Pasword changed[/]")
+        else:
+            console.print("[bold red]User may not exist [/]")
     else:
-        click.echo("Wrong param...")
+        console.print("[red bold]Wrongs params[/]")
 
 
 # managercli.add_command(db)
