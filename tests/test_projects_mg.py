@@ -17,7 +17,7 @@ from .factories import (
 
 @pytest.mark.asyncio
 async def test_projects_mg_create_or_update(async_session):
-    um = create_user_model()
+    um = create_user_model2()
     um.id = 99
     async_session.add(um)
     await async_session.flush()
@@ -31,7 +31,7 @@ async def test_projects_mg_create_or_update(async_session):
 
 @pytest.mark.asyncio
 async def test_projects_mg_create(async_session):
-    um = create_user_model()
+    um = create_user_model2()
     um.id = 100
     async_session.add(um)
     await async_session.flush()
@@ -42,7 +42,7 @@ async def test_projects_mg_create(async_session):
 
 @pytest.mark.asyncio
 async def test_projects_mg_add_project(async_session):
-    um = create_user_model()
+    um = create_user_model2()
     async_session.add(um)
     await async_session.flush()
     # pq = ProjectReqFactory()

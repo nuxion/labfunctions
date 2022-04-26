@@ -46,7 +46,7 @@ def protected(scopes: Optional[List[str]] = None, require_all=True):
     def decorator(f):
         @wraps(f)
         async def decorated_function(request, *args, **kwargs):
-            auth = get_auth()
+            auth = get_auth(app_name=request.app.name)
             token = request.token
             if not token:
                 raise MissingAuthorizationHeader()

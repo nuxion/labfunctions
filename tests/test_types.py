@@ -32,7 +32,7 @@ def test_types_workflow_serialization():
 def test_types_user_serialization():
 
     um = create_user_model2()
-    ud = UserOrm.from_model(um)
+    ud = UserOrm.from_orm(um)
     assert ud.username == um.username
 
 

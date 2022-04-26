@@ -14,7 +14,7 @@ class UserOrm(BaseModel):
     projects: List[str] = []
 
     class Config:
-        orm = True
+        orm_mode = True
 
 
 class AgentReq(BaseModel):

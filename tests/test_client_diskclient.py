@@ -7,8 +7,11 @@ from nb_workflows.client import shortcuts, utils
 from nb_workflows.client.base import AuthFlow
 from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.client.types import Credentials
+from nb_workflows.types.config import SecuritySettings
 
 from .factories import credentials_generator
+
+settings = SecuritySettings()
 
 
 class MockLoginRsp:
@@ -58,7 +61,7 @@ def test_client_diskclient_notebook_tmp(tempdir):
 # def test_client_diskclient_from_file(mocker: MockerFixture, auth_helper):
 def test_client_diskclient_from_file(monkeypatch, auth_helper):
     def mock_creds(*args, **kwargs):
-        creds = credentials_generator(auth_helper)
+        creds = credentials_generator(settings=settings)
         return creds
 
     monkeypatch.setattr(
@@ -74,7 +77,7 @@ def test_client_diskclient_from_file(monkeypatch, auth_helper):
 
 def test_client_diskclient_from_file_none(monkeypatch, auth_helper):
     def mock_login(*args, **kwargs):
-        creds = credentials_generator(auth_helper)
+        creds = credentials_generator(settings=settings)
         return creds
 
     def mock_creds(*args, **kwargs):

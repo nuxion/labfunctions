@@ -7,7 +7,6 @@ import redis
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
-from sanic_jwt import Initialize, inject_user, protected
 
 from nb_workflows import defaults
 from nb_workflows.db.nosync import AsyncSQL

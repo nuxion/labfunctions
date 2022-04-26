@@ -4,7 +4,6 @@ from dataclasses import asdict
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
-from sanic_jwt import Initialize
 
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
