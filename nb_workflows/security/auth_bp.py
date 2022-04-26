@@ -10,7 +10,7 @@ from nb_workflows.errors.security import (
 from nb_workflows.security import get_auth, get_authenticate, protected
 from nb_workflows.types.security import JWTResponse, UserLogin
 
-auth_bp = Blueprint("auth_api", url_prefix="auth", version="v2")
+auth_bp = Blueprint("auth_api", url_prefix="auth", version="v1")
 
 
 @auth_bp.post("/login")

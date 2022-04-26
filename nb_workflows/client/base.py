@@ -180,7 +180,7 @@ class BaseClient:
 
     def login(self, u: str, p: str):
         rsp = httpx.post(
-            f"{self._addr}/auth",
+            f"{self._addr}/{self._version}/auth/login",
             json=dict(username=u, password=p),
             timeout=self._timeout,
         )
@@ -191,7 +191,7 @@ class BaseClient:
             raise LoginError(self._addr, u)
 
     def verify(self):
-        rsp = self._http.get("/auth/verify")
+        rsp = self._http.get(f"/{self._version}/auth/verify")
         if rsp.status_code == 401:
             return False
         return True

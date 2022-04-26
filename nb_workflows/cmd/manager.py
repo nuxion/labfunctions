@@ -74,18 +74,20 @@ def users(sql, superuser, scopes, username, action):
         if password != repeat:
             console.print("[bold red]Paswords doesn't match[/]")
             sys.exit(-1)
-        key = users_mg.encrypt_password(password, salt=settings.SECURITY.AUTH_SALT)
 
         S = db.sessionmaker()
         with S() as session:
             obj = UserOrm(
                 username=name,
-                password=key,
+                # password=key,
                 email=email,
+                is_active=True,
                 scopes=scopes,
                 is_superuser=superuser,
             )
-            user = users_mg.create(session, obj)
+            user = users_mg.create(
+                session, obj, password=password, salt=settings.SECURITY.AUTH_SALT
+            )
             session.commit()
         console.print(f"[bold magenta]Congrats!! user {name} created")
 

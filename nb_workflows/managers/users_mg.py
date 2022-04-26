@@ -24,10 +24,10 @@ from nb_workflows.types.user import UserOrm
 
 
 def select_user():
-    # stmt = select(UserModel).options(
-    #    selectinload(UserModel.projects),
-    # )
-    stmt = select(UserModel)
+    stmt = select(UserModel).options(
+        selectinload(UserModel.projects),
+    )
+    # stmt = select(UserModel)
     return stmt
 
 
@@ -182,9 +182,10 @@ def inject_user():
     def decorator(f):
         @wraps(f)
         async def decorated_function(request, *args, **kwargs):
-            token = request.token_data
+            token = request.ctx.token_data
             session = request.ctx.session
-            user = get_user_async(session, token["usr"])
+            user = await get_user_async(session, token["usr"])
+            breakpoint()
             user_orm = UserOrm.from_orm(user)
             response = f(request, user_orm, *args, **kwargs)
             if isawaitable(response):

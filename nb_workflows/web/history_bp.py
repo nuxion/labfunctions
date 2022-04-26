@@ -10,7 +10,6 @@ from sanic_ext import openapi
 
 from nb_workflows import defaults
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.core.registers import register_history_db
 from nb_workflows.defaults import API_VERSION
 from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import history_mg
