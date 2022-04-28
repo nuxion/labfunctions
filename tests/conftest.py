@@ -150,7 +150,6 @@ async def sanic_app(async_conn):
 
     settings.EVENTS_BLOCK_MS = 5
     settings.EVENTS_STREAM_TTL_SECS = 5
-    settings.SECRET_KEY = secret_auth
 
     rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
     # rweb = Redis("/tmp/RWeb.rdb")

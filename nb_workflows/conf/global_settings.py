@@ -3,11 +3,6 @@ import os
 # detailed_format = "[%(asctime)s] - %(name)s %(lineno)d - %(levelname)s - %(message)s"
 detailed_format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
 
-# SALT is used as salt hash for users passwords
-SALT = os.getenv("SALT", "changeme")
-# Signing data
-SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
-
 AGENT_TOKEN = os.getenv("NB_AGENT_TOKEN", "changeme")
 AGENT_REFRESH_TOKEN = os.getenv("NB_AGENT_REFRESH_TOKEN", "changeme")
 
@@ -30,7 +25,6 @@ AGENT_DATA_FOLDER = ".worker_data/"
 SECURITY = {
     "JWT_ALG": "ES512",
     "JWT_EXP": 30,
-    "JWT_PUBLIC": ".secrets/ecdsa.pub.pem",
     "AUTH_CLASS": "nb_workflows.security.authentication.Auth",
     "AUTH_FUNCTION": "nb_workflows.managers.users_mg.authenticate",
 }

@@ -6,10 +6,12 @@ from nb_workflows.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
 
 
 class SecuritySettings(BaseSettings):
+    JWT_PUBLIC: str
+    JWT_PRIVATE: str
     JWT_ALG: str = "ES512"
     JWT_EXP: int = 30  # 30 minutes
-    JWT_PUBLIC: str = ".secrets/ecdsa.pub.pem"
-    JWT_PRIVATE: str = ".secrets/ecdsa.priv.pem"
+    # JWT_PUBLIC: str = ".secrets/ecdsa.pub.pem"
+    # JWT_PRIVATE: str = ".secrets/ecdsa.priv.pem"
     JWT_REQUIRES_CLAIMS: List[str] = ["exp"]
     JWT_SECRET: Optional[str] = None
     JWT_ISS: Optional[str] = None
@@ -27,8 +29,6 @@ class SecuritySettings(BaseSettings):
 
 class ServerSettings(BaseSettings):
     # Security
-    SALT: str
-    SECRET_KEY: str
     AGENT_TOKEN: str
     AGENT_REFRESH_TOKEN: str
     AGENT_TOKEN_EXP: int
