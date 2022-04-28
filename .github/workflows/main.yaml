@@ -52,6 +52,8 @@ jobs:
           NB_GCE_PEM_FILE: tests/dummy_gce_creds.json
           NB_CLUSTER_SSH_PUBLIC_KEY: tests/dummy_rsa.pub
           NB_LCL_WORKING_DIR: /tmp/machines
+          NB_JWT_PUBLIC: tests/ecdsa.pub.pem
+          NB_JWT_PRIVATE: tests/ecdsa.priv.pem
 
         run: |
           pytest --cov=nb_workflows --cov-report=xml tests/
