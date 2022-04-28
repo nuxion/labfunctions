@@ -12,6 +12,7 @@ class InvalidToken(SanicJWTException):
 
 class WebAuthFailed(SanicJWTException):
     status_code = 401
+    quiet = True
 
     def __init__(self, message="Authentication failed.", **kwargs):
         super().__init__(message, **kwargs)

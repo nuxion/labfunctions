@@ -5,21 +5,22 @@ from typing import Optional, Union
 
 from pydantic.error_wrappers import ValidationError
 from sanic import Request
+from sqlalchemy import delete
 from sqlalchemy import insert as sqlinsert
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from nb_workflows import defaults
-from nb_workflows.errors.security import (
+from nb_workflows.hashes import generate_random
+from nb_workflows.models import UserModel, assoc_projects_users
+from nb_workflows.security import AuthSpec, PasswordScript, get_delta
+from nb_workflows.security.errors import (
     AuthValidationFailed,
     MissingAuthorizationHeader,
     WebAuthFailed,
 )
-from nb_workflows.hashes import generate_random
-from nb_workflows.models import UserModel, assoc_projects_users
-from nb_workflows.security.password import PasswordScript
-from nb_workflows.types.security import UserLogin
+from nb_workflows.types.security import JWTResponse, UserLogin
 from nb_workflows.types.user import UserOrm
 
 
@@ -29,6 +30,22 @@ def select_user():
     )
     # stmt = select(UserModel)
     return stmt
+
+
+def model2orm(user: UserModel) -> UserOrm:
+    projects = []
+    if user.projects:
+        projects = [p.name for p in user.projects]
+
+    return UserOrm(
+        username=user.username,
+        id=user.id,
+        email=user.email,
+        password=user.password,
+        scopes=user.scopes,
+        is_superuser=user.is_superuser,
+        projects=projects,
+    )
 
 
 def _insert(user: UserOrm):
@@ -114,6 +131,16 @@ def disable_user(session, username: str) -> Union[UserModel, None]:
     return None
 
 
+async def delete_user_async(session, username: str):
+    stmt = delete(UserModel).where(UserModel.username == username)
+    await session.execute(stmt)
+
+
+def delete_user(session, username: str):
+    stmt = delete(UserModel).where(UserModel.username == username)
+    session.execute(stmt)
+
+
 async def disable_user_async(session, username: str) -> Union[UserModel, None]:
     user = await get_user_async(session, username)
     if user:
@@ -176,31 +203,9 @@ async def authenticate(request: Request, *args, **kwargs):
         return user
 
 
-def inject_user():
-    """Inject a user"""
-
-    def decorator(f):
-        @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
-            token = request.ctx.token_data
-            session = request.ctx.session
-            user = await get_user_async(session, token["usr"])
-            breakpoint()
-            user_orm = UserOrm.from_orm(user)
-            response = f(request, user_orm, *args, **kwargs)
-            if isawaitable(response):
-                response = await response
-
-            return response
-
-        return decorated_function
-
-    return decorator
-
-
-async def create_agent(session, scopes=defaults.AGENT_SCOPES):
-    name = generate_random(defaults.AGENT_LEN)
-    fullname = f"{defaults.AGENT_USER_PREFIX}-{name}"
+async def create_agent(session, projectid=None, scopes=defaults.AGENT_SCOPES):
+    name = projectid or generate_random(defaults.AGENT_LEN)
+    fullname = f"{defaults.AGENT_USER_PREFIX}{name}"
 
     u = UserModel(
         username=fullname,
@@ -209,3 +214,37 @@ async def create_agent(session, scopes=defaults.AGENT_SCOPES):
 
     session.add(u)
     return u
+
+
+async def get_jwt_token(auth: AuthSpec, user: UserModel, exp=30) -> JWTResponse:
+    access_token = auth.encode(
+        {"usr": user.username, "scopes": user.scopes.split(",")}, exp=get_delta(exp)
+    )
+    username = str(user.username)
+    rftkn = await auth.store_refresh_token(username)
+    return JWTResponse(access_token=access_token, refresh_token=rftkn)
+
+
+def inject_user(func):
+    """Inject a user"""
+
+    def decorator(f):
+        @wraps(f)
+        async def decorated_function(request, *args, **kwargs):
+            token = request.ctx.token_data
+            session = request.ctx.session
+            user = get_user_async(session, token["usr"])
+            if isawaitable(user):
+                user = await user
+            if not user:
+                raise WebAuthFailed("Authentication failed")
+            user_orm = model2orm(user)
+            response = f(request, user=user_orm, *args, **kwargs)
+            if isawaitable(response):
+                response = await response
+
+            return response
+
+        return decorated_function
+
+    return decorator(func)

@@ -1,7 +1,30 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from nb_workflows.types.security import JWTResponse
+
+
+class TokenStoreSpec(ABC):
+    @abstractmethod
+    async def put(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
+        pass
+
+    @abstractmethod
+    async def get(self, key: str) -> Union[str, None]:
+        pass
+
+    @abstractmethod
+    async def delete(self, key: str):
+        pass
+
+    # @abstractmethod
+    # async def validate(self, token: str, user: str) -> bool:
+    #     pass
+
+    @staticmethod
+    @abstractmethod
+    def generate(sign: Optional[str] = None) -> str:
+        pass
 
 
 class AuthSpec(ABC):
@@ -27,9 +50,9 @@ class AuthSpec(ABC):
         pass
 
     @abstractmethod
-    async def refresh_token(self, redis, access_token, refresh_token) -> JWTResponse:
+    async def refresh_token(self, access_token, refresh_token) -> JWTResponse:
         pass
 
     @abstractmethod
-    async def store_refresh_token(self, redis, username: str) -> str:
+    async def store_refresh_token(self, username: str) -> str:
         pass

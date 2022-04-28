@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Set
 
 import jwt
@@ -9,46 +8,18 @@ from pydantic.error_wrappers import ValidationError
 from sanic import Request
 
 from nb_workflows import defaults
-from nb_workflows.errors.security import AuthValidationFailed
 from nb_workflows.security import scopes
-from nb_workflows.security.utils import generate_token
 from nb_workflows.types.config import SecuritySettings
 from nb_workflows.types.security import JWTConfig, JWTResponse
 from nb_workflows.utils import get_class
 
-from .base import AuthSpec
-from .utils import open_keys
-
-
-def _get_delta(delta_min: int) -> int:
-    """Returns a timestamp addding a delta_min value to the utc now date."""
-    delta = datetime.utcnow() + timedelta(minutes=delta_min)
-    return int(delta.timestamp())
-
-
-async def store_refresh_token(redis, username: str) -> str:
-    tkn = generate_token()
-    await redis.set(f"rtkn:{tkn}", username)
-    return tkn
-
-
-async def validate_refresh_token(redis, token, user):
-
-    redis_user = await redis.get(f"rtkn:{token}")
-    if redis_user and redis_user == user:
-        return True
-    return False
-
-
-async def renew_refresh_token(redis, old_token, username: str) -> str:
-    tkn = generate_token()
-    async with redis.pipeline() as pipe:
-        await pipe.delete(f"rtkn:{old_token}").set(f"rtkn:{tkn}", username).execute()
-    return tkn
+from .base import AuthSpec, TokenStoreSpec
+from .errors import AuthValidationFailed
+from .utils import get_delta, open_keys
 
 
 class Auth(AuthSpec):
-    def __init__(self, conf: JWTConfig):
+    def __init__(self, conf: JWTConfig, store: Optional[TokenStoreSpec] = None):
         """
         It is a wrapper around jwt which produces jwt tokens.
         By default it will add a "exp" claim, other claims.
@@ -58,6 +29,7 @@ class Auth(AuthSpec):
         prioritize the payload configuration.
         """
         self.conf = conf
+        self.store = store
 
     def _get_secret_encode(self):
         """because jwt allows the use of a simple secret or a pairs of keys
@@ -79,7 +51,7 @@ class Auth(AuthSpec):
     def _build_payload(self, payload: Dict[str, Any], exp=None, iss=None, aud=None):
         _payload = deepcopy(payload)
         if not exp:
-            exp = _get_delta(self.conf.exp_min)
+            exp = get_delta(self.conf.exp_min)
         _iss = iss or self.conf.issuer
         if _iss:
             _payload.update({"iss": _iss})
@@ -159,23 +131,36 @@ class Auth(AuthSpec):
 
         return decoded
 
-    async def refresh_token(self, redis, access_token, refresh_token) -> JWTResponse:
+    async def store_refresh_token(self, username: str, ttl=None) -> str:
+        ttl = ttl or self.conf.ttl_refresh_token
+        refresh = self.store.generate()
+        await self.store.put(f"{username}.{refresh}", username, ttl=ttl)
+
+        return refresh
+
+    async def validate_refresh_token(self, access_token, refresh_token) -> bool:
+        is_valid = False
         decoded = self.decode(access_token, verify_exp=False)
-        is_valid = await validate_refresh_token(redis, refresh_token, decoded["usr"])
-        if is_valid:
-            _new_refresh = await renew_refresh_token(
-                redis, refresh_token, decoded["usr"]
-            )
+        value = await self.store.get(f"{decoded['usr']}.{refresh_token}")
+        if decoded["usr"] == value:
+            is_valid = True
+        return is_valid
+
+    async def refresh_token(self, access_token, refresh_token) -> JWTResponse:
+        decoded = self.decode(access_token, verify_exp=False)
+        if await self.validate_refresh_token(access_token, refresh_token):
+            await self.store.delete(f"{decoded['usr']}.{refresh_token}")
+
+            _new_refresh = await self.store_refresh_token(decoded["usr"])
             _new_tkn = self.encode(decoded)
             new_jwt = JWTResponse(access_token=_new_tkn, refresh_token=_new_refresh)
             return new_jwt
         raise AuthValidationFailed()
 
-    async def store_refresh_token(self, redis, username: str) -> str:
-        return await store_refresh_token(redis, username)
 
-
-def auth_from_settings(settings: SecuritySettings) -> AuthSpec:
+def auth_from_settings(
+    settings: SecuritySettings, store: Optional[TokenStoreSpec] = None
+) -> AuthSpec:
     """Intiliazie a `Auth` based on settings."""
     AuthClass = get_class(settings.AUTH_CLASS)
     keys = open_keys(settings.JWT_PUBLIC, settings.JWT_PRIVATE)
@@ -187,4 +172,4 @@ def auth_from_settings(settings: SecuritySettings) -> AuthSpec:
         audience=settings.JWT_AUD,
         requires_claims=settings.JWT_REQUIRES_CLAIMS,
     )
-    return AuthClass(conf)
+    return AuthClass(conf, store=store)

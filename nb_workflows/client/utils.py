@@ -58,6 +58,13 @@ def get_credentials_disk(home_dir=defaults.CLIENT_HOME_DIR) -> Union[Credentials
         return None
 
 
+def del_credentials_disk(home_dir=defaults.CLIENT_HOME_DIR):
+    root = Path.home() / home_dir
+    # root.mkdir(parents=True, exist_ok=True)
+    if (root / "credentials.json").is_file():
+        (root / "credentials.json").unlink()
+
+
 def store_private_key(key, projectid, home_dir=defaults.CLIENT_HOME_DIR):
     root = Path.home() / home_dir / projectid
     root.mkdir(parents=True, exist_ok=True)

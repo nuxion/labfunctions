@@ -2,32 +2,28 @@ from functools import wraps
 from inspect import isawaitable
 from typing import Callable, List, Optional
 
-from sanic import Request, Sanic, json
+from sanic import Request, Sanic, json, text
 
 from nb_workflows import defaults
-from nb_workflows.errors.security import (
-    AuthValidationFailed,
-    MissingAuthorizationHeader,
-    WebAuthFailed,
-)
-from nb_workflows.managers import users_mg
 from nb_workflows.types.config import SecuritySettings
 from nb_workflows.types.security import JWTConfig, JWTResponse, UserLogin
 from nb_workflows.utils import get_class
 
 from .base import AuthSpec
+from .errors import AuthValidationFailed, MissingAuthorizationHeader, WebAuthFailed
 
 
-def get_auth(app_name=defaults.SANIC_APP_NAME) -> AuthSpec:
+def get_auth(request: Request) -> AuthSpec:
     """a shortcut to get the Auth object from a web context"""
-    current_app: Sanic = Sanic.get_app(app_name)
+
+    current_app: Sanic = Sanic.get_app(request.app.name)
 
     return current_app.ctx.auth
 
 
-def get_authenticate(app_name=defaults.SANIC_APP_NAME) -> Callable:
+def get_authenticate(request: Request) -> Callable:
     """a shortcut to get the Auth object from a web context"""
-    current_app: Sanic = Sanic.get_app(app_name)
+    current_app: Sanic = Sanic.get_app(request.app.name)
 
     return current_app.ctx.authenticate
 
@@ -46,7 +42,7 @@ def protected(scopes: Optional[List[str]] = None, require_all=True):
     def decorator(f):
         @wraps(f)
         async def decorated_function(request, *args, **kwargs):
-            auth = get_auth(app_name=request.app.name)
+            auth = get_auth(request)
             token = request.token
             if not token:
                 raise MissingAuthorizationHeader()
@@ -66,8 +62,15 @@ def protected(scopes: Optional[List[str]] = None, require_all=True):
     return decorator
 
 
+def auth_error_handler(request, exception):
+    return json({"msg": "Authentication failed"}, status=401)
+
+
 def sanic_init_auth(app: Sanic, auth: AuthSpec, settings: SecuritySettings):
     app.ctx.auth = auth
     app.config.AUTH_SALT = settings.AUTH_SALT
     app.config.AUTH_ALLOW_REFRESH = settings.AUTH_ALLOW_REFRESH
     app.ctx.authenticate = get_class(settings.AUTH_FUNCTION)
+
+    app.error_handler.add(WebAuthFailed, auth_error_handler)
+    app.error_handler.add(MissingAuthorizationHeader, auth_error_handler)

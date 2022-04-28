@@ -16,6 +16,7 @@ class JWTConfig(BaseModel):
     issuer: Optional[str] = None
     audience: Optional[str] = None
     requires_claims: List[str] = ["exp"]
+    ttl_refresh_token: int = 3600 * 168  # 7 days
 
 
 class UserLogin(BaseModel):

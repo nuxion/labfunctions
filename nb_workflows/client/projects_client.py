@@ -73,6 +73,7 @@ class ProjectsClient(BaseClient):
         return None
 
     def projects_get(self) -> Union[ProjectData, None]:
+        breakpoint()
         r = self._http.get(f"/projects/{self.projectid}")
         if r.status_code == 200:
             return ProjectData(**r.json())

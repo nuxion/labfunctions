@@ -2,15 +2,17 @@ import json
 import logging
 import os
 from dataclasses import asdict
-from typing import Callable, Generator, List, Optional
+from typing import Callable, Generator, List, Optional, Union
 
 import httpx
+import jwt
 
 from nb_workflows import defaults
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
 from nb_workflows.events import EventManager
 from nb_workflows.executors import context
 from nb_workflows.hashes import generate_random
+from nb_workflows.security.errors import AuthValidationFailed
 from nb_workflows.types import (
     ExecutionNBTask,
     NBTask,
@@ -66,7 +68,10 @@ class AuthFlow(httpx.Auth):
         # Update the `.access_token` and `.refresh_token` tokens
         # based on a refresh response.
         data = response.json()
-        self.access_token = data["access_token"]
+        tkn = data.get("access_token")
+        if not tkn:
+            raise AuthValidationFailed()
+        self.access_token = tkn
 
 
 class BaseClient:
@@ -147,20 +152,30 @@ class BaseClient:
         self._auth = AuthFlow(
             self._creds.access_token,
             self._creds.refresh_token,
-            f"{self._addr}{defaults.REFRESH_TOKEN_PATH}",
+            f"{self._addr}/{self._version}/{defaults.REFRESH_TOKEN_PATH}",
         )
 
     def _http_init(self) -> httpx.Client:
         """When token is updated the client MUST BE updated too."""
         # _headers = {"Authorization": f"Bearer {self.creds.access_token}"}
 
-        if self._creds and not self._auth:
+        if self._creds:
             self._auth_init()
         return self._http_creator(
             base_url=f"{self._addr}/{self._version}",
             timeout=self._timeout,
             auth=self._auth,
         )
+
+    @property
+    def user(self) -> Union[str, None]:
+        if self._creds:
+            decoded = jwt.decode(
+                self._creds.access_token, options={"verify_signature": False}
+            )
+
+            return decoded["usr"]
+        return None
 
     @property
     def creds(self) -> Credentials:
@@ -191,10 +206,14 @@ class BaseClient:
             raise LoginError(self._addr, u)
 
     def verify(self):
-        rsp = self._http.get(f"/{self._version}/auth/verify")
-        if rsp.status_code == 401:
+        try:
+            rsp = self._http.get(f"/auth/verify")
+            if rsp.status_code == 200:
+                return True
+        except AuthValidationFailed:
+            self._creds = None
+            self._auth = None
             return False
-        return True
 
     def write(self, output="workflows.yaml"):
         self.state.write(output)

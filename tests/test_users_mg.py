@@ -3,6 +3,7 @@ import pytest
 from nb_workflows.executors import context
 from nb_workflows.managers import users_mg
 from nb_workflows.models import UserModel
+from nb_workflows.types.security import JWTResponse
 from nb_workflows.types.user import UserOrm
 
 from .factories import UserOrmFactory, create_user_model2
@@ -66,42 +67,16 @@ def test_users_mg_verify_password(session):
     assert verified
 
 
-# @pytest.mark.asyncio
-# async def test_machine_create_or_update(async_session):
-#     mo = MachineOrmFactory()
-#     await machine_mg.create(async_session, mo)
-#     mo.desc = "changed"
-#     rsp = await machine_mg.create_or_update(async_session, mo)
-#     assert isinstance(rsp, MachineModel)
-#     assert rsp.desc == mo.desc
-#
-#
-# @pytest.mark.asyncio
-# async def test_machine_get_list(async_session):
-#     mo = MachineOrmFactory()
-#     await machine_mg.create(async_session, mo)
-#     rows = await machine_mg.get_list(async_session)
-#     assert len(rows) == 1
-#
-#
-# @pytest.mark.asyncio
-# async def test_machine_get_one(async_session):
-#     mo = MachineOrmFactory()
-#     await machine_mg.create(async_session, mo)
-#     obj = await machine_mg.get_one(async_session, mo.name)
-#     assert obj.name == mo.name
-#     assert isinstance(obj, MachineModel)
-#
-#
-# def test_machine_create_or_update_sync(session):
-#     mo = MachineOrmFactory()
-#     mo.desc = "changed"
-#     rsp = machine_mg.create_or_update_sync(session, mo)
-#     assert isinstance(rsp, MachineModel)
-#     assert rsp.desc == mo.desc
-#
-#
-# def test_machine_insert():
-#     mo = MachineOrmFactory()
-#     stmt = machine_mg._insert(mo)
-#     assert "machine" in str(stmt)
+@pytest.mark.asyncio
+async def test_users_mg_get_jwt(async_session, auth_helper, mocker):
+
+    # async def refresh(us):
+    #    return "refresh"
+
+    # redis = mocker.MagicMock()
+    # auth_helper.store_refresh_token = refresh
+    user = create_user_model2(username="jwt_testing")
+
+    jwt = await users_mg.get_jwt_token(auth_helper, user)
+    assert isinstance(jwt, JWTResponse)
+    assert jwt.refresh_token

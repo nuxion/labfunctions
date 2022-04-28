@@ -25,7 +25,7 @@ from nb_workflows.types import (
 )
 from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.types.projects import ProjectCreated
-from nb_workflows.utils import get_parent_folder, mkdir_p
+from nb_workflows.utils import get_parent_folder, get_version, mkdir_p
 
 from .utils import normalize_name
 
@@ -71,9 +71,10 @@ def _example_workflow() -> WorkflowDataWeb:
 
 
 def default_runtime() -> DockerfileImage:
+    version = get_version()
     return DockerfileImage(
         maintener=defaults.DOCKERFILE_MAINTENER,
-        image=defaults.DOCKERFILE_IMAGE,
+        image=f"{defaults.DOCKERFILE_IMAGE}:{version}",
         final_packages="vim-tiny",
     )
 
@@ -159,7 +160,7 @@ def create_on_the_server(
     )
     if rsp:
         dc.state.projectid = rsp.pd.projectid
-        valid_agent = dc.projects_create_agent()
+        # valid_agent = dc.projects_create_agent()
         agent_creds = dc.projects_agent_token()
         with open(f"{root}/local.nbvars", "a") as f:
             f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")

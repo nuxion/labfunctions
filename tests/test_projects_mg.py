@@ -2,6 +2,7 @@ import logging
 
 import pytest
 
+from nb_workflows import defaults
 from nb_workflows import defaults as df
 from nb_workflows.managers import projects_mg
 from nb_workflows.models import ProjectModel
@@ -37,7 +38,10 @@ async def test_projects_mg_create(async_session):
     await async_session.flush()
     pq = ProjectReqFactory()
     pd = await projects_mg.create(async_session, um.id, pq)
+    pd2 = await projects_mg.create(async_session, um.id, pq)
     assert isinstance(pd, ProjectData)
+    assert pd2 is None
+    assert pd.agent == f"{defaults.AGENT_USER_PREFIX}{pd.projectid}"
 
 
 @pytest.mark.asyncio
@@ -62,3 +66,11 @@ async def test_projects_mg_create_agent_for(async_session):
     assert res == pd.agent
     assert "test" in agent.projects[0].name
     assert agent.scopes == "agent:rw"
+
+
+@pytest.mark.asyncio
+async def test_projects_mg_delete_agent_for(async_session):
+    await projects_mg.delete_agent_for_project(async_session, "test")
+    pm = await projects_mg.get_by_projectid_model(async_session, "test")
+
+    assert pm.agent is None

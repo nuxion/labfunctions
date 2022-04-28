@@ -65,12 +65,14 @@ def check_port(ip: str, port: int) -> bool:
 
 
 async def run_async(func, *args, **kwargs):
+    """Run sync functions from async code"""
     loop = asyncio.get_running_loop()
     rsp = await loop.run_in_executor(None, func, *args, **kwargs)
     return rsp
 
 
 def run_sync(func, *args, **kwargs):
+    """run async functions from sync code"""
     loop = asyncio.get_event_loop()
     rsp = loop.run_until_complete(func(*args, **kwargs))
     return rsp

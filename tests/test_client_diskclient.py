@@ -59,7 +59,7 @@ def test_client_diskclient_notebook_tmp(tempdir):
 
 
 # def test_client_diskclient_from_file(mocker: MockerFixture, auth_helper):
-def test_client_diskclient_from_file(monkeypatch, auth_helper):
+def test_client_diskclient_from_file(monkeypatch, mocker: MockerFixture, auth_helper):
     def mock_creds(*args, **kwargs):
         creds = credentials_generator(settings=settings)
         return creds
@@ -67,12 +67,15 @@ def test_client_diskclient_from_file(monkeypatch, auth_helper):
     monkeypatch.setattr(
         "nb_workflows.client.diskclient.get_credentials_disk", mock_creds
     )
+    mock = mocker.patch(
+        "nb_workflows.client.shortcuts.DiskClient.logincli", return_value=None
+    )
     client = shortcuts.from_file(
         "tests/workflows_test.yaml", "http://localhost:8000", ".test"
     )
-
     assert client._addr == "http://localhost:8000"
     assert isinstance(client, DiskClient)
+    assert mock.called
 
 
 def test_client_diskclient_from_file_none(monkeypatch, auth_helper):

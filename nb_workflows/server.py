@@ -12,6 +12,7 @@ from nb_workflows import defaults
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.events import EventManager
 from nb_workflows.security import auth_from_settings, sanic_init_auth
+from nb_workflows.security.redis_tokens import RedisTokenStore
 from nb_workflows.types import ServerSettings
 from nb_workflows.utils import get_class, get_version
 
@@ -80,8 +81,10 @@ def create_app(
 
     init_blueprints(app, list_bp)
 
+    web_redis = web_redis_func(settings.WEB_REDIS)
     if with_auth:
-        auth = auth_from_settings(settings.SECURITY)
+        _store = RedisTokenStore(web_redis)
+        auth = auth_from_settings(settings.SECURITY, _store)
         sanic_init_auth(app, auth, settings.SECURITY)
     if with_auth and with_auth_bp:
         init_blueprints(app, ["auth"], "nb_workflows.security")
@@ -92,7 +95,7 @@ def create_app(
         _db = db_func(settings.ASQL)
         _base_model_session_ctx = ContextVar("session")
 
-        current_app.ctx.web_redis = web_redis_func(settings.WEB_REDIS)
+        current_app.ctx.web_redis = web_redis.client()
         current_app.ctx.rq_redis = rq_func(settings.RQ_REDIS)
         current_app.ctx.db = _db
         await current_app.ctx.db.init()

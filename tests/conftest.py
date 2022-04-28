@@ -27,7 +27,7 @@ from .factories import (
     create_user_model2,
     create_workflow_model,
 )
-from .resources import create_app
+from .resources import TestTokenStore, create_app
 
 # SQL_URI = os.getenv("SQLTEST")
 # ASQL_URI = os.getenv("ASQLTEST")
@@ -54,7 +54,9 @@ def connection():
 @pytest.fixture(scope="module", autouse=True)
 def setupdb(connection):
     s = Session(bind=connection)
-    um = create_user_model2(username="admin_test", password="meolvide")
+    um = create_user_model2(
+        username="admin_test", password="meolvide", salt=settings.SECURITY.AUTH_SALT
+    )
     pm = create_project_model(um, projectid="test", name="test")
     wm = create_workflow_model(pm, wfid="wfid-test", alias="alias_test")
     rm = create_runtime_model(pm, project_id="test")
@@ -97,9 +99,9 @@ async def async_conn():
 @pytest.fixture(scope="function")
 async def async_session(async_conn):
     s = async_conn.sessionmaker()
-    async with s.begin():
-        yield s
-        await s.rollback()
+    # async with s.begin():
+    yield s
+    await s.rollback()
     # async with async_conn.begin() as conn:
     #    yield conn
     #    await conn.rollback()
@@ -171,13 +173,14 @@ async def async_redis_web():
 
 @pytest.fixture(scope="session")
 def auth_helper():
-    auth = auth_from_settings(settings.SECURITY)
+    store = TestTokenStore()
+    auth = auth_from_settings(settings.SECURITY, store=store)
     yield auth
 
 
 @pytest.fixture
 def access_token():
     auth = auth_from_settings(settings.SECURITY)
-    encoded = auth.encode({"usr": "test_user", "scopes": ["user:r:w"]})
+    encoded = auth.encode({"usr": "admin_test", "scopes": ["user:r:w"]})
 
     yield encoded

@@ -7,13 +7,15 @@ from nb_workflows.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
 
 class SecuritySettings(BaseSettings):
     JWT_ALG: str = "ES512"
-    JWT_EXP: int = 30
+    JWT_EXP: int = 30  # 30 minutes
     JWT_PUBLIC: str = ".secrets/ecdsa.pub.pem"
     JWT_PRIVATE: str = ".secrets/ecdsa.priv.pem"
     JWT_REQUIRES_CLAIMS: List[str] = ["exp"]
     JWT_SECRET: Optional[str] = None
     JWT_ISS: Optional[str] = None
     JWT_AUD: Optional[str] = None
+    REFRESH_TOKEN_TTL: int = 3600 * 168  # 7 days
+    TOKEN_STORE_URL: Optional[str] = None
     AUTH_SALT: str = "changeit"
     AUTH_ALLOW_REFRESH: bool = True
     AUTH_CLASS = "nb_workflows.security.authentication.Auth"

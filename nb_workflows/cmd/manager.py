@@ -5,13 +5,18 @@ from getpass import getpass
 import click
 from alembic import command
 from alembic.config import Config as AlembicConfig
+from rich import print_json
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
 from nb_workflows.conf import load_server
 from nb_workflows.db.sync import SQL
 from nb_workflows.managers import users_mg
+from nb_workflows.security import auth_from_settings
+from nb_workflows.security.redis_tokens import RedisTokenStore
+from nb_workflows.server import create_web_redis
 from nb_workflows.types.user import UserOrm
+from nb_workflows.utils import run_sync
 
 settings = load_server()
 console = Console()
@@ -126,6 +131,63 @@ def users(sql, superuser, scopes, username, action):
             console.print("[bold red]User may not exist [/]")
     else:
         console.print("[red bold]Wrongs params[/]")
+
+
+@managercli.command()
+@click.option("--sql", "-s", default=settings.SQL, help="SQL Database")
+@click.option("--scopes", default="agent:r:w", help="agent scopes")
+@click.option("--username", "-u", default=None, help="Agent username")
+@click.option("--admin", "-A", default=None, help="Agent as admin")
+@click.option("--exp", "-e", default=30, help="Expire time")
+@click.argument("action", type=click.Choice(["create", "get-token", "delete"]))
+def agent(sql, scopes, username, action, admin, exp):
+    db = SQL(sql)
+    store = RedisTokenStore(settings.WEB_REDIS)
+    auth = auth_from_settings(settings.SECURITY, store=store)
+
+    if action == "create":
+        S = db.sessionmaker()
+        with S() as session:
+            if admin:
+                scopes = "agent:r:w,admin:r"
+            um = run_sync(users_mg.create_agent, session, username, scopes)
+            jwt = run_sync(users_mg.get_jwt_token, auth, um, exp)
+            session.commit()
+            print_json(
+                data={
+                    "username": um.username,
+                    "scopes": um.scopes.split(","),
+                    "jwt": jwt.dict(),
+                }
+            )
+    elif action == "get-token":
+        if not username:
+            console.print("[bold red]A username should be given[/]")
+            return
+        S = db.sessionmaker()
+        with S() as session:
+            um = users_mg.get_user(session, username)
+            if not um:
+                console.print("[bold red]Username not found[/]")
+                return
+            jwt = run_sync(users_mg.get_jwt_token, auth, um, exp)
+            print_json(
+                data={
+                    "username": um.username,
+                    "scopes": um.scopes.split(","),
+                    "jwt": jwt.dict(),
+                }
+            )
+
+    elif action == "delete":
+        if not username:
+            console.print("[bold red]A username should be given[/]")
+            return
+        S = db.sessionmaker()
+        with S() as session:
+            users_mg.delete_user(session, username)
+            session.commit()
+        console.print("[bold green]Agent deleted[/]")
 
 
 # managercli.add_command(db)

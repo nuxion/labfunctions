@@ -5,7 +5,7 @@ QueuesNS = namedtuple("QueuesNS", ["control", "machine", "build"])
 Q_NS = QueuesNS(control="ctrl", machine="mch", build="bui")
 CLOUD_TAG = "nbworkflows"
 
-REFRESH_TOKEN_PATH = "/auth/refresh"
+REFRESH_TOKEN_PATH = "auth/refresh_token"
 
 API_VERSION = "v1"
 
@@ -31,7 +31,7 @@ CLIENT_TIMEOUT = 60
 
 DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
 DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
-DOCKERFILE_IMAGE = "nuxion/nb_workflows:0.7.0"
+DOCKERFILE_IMAGE = "nuxion/nb_workflows"
 DOCKER_AUTHOR = "nbworkflows"
 DOCKER_UID = "1000"
 DOCKER_GID = "997"

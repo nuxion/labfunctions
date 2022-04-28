@@ -13,7 +13,7 @@ def test_client_auth_nbauth():
     a = AuthFlow(
         access_token=tkn,
         refresh_token="test-refresh",
-        refresh_url="http://localhost:8000/auth/refresh",
+        refresh_url="http://localhost:8000/v1/auth/refresh",
     )
 
     new_tkn = token_generator(settings, username="test")
@@ -21,7 +21,7 @@ def test_client_auth_nbauth():
     def handler(request):
         if (
             request.method == "POST"
-            and request.url == "http://localhost:8000/auth/refresh"
+            and request.url == "http://localhost:8000/v1/auth/refresh"
         ):
             return httpx.Response(200, json={"access_token": new_tkn})
         elif request.method == "GET" and request.url == "http://localhost:8000/":

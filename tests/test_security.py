@@ -1,13 +1,16 @@
 import os
 from datetime import datetime, timedelta
 
+import aioredis
 import jwt
 import pytest
 
 from nb_workflows import defaults
+from nb_workflows.conf.server_settings import settings
 from nb_workflows.security import scopes
 from nb_workflows.security.authentication import Auth
 from nb_workflows.security.password import PasswordScript
+from nb_workflows.security.redis_tokens import RedisTokenStore
 from nb_workflows.security.scopes import scope2dict
 from nb_workflows.security.scopes import validate as validate_scopes
 from nb_workflows.security.utils import open_keys
@@ -124,3 +127,47 @@ def test_security_validate_scopes():
     assert valid9
     assert not valid10
     assert not valid11  # review
+
+
+def test_security_redis_store():
+    redis = aioredis.from_url(settings.WEB_REDIS)
+    store = RedisTokenStore(redis, "test")
+
+    store2 = RedisTokenStore(settings.WEB_REDIS, "test")
+    assert isinstance(store.redis, aioredis.Redis)
+    assert isinstance(store2.redis, aioredis.Redis)
+    assert store2.ns == "test"
+
+
+@pytest.mark.asyncio
+async def test_security_redis_put(mocker):
+    mock = mocker.AsyncMock()
+    mock.set.return_value = "ok"
+
+    mocker.patch(
+        "nb_workflows.security.redis_tokens.aioredis.from_url", return_value=mock
+    )
+    store = RedisTokenStore("test", "test")
+    rsp = await store.put("test", "hey", ttl=5)
+    assert rsp
+    assert mock.mock_calls[0][1][0] == "test:test"
+
+
+@pytest.mark.asyncio
+async def test_security_redis_get(mocker):
+
+    redis = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+    store = RedisTokenStore(redis.client(), "test")
+    await store.put("test_key", "ok")
+    rsp = await store.get("test_key")
+    assert rsp == "ok"
+
+
+def test_security_redis_generate(mocker):
+    mock = mocker.AsyncMock()
+    mocker.patch(
+        "nb_workflows.security.redis_tokens.aioredis.from_url", return_value=mock
+    )
+    # store = RedisTokenStore("test", "test")
+    tkn = RedisTokenStore.generate()
+    assert tkn
