@@ -27,7 +27,7 @@ assoc_projects_users = Table(
     "nb_projects_users",
     Base.metadata,
     Column("project_id", ForeignKey("nb_project.projectid")),
-    Column("user_id", ForeignKey("nb_auth_user.id")),
+    Column("user_id", ForeignKey("nb_user.id")),
 )
 
 
@@ -46,6 +46,27 @@ class ProjectRelationMixin:
     @declared_attr
     def project(cls):
         return relationship("ProjectModel")
+
+
+@declarative_mixin
+class UserMixin:
+
+    id = Column(BigInteger, primary_key=True)
+    password = Column(BINARY, nullable=True)
+    is_superuser = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    scopes = Column(String(), default="user", nullable=False)
+
+    created_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        nullable=False,
+    )
+    updated_at = Column(
+        DateTime(),
+        server_default=functions.now(),
+        nullable=False,
+    )
 
 
 class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
@@ -102,7 +123,7 @@ class ProjectModel(Base, SerializerMixin):
     repository = Column(String(2048), nullable=True)
     owner_id = Column(
         BigInteger,
-        ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
+        ForeignKey("nb_user.id", ondelete="SET NULL"),
         nullable=False,
     )
     owner = relationship(
@@ -110,7 +131,7 @@ class ProjectModel(Base, SerializerMixin):
     )
     agent_id = Column(
         BigInteger,
-        ForeignKey("nb_auth_user.id", ondelete="SET NULL"),
+        ForeignKey("nb_user.id", ondelete="SET NULL"),
         nullable=True,
     )
     agent = relationship(
@@ -130,6 +151,17 @@ class ProjectModel(Base, SerializerMixin):
         DateTime(),
         server_default=functions.now(),
         nullable=False,
+    )
+
+
+class UserModel(UserMixin, Base):
+    __tablename__ = "nb_user"
+    __mapper_args__ = {"eager_defaults": True}
+
+    username = Column(String(), index=True, unique=True, nullable=False)
+    email = Column(String(), index=True, nullable=True)
+    projects = relationship(
+        "ProjectModel", secondary=assoc_projects_users, back_populates="users"
     )
 
 
@@ -212,28 +244,28 @@ class MachineModel(Base):
     )
 
 
-class UserModel(Base):
-
-    __tablename__ = "nb_auth_user"
-    __mapper_args__ = {"eager_defaults": True}
-
-    id = Column(BigInteger, primary_key=True)
-    username = Column(String(), index=True, unique=True, nullable=False)
-    password = Column(BINARY, nullable=True)
-    is_superuser = Column(Boolean, default=False, nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
-    scopes = Column(String(), default="user", nullable=False)
-
-    projects = relationship(
-        "ProjectModel", secondary=assoc_projects_users, back_populates="users"
-    )
-    created_at = Column(
-        DateTime(),
-        server_default=functions.now(),
-        nullable=False,
-    )
-    updated_at = Column(
-        DateTime(),
-        server_default=functions.now(),
-        nullable=False,
-    )
+# class UserModel(Base):
+#
+#     __tablename__ = "nb_auth_user"
+#     __mapper_args__ = {"eager_defaults": True}
+#
+#     id = Column(BigInteger, primary_key=True)
+#     username = Column(String(), index=True, unique=True, nullable=False)
+#     password = Column(BINARY, nullable=True)
+#     is_superuser = Column(Boolean, default=False, nullable=False)
+#     is_active = Column(Boolean, default=True, nullable=False)
+#     scopes = Column(String(), default="user", nullable=False)
+#
+#     projects = relationship(
+#         "ProjectModel", secondary=assoc_projects_users, back_populates="users"
+#     )
+#     created_at = Column(
+#         DateTime(),
+#         server_default=functions.now(),
+#         nullable=False,
+#     )
+#     updated_at = Column(
+#         DateTime(),
+#         server_default=functions.now(),
+#         nullable=False,
+#     )

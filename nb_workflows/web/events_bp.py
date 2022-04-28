@@ -6,10 +6,10 @@ import async_timeout
 from sanic import Blueprint
 from sanic.response import empty, json, stream
 from sanic_ext import openapi
-from sanic_jwt import inject_user, protected
 
 from nb_workflows.defaults import API_VERSION
 from nb_workflows.events import EventManager
+from nb_workflows.security.web import protected
 from nb_workflows.types.events import EventSSE
 from nb_workflows.utils import get_query_param, secure_filename
 

@@ -2,7 +2,7 @@ FROM {{ data.image }} as builder
 # supress pip warning
 # For Dev & Debug
 # ADD dist/nb_workflows-0.5.0-py3-none-any.whl /tmp
-
+USER root
 SHELL ["/bin/bash", "-c"]
 ADD requirements.txt /tmp
 # suppress warning

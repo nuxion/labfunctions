@@ -99,7 +99,7 @@ def normalize_name(name: str) -> str:
     return evaluate
 
 
-def generate_projectid() -> str:
+def generate_projectid(name=None) -> str:
     return generate_random(settings.PROJECTID_LEN)
 
 
@@ -112,6 +112,8 @@ async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, No
     try:
         await session.execute(stmt)
         await session.execute(project)
+        agent_user = await create_agent_for_project(session, projectid)
+        # await session.commit()
         await session.commit()
     except exc.IntegrityError as e:
         # await session.rollback()
@@ -122,6 +124,7 @@ async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, No
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
+        agent=agent_user,
     )
 
 
@@ -142,13 +145,20 @@ async def assign_project(session, user_id: int, projectid):
 async def create_agent_for_project(session, projectid: str) -> Union[str, None]:
     prj = await get_by_projectid_model(session, projectid)
     if prj and not prj.agent_id:
-        um = await users_mg.create_agent(session)
+        um = await users_mg.create_agent(session, projectid)
         um.projects.append(prj)
         prj.agent = um
         prj.updated_at = datetime.utcnow()
         session.add(prj)
         return um.username
     return None
+
+
+async def delete_agent_for_project(session, projectid: str):
+    prj = await get_by_projectid_model(session, projectid)
+    prj.agent = None
+    prj.updated_at = datetime.utcnow()
+    session.add(prj)
 
 
 async def get_agent_for_project(session, projectid: str) -> Union[UserModel, None]:

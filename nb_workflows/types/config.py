@@ -1,14 +1,34 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseSettings, RedisDsn
 
 from nb_workflows.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
 
 
+class SecuritySettings(BaseSettings):
+    JWT_PUBLIC: str
+    JWT_PRIVATE: str
+    JWT_ALG: str = "ES512"
+    JWT_EXP: int = 30  # 30 minutes
+    # JWT_PUBLIC: str = ".secrets/ecdsa.pub.pem"
+    # JWT_PRIVATE: str = ".secrets/ecdsa.priv.pem"
+    JWT_REQUIRES_CLAIMS: List[str] = ["exp"]
+    JWT_SECRET: Optional[str] = None
+    JWT_ISS: Optional[str] = None
+    JWT_AUD: Optional[str] = None
+    REFRESH_TOKEN_TTL: int = 3600 * 168  # 7 days
+    TOKEN_STORE_URL: Optional[str] = None
+    AUTH_SALT: str = "changeit"
+    AUTH_ALLOW_REFRESH: bool = True
+    AUTH_CLASS = "nb_workflows.security.authentication.Auth"
+    AUTH_FUNCTION = "nb_workflows.managers.users_mg.authenticate"
+
+    class Config:
+        env_prefix = "NB_"
+
+
 class ServerSettings(BaseSettings):
     # Security
-    SALT: str
-    SECRET_KEY: str
     AGENT_TOKEN: str
     AGENT_REFRESH_TOKEN: str
     AGENT_TOKEN_EXP: int
@@ -23,6 +43,8 @@ class ServerSettings(BaseSettings):
     NB_WORKFLOWS: str
     NB_OUTPUT: str
     DOCKER_REGISTRY: Optional[str] = None
+
+    SECURITY: Optional[SecuritySettings] = None
 
     DEV_MODE: bool = False
     WEB_REDIS: Optional[RedisDsn] = None

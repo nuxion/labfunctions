@@ -74,11 +74,14 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
         creds = get_credentials_disk(home_dir)
         if creds:
             self.creds = creds
-        else:
-            self.console.print(f"You are connecting to [magenta]{self._addr}[/magenta]")
-            u = input("User: ")
-            p = getpass.getpass("Password: ")
-            self.login(u, p)
+            rsp = self.verify()
+            if rsp:
+                return True
+        self.creds = None
+        self.console.print(f"You are connecting to [magenta]{self._addr}[/magenta]")
+        u = input("User: ")
+        p = getpass.getpass("Password: ")
+        self.login(u, p)
 
     def projects_private_key(self) -> str:
         """Gets private key to be shared to the docker container of a

@@ -147,7 +147,7 @@ def builder_exec(ctx: DockerBuildCtx):
     )
     project_dir, tmp_dir = prepare_files(ctx)
 
-    pd = nb_client.projects_get()
+    # pd = nb_client.projects_get()
     docker_tag = ctx.docker_name
     push = False
     if settings.DOCKER_REGISTRY:

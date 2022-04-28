@@ -65,12 +65,14 @@ def check_port(ip: str, port: int) -> bool:
 
 
 async def run_async(func, *args, **kwargs):
+    """Run sync functions from async code"""
     loop = asyncio.get_running_loop()
     rsp = await loop.run_in_executor(None, func, *args, **kwargs)
     return rsp
 
 
 def run_sync(func, *args, **kwargs):
+    """run async functions from sync code"""
     loop = asyncio.get_event_loop()
     rsp = loop.run_until_complete(func(*args, **kwargs))
     return rsp
@@ -420,6 +422,9 @@ def get_hostname() -> str:
 
 
 def get_class(fullclass_path):
+    """get a class or object from a module. The fullclass_path should be passed as:
+    package.my_module.MyClass
+    """
     module, class_ = fullclass_path.rsplit(".", maxsplit=1)
     mod = import_module(module)
     cls = getattr(mod, class_)

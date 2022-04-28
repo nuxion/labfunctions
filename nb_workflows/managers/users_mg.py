@@ -1,99 +1,126 @@
 from datetime import datetime
-from typing import Union
+from functools import wraps
+from inspect import isawaitable
+from typing import Optional, Union
 
-from sanic_jwt import exceptions
+from pydantic.error_wrappers import ValidationError
+from sanic import Request
+from sqlalchemy import delete
+from sqlalchemy import insert as sqlinsert
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from nb_workflows import defaults
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.hashes import PasswordScript, generate_random
-
-# from nb_workflows.auth import gorups
-from nb_workflows.models import UserModel
-from nb_workflows.types.users import UserData
+from nb_workflows.hashes import generate_random
+from nb_workflows.models import UserModel, assoc_projects_users
+from nb_workflows.security import AuthSpec, PasswordScript, get_delta
+from nb_workflows.security.errors import (
+    AuthValidationFailed,
+    MissingAuthorizationHeader,
+    WebAuthFailed,
+)
+from nb_workflows.types.security import JWTResponse, UserLogin
+from nb_workflows.types.user import UserOrm
 
 
 def select_user():
     stmt = select(UserModel).options(
         selectinload(UserModel.projects),
     )
+    # stmt = select(UserModel)
     return stmt
 
 
-def password_manager() -> PasswordScript:
-    s = settings.SALT
-    return PasswordScript(salt=s.encode("utf-8"))
+def model2orm(user: UserModel) -> UserOrm:
+    projects = []
+    if user.projects:
+        projects = [p.name for p in user.projects]
 
-
-def create_user(
-    session, username, password, scopes, superuser=False, is_active=False
-) -> UserModel:
-    pm = password_manager()
-    key = pm.encrypt(password)
-    u = UserModel(
-        username=username,
-        password=key,
-        scopes=scopes,
-        is_superuser=superuser,
-        is_active=is_active,
-    )
-    session.add(u)
-    return u
-
-
-async def create_agent(session, scopes=defaults.AGENT_SCOPES):
-    name = generate_random(defaults.AGENT_LEN)
-    fullname = f"{defaults.AGENT_USER_PREFIX}-{name}"
-
-    u = UserModel(
-        username=fullname,
-        scopes=scopes,
+    return UserOrm(
+        username=user.username,
+        id=user.id,
+        email=user.email,
+        password=user.password,
+        scopes=user.scopes,
+        is_superuser=user.is_superuser,
+        projects=projects,
     )
 
-    session.add(u)
-    return u
+
+def _insert(user: UserOrm):
+    t = UserModel.__table__
+    stmt = (
+        sqlinsert(t).values(**user.dict(exclude={"projects", "id"})).returning(t.c.id)
+    )
+    return stmt
 
 
-# async def assign_group(session, user: UserModel, group_name):
-#     g_obj = await gorups.get_group_by_name(session, group_name)
-#     user.groups.append(g_obj)
-#
-#
-# def assign_group_sync(session, user: UserModel, group_name):
-#     g_obj = gorups.get_group_by_name_sync(session, group_name)
-#     if g_obj:
-#         user.groups.append(g_obj)
+def _insert_project_user(project_id, user_id):
+    stmt = sqlinsert(assoc_projects_users).values(project_id, user_id)
 
 
-def get_user(session, username: str) -> Union[UserModel, None]:
-    stmt = select(UserModel).where(UserModel.username == username).limit(1)
-    user_t = session.execute(stmt).fetchone()
-    if user_t:
-        return user_t[0]
+def encrypt_password(password, salt: Union[bytes, str]):
+
+    pm = PasswordScript(salt)
+    encrypted = pm.encrypt(password)
+    return encrypted
+
+
+def create(
+    session, u: UserOrm, password: Optional[str] = None, salt: Optional[str] = None
+) -> Union[int, None]:
+    """
+    it will create a user in  database
+    if created will return the id, else None
+    """
+    if u.is_superuser and "admin:read:write" not in u.scopes:
+        u.scopes = f"{u.scopes},admin:r:w"
+
+    if password and salt:
+        u.password = encrypt_password(password, salt)
+
+    stmt = _insert(u)
+    try:
+        # um = UserModel(**u.dict())
+        r = session.execute(stmt)
+        id = r.scalar()
+        return id
+    except IntegrityError:
+        pass
+
     return None
 
 
 async def get_user_async(session, username: str) -> Union[UserModel, None]:
     stmt = select_user().where(UserModel.username == username).limit(1)
-    rsp = await session.execute(stmt)
-    user_t = rsp.fetchone()
-    if user_t:
-        return user_t[0]
-    return None
-
-
-async def get_userid_async(session, id_: int) -> Union[UserModel, None]:
-    stmt = select_user().where(UserModel.id == id_).limit(1)
 
     rsp = await session.execute(stmt)
-    user_t = rsp.fetchone()
-    if user_t:
-        return user_t[0]
-    return None
+    return rsp.scalar_one_or_none()
 
 
-def disable_user(session, username) -> Union[UserModel, None]:
+async def get_userid_async(session, user_id: str) -> Union[UserModel, None]:
+    stmt = select_user().where(UserModel.id == user_id).limit(1)
+
+    rsp = await session.execute(stmt)
+    return rsp.scalar_one_or_none()
+
+
+def get_user(session, username: str) -> Union[UserModel, None]:
+    stmt = select(UserModel).where(UserModel.username == username).limit(1)
+    rsp = session.execute(stmt)
+
+    return rsp.scalar_one_or_none()
+
+
+def create_or_update(session, user: UserOrm) -> UserModel:
+    m = UserModel(**user.dict())
+
+    session.merge(m)
+    return m
+
+
+def disable_user(session, username: str) -> Union[UserModel, None]:
     user = get_user(session, username)
     if user:
         user.is_active = False
@@ -104,10 +131,20 @@ def disable_user(session, username) -> Union[UserModel, None]:
     return None
 
 
-def change_scopes(session, username, new_scopes) -> Union[UserModel, None]:
-    user = get_user(session, username)
+async def delete_user_async(session, username: str):
+    stmt = delete(UserModel).where(UserModel.username == username)
+    await session.execute(stmt)
+
+
+def delete_user(session, username: str):
+    stmt = delete(UserModel).where(UserModel.username == username)
+    session.execute(stmt)
+
+
+async def disable_user_async(session, username: str) -> Union[UserModel, None]:
+    user = await get_user_async(session, username)
     if user:
-        user.scopes = new_scopes
+        user.is_active = False
         user.updated_at = datetime.utcnow()
         session.add(user)
 
@@ -115,71 +152,99 @@ def change_scopes(session, username, new_scopes) -> Union[UserModel, None]:
     return None
 
 
-def verify_user(session, username: str, password: str) -> Union[UserModel, None]:
-    pm = password_manager()
-    key = pm.encrypt(password)
-    u = get_user(session, username)
-    if u and u.is_active:
-        is_valid = pm.verify(u.password, key)
-        if is_valid:
-            return u
-    return None
+async def change_pass_async(session, username: str, new_password: str, salt):
+    u = await get_user_async(session, username)
+    if u:
+        pass_ = encrypt_password(new_password, salt=salt)
+        u.password == pass_
+        u.updated_at = datetime.utcnow()
+        session.add(u)
 
 
-def verify_user_from_model(user: UserModel, password: str) -> bool:
-    pm = password_manager()
-    # key = pm.encrypt(password)
+def change_pass(session, user: str, new_password: str, salt) -> bool:
+    obj = get_user(session, user)
+    if obj:
+        pass_ = encrypt_password(new_password, salt=salt)
+        obj.password = pass_
+        obj.updated_at = datetime.utcnow()
+        session.add(obj)
+        return True
+    return False
 
-    verified = pm.verify(password, user.password)
+
+def verify_password(
+    user: UserModel, pass_unencrypted: str, salt: Union[bytes, str]
+) -> bool:
+    pm = PasswordScript(salt)
+    verified = pm.verify(pass_unencrypted, user.password)
     if verified and user.is_active:
         return True
     return False
 
 
-async def authenticate_web(requests, *args, **kwargs):
-    u = requests.json.get("username", None)
-    p = requests.json.get("password", None)
-    session = requests.ctx.session
-    if not u or not p:
-        raise exceptions.AuthenticationFailed("Auth error")
+async def authenticate(request: Request, *args, **kwargs):
+    try:
+        creds = UserLogin(**request.json)
+    except ValidationError as e:
+        raise AuthValidationFailed()
 
+    session = request.ctx.session
     async with session.begin():
-        user = await get_user_async(session, u)
+        user = await get_user_async(session, creds.username)
         if user is None:
-            raise exceptions.AuthenticationFailed("Auth error")
+            raise AuthValidationFailed()
 
-        is_valid = verify_user_from_model(user, p)
+        is_valid = verify_password(
+            user, creds.password, salt=request.app.config.AUTH_SALT
+        )
         if not is_valid:
-            raise exceptions.AuthenticationFailed("Auth error")
-        user_ = user.to_dict()
-        user_["user_id"] = user_["id"]
-        return user_
+            raise AuthValidationFailed()
+
+        return user
 
 
-async def retrieve_user(request, payload, *args, **kwargs) -> UserData:
-    if payload:
-        user_id = payload.get("user_id", None)
-        session = request.ctx.session
-        # async with session.begin():
-        user = await get_userid_async(session, user_id)
-        user_dict = user.to_dict(rules=("-id", "-created_at", "-updated_at"))
-        user_dict["user_id"] = user_id
-        return UserData(**user_dict)
-    else:
-        return None
+async def create_agent(session, projectid=None, scopes=defaults.AGENT_SCOPES):
+    name = projectid or generate_random(defaults.AGENT_LEN)
+    fullname = f"{defaults.AGENT_USER_PREFIX}{name}"
+
+    u = UserModel(
+        username=fullname,
+        scopes=scopes,
+    )
+
+    session.add(u)
+    return u
 
 
-async def store_refresh_token(user_id, refresh_token, *args, **kwargs):
+async def get_jwt_token(auth: AuthSpec, user: UserModel, exp=30) -> JWTResponse:
+    access_token = auth.encode(
+        {"usr": user.username, "scopes": user.scopes.split(",")}, exp=get_delta(exp)
+    )
+    username = str(user.username)
+    rftkn = await auth.store_refresh_token(username)
+    return JWTResponse(access_token=access_token, refresh_token=rftkn)
 
-    redis = kwargs["request"].ctx.web_redis
-    key = f"nb.rtkn.{user_id}"
-    _key = await redis.get(key)
-    if not _key:
-        await redis.set(key, refresh_token)
 
+def inject_user(func):
+    """Inject a user"""
 
-async def retrieve_refresh_token(request, user_id, *args, **kwargs):
-    # Check: https://github.com/ahopkins/sanic-jwt/issues/34
-    redis = request.ctx.web_redis
-    key = f"nb.rtkn.{user_id}"
-    return await redis.get(key)
+    def decorator(f):
+        @wraps(f)
+        async def decorated_function(request, *args, **kwargs):
+            token = request.ctx.token_data
+            session = request.ctx.session
+            user = get_user_async(session, token["usr"])
+            if isawaitable(user):
+                user = await user
+            if not user:
+                raise WebAuthFailed("Authentication failed")
+            user_orm = model2orm(user)
+            response = f(request, user=user_orm, *args, **kwargs)
+            if isawaitable(response):
+                response = await response
+
+            return response
+
+        return decorated_function
+
+    return decorator(func)

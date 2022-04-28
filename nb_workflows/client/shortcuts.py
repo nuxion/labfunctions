@@ -19,7 +19,6 @@ from nb_workflows.types import (
 )
 from nb_workflows.utils import get_parent_folder, secure_filename
 
-from .agent import AgentClient
 from .diskclient import DiskClient
 from .nbclient import NBClient
 from .state import WorkflowsState
@@ -85,7 +84,7 @@ def from_env(settings: Optional[ClientSettings] = None) -> NBClient:
 
 
 def agent(url_service, token, refresh, projectid) -> NBClient:
-    """A shortcut to intialize :class:`nb_workflows.client.agent_client.AgentClient`
+    """A shortcut to intialize
 
     Usually, it is used in each machine running a agent (data plane),
     and is used to communicates with server for workflows task

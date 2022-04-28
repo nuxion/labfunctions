@@ -1,12 +1,12 @@
 from nb_workflows.models import ProjectModel
 from nb_workflows.types import NBTask, ProjectData, ScheduleData
-from nb_workflows.types.users import UserData
+from nb_workflows.types.user import UserOrm
 
 from .factories import (
     NBTaskFactory,
     ScheduleDataFactory,
     WorkflowDataWebFactory,
-    create_user_model,
+    create_user_model2,
 )
 
 
@@ -31,8 +31,8 @@ def test_types_workflow_serialization():
 
 def test_types_user_serialization():
 
-    um = create_user_model()
-    ud = UserData.from_model(um)
+    um = create_user_model2()
+    ud = UserOrm.from_orm(um)
     assert ud.username == um.username
 
 

@@ -4,25 +4,23 @@ import pathlib
 from typing import List, Union
 
 import httpx
-
-# import aiofiles
 from sanic import Blueprint, Request, Sanic, exceptions
 from sanic.response import empty, json
 from sanic_ext import openapi
-from sanic_jwt import inject_user, protected
 
 from nb_workflows import defaults
-from nb_workflows.auth import get_auth
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.defaults import API_VERSION
 from nb_workflows.executors.context import build_upload_uri, create_build_ctx
 from nb_workflows.io import AsyncFileserver
-from nb_workflows.managers import projects_mg
+from nb_workflows.managers import projects_mg, users_mg
 from nb_workflows.scheduler import SchedulerExecutor
+from nb_workflows.security import get_auth
+from nb_workflows.security.web import protected
 from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
 from nb_workflows.types.projects import ProjectBuildReq
-from nb_workflows.types.users import AgentReq, UserData
+from nb_workflows.types.user import AgentReq, UserOrm
 from nb_workflows.utils import run_async, secure_filename
 from nb_workflows.web.utils import get_query_param2, stream_reader
 
@@ -48,6 +46,10 @@ def _get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
     return SchedulerExecutor(r, qname=qname)
 
 
+def get_token_data(request: Request):
+    return request.ctx.token_data
+
+
 @projects_bp.get("/_generateid")
 @openapi.response(200, "project")
 @openapi.response(500, "not found")
@@ -67,16 +69,17 @@ async def project_generateid(request: Request):
 @projects_bp.post("/")
 @openapi.body({"application/json": ProjectReq})
 @openapi.response(201, ProjectData, "Created")
-@inject_user()
 @protected()
-async def project_create(request, user: UserData):
+@users_mg.inject_user
+async def project_create(request, user: UserOrm):
     """Create a new project"""
     # pylint: disable=unused-argument
 
     dict_ = request.json
+    token_data = get_token_data(request)
     pr = ProjectReq(**dict_)
     session = request.ctx.session
-    r = await projects_mg.create(session, user.user_id, pr)
+    r = await projects_mg.create(session, user.id, pr)
     if r:
         return json(r.dict(), 201)
     return json(dict(msg="already exist"), 200)
@@ -86,8 +89,8 @@ async def project_create(request, user: UserData):
 @openapi.body({"application/json": ProjectReq})
 @openapi.response(202, "created")
 @protected()
-@inject_user()
-async def project_create_or_update(request, user: UserData):
+@users_mg.inject_user
+async def project_create_or_update(request, user: UserOrm):
     """Create or update a project"""
     # pylint: disable=unused-argument
 
@@ -95,20 +98,20 @@ async def project_create_or_update(request, user: UserData):
     pd = ProjectReq(**dict_)
     session = request.ctx.session
     async with session() as new_session:
-        r = await projects_mg.create_or_update(new_session, user.user_id, pd)
+        r = await projects_mg.create_or_update(new_session, user.id, pd)
     return json(dict(msg="created"), 202)
 
 
 @projects_bp.get("/")
 @openapi.response(200, List[ProjectData], "project-list")
 @protected()
-@inject_user()
-async def project_list(request, user: UserData):
+@users_mg.inject_user
+async def project_list(request, user: UserOrm):
     """Get a list of projects belonging to a user"""
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    result = await projects_mg.list_all(session, user.user_id)
+    result = await projects_mg.list_all(session, user.id)
     return json([r.dict() for r in result], 200)
 
 
@@ -117,13 +120,14 @@ async def project_list(request, user: UserData):
 @openapi.response(200, "project")
 @openapi.response(404, "not found")
 @protected()
-@inject_user()
-async def project_get_one(request, projectid, user: UserData):
+@users_mg.inject_user
+async def project_get_one(request, projectid, user: UserOrm):
     """Get one project"""
     # pylint: disable=unused-argument
 
     session = request.ctx.session
-    r = await projects_mg.get_by_projectid(session, projectid, user_id=user.user_id)
+    print("User id: ", user.id)
+    r = await projects_mg.get_by_projectid(session, projectid, user_id=user.id)
     if r:
         return json(r.dict(), 200)
     return json(dict(msg="Not found"))
@@ -151,11 +155,11 @@ async def project_create_user_agent(request, projectid):
     Creates a User Agent
     """
     session = request.ctx.session
+    async with session.begin():
+        res = await projects_mg.create_agent_for_project(session, projectid)
+        if res:
+            return json(dict(msg=res), 201)
 
-    res = await projects_mg.create_agent_for_project(session, projectid)
-    if res:
-        await session.commit()
-        return json(dict(msg=res), 201)
     return json(dict(msg="not created"), 200)
 
 
@@ -164,15 +168,11 @@ async def project_create_user_agent(request, projectid):
 @protected()
 async def project_delete_user_agent(request, projectid):
     """
-    Creates a User Agent
+    Delete a User Agent
     """
     session = request.ctx.session
-
-    res = await projects_mg.create_agent_for_project(session, projectid)
-    if res:
-        await session.commit()
-        return json(dict(msg=res), 201)
-    return json(dict(msg="not created"), 200)
+    await projects_mg.delete_agent_for_project(session, projectid)
+    return json(dict(msg="deleted"), 200)
 
 
 @projects_bp.post("/<projectid:str>/agent/_token")
@@ -184,16 +184,14 @@ async def project_get_agent_token(request, projectid):
     Create an agent token
     """
     # pylint: disable=unused-argument
-    _auth = get_auth()
+    _auth = get_auth(request)
     session = request.ctx.session
+    redis = request.ctx.web_redis
 
     agt = await projects_mg.get_agent_for_project(session, projectid)
-    user = UserData.from_model(agt)
-    with _auth.override(expiration_delta=settings.AGENT_TOKEN_EXP):
-        token = await _auth.generate_access_token(user)
-        refresh = await _auth.generate_refresh_token(request, user)
+    jwt = await users_mg.get_jwt_token(_auth, agt, exp=settings.AGENT_TOKEN_EXP)
 
-    return json(dict(access_token=token, refresh_token=refresh), 200)
+    return json(jwt.dict(), 200)
 
 
 @projects_bp.post("/<projectid:str>/_build")

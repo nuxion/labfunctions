@@ -8,26 +8,26 @@ import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.auth import (
-    NBAuthStandalone,
-    ProjectClaim,
-    initialize,
-    scope_extender_sync,
-)
+# from nb_workflows.auth import (
+#     NBAuthStandalone,
+#     ProjectClaim,
+#     initialize,
+#     scope_extender_sync,
+# )
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
 from nb_workflows.models import HistoryModel, UserModel, WorkflowModel
-from nb_workflows.types.users import UserData
+from nb_workflows.security import AuthSpec, auth_from_settings, sanic_init_auth
 
 from .factories import (
     create_history_model,
     create_project_model,
     create_runtime_model,
-    create_user_model,
+    create_user_model2,
     create_workflow_model,
 )
-from .resources import create_app
+from .resources import TestTokenStore, create_app
 
 # SQL_URI = os.getenv("SQLTEST")
 # ASQL_URI = os.getenv("ASQLTEST")
@@ -54,7 +54,9 @@ def connection():
 @pytest.fixture(scope="module", autouse=True)
 def setupdb(connection):
     s = Session(bind=connection)
-    um = create_user_model(username="admin_test", password="meolvide")
+    um = create_user_model2(
+        username="admin_test", password="meolvide", salt=settings.SECURITY.AUTH_SALT
+    )
     pm = create_project_model(um, projectid="test", name="test")
     wm = create_workflow_model(pm, wfid="wfid-test", alias="alias_test")
     rm = create_runtime_model(pm, project_id="test")
@@ -97,9 +99,9 @@ async def async_conn():
 @pytest.fixture(scope="function")
 async def async_session(async_conn):
     s = async_conn.sessionmaker()
-    async with s.begin():
-        yield s
-        await s.rollback()
+    # async with s.begin():
+    yield s
+    await s.rollback()
     # async with async_conn.begin() as conn:
     #    yield conn
     #    await conn.rollback()
@@ -148,7 +150,6 @@ async def sanic_app(async_conn):
 
     settings.EVENTS_BLOCK_MS = 5
     settings.EVENTS_STREAM_TTL_SECS = 5
-    settings.SECRET_KEY = secret_auth
 
     rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
     # rweb = Redis("/tmp/RWeb.rdb")
@@ -171,19 +172,14 @@ async def async_redis_web():
 
 @pytest.fixture(scope="session")
 def auth_helper():
-    auth = initialize("testing")
+    store = TestTokenStore()
+    auth = auth_from_settings(settings.SECURITY, store=store)
     yield auth
 
 
 @pytest.fixture
 def access_token():
-    um = create_user_model()
-    nb = NBAuthStandalone(
-        secret=secret_auth,
-        custom_claims=[ProjectClaim()],
-        add_scopes_to_payload=scope_extender_sync,
-    )
+    auth = auth_from_settings(settings.SECURITY)
+    encoded = auth.encode({"usr": "admin_test", "scopes": ["user:r:w"]})
 
-    ud = UserData.from_model(um)
-    p = nb.generate_access_token(ud)
-    yield p
+    yield encoded

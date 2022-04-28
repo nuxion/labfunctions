@@ -5,6 +5,7 @@ import click
 
 # from nb_workflows.io.fileserver import FileFileserver
 import httpx
+from httpx import ConnectError
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
@@ -17,6 +18,7 @@ from nb_workflows.executors.local import local_exec_env
 from nb_workflows.utils import mkdir_p
 
 service = os.getenv("NS_WORKFLOW_SERVICE", "http://localhost:8000")
+console = Console()
 
 
 @click.command()
@@ -30,7 +32,13 @@ def login(url_service):
     """Login to NB Workflows service"""
     # click.echo(f"\nLogin to NB Workflows services {url_service}\n")
     c = client.diskclient.DiskClient(url_service)
-    c.logincli()
+    try:
+        c.logincli()
+        console.print("[bold green]Successfully logged")
+    except ConnectError:
+        console.print(
+            f"[bold red]Error trying to connect to [magenta]{url_service}[/magenta][/]"
+        )
 
 
 @click.command()
