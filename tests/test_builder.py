@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.executors import builder
 
-from .factories import DockerBuildCtxFactory, ProjectDataFactory
+from .factories import BuildCtxFactory, ProjectDataFactory
 
 
 def test_builder_prepare_files(mocker: MockerFixture, tempdir):
@@ -18,7 +18,7 @@ def test_builder_prepare_files(mocker: MockerFixture, tempdir):
 
     mocker.patch("nb_workflows.executors.builder._extract_project", return_value=None)
 
-    ctx = DockerBuildCtxFactory()
+    ctx = BuildCtxFactory()
     prj_dir, temp_dir = builder.prepare_files(ctx)
 
     assert str(prj_dir).endswith(f"{ctx.projectid}/build")
@@ -48,7 +48,7 @@ def test_builder_exec(mocker: MockerFixture, tempdir):
     mocker.patch("nb_workflows.executors.builder.docker_build", return_value="logs")
     spy = mocker.spy(builder, "docker_build")
 
-    ctx = DockerBuildCtxFactory()
+    ctx = BuildCtxFactory()
 
     logs = builder.builder_exec(ctx)
     dir_ = spy.call_args[0][0]
@@ -82,7 +82,7 @@ def test_builder_exec_repo(mocker: MockerFixture, tempdir):
     mocker.patch("nb_workflows.executors.builder.docker_build", return_value="logs")
     spy = mocker.spy(builder, "docker_build")
 
-    ctx = DockerBuildCtxFactory()
+    ctx = BuildCtxFactory()
 
     logs = builder.builder_exec(ctx)
     dir_ = spy.call_args[0][0]

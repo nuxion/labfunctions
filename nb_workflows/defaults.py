@@ -45,8 +45,13 @@ EXECUTIONTASK_VAR = "NB_EXECUTION_TASK"
 
 BASE_PATH_ENV = "NB_BASE_PATH"
 
+PROJECT_UPLOADS = "uploads"
+PROJECT_HISTORY = "history"
+
 # see https://zelark.github.io/nano-id-cc/
-PROJECTID_LEN = 8  # 3 years 1% collision at 100 projects creations per hour
+PROJECT_ID_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz-"
+PROJECTID_MIN_LEN = 10  # 13 years 1% collision at 100 projects creations per hour
+PROJECTID_MAX_LEN = 16
 WFID_LEN = 11  # ~139 thousand years 1% collision at 1000 jobs creation per hour
 EXECID_LEN = 14  # ~20 years %1 collision at 1000 execs per second
 PIPEID_LEN = 11

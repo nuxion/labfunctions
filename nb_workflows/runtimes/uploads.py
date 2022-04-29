@@ -7,19 +7,12 @@ from zipfile import ZipFile
 from nb_workflows import defaults, secrets
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 from nb_workflows.errors import CommandExecutionException
+from nb_workflows.types.runtimes import ProjectBundleFile, RuntimeSpec
 from nb_workflows.utils import execute_cmd
 
-from .types import Credentials, ProjectZipFile
+from .utils import git_last_tag, git_short_head_id
 
 logger = logging.getLogger(__name__)
-
-
-def generate_dockerfile(root, docker_options: Dict[str, Any]):
-    render_to_file(
-        "Dockerfile",
-        str((root / defaults.DOCKERFILE_RUNTIME_NAME).resolve()),
-        data=docker_options,
-    )
 
 
 def write_secrets(root, private_key, nbvars_dict) -> str:
@@ -33,17 +26,9 @@ def write_secrets(root, private_key, nbvars_dict) -> str:
     return outfile
 
 
-def git_short_head_id():
-    return execute_cmd("git rev-parse --short HEAD")
-
-
-def git_last_tag():
-    return execute_cmd("git describe --tags")
-
-
-def zip_git_current(
-    root, prefix_folder=defaults.ZIP_GIT_PREFIX
-) -> Union[ProjectZipFile, None]:
+def zip_git_stash(
+    root, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
+) -> Union[ProjectBundleFile, None]:
     """Zip the actual folder state
     using git stash, this should be used only when testing or developing
     """
@@ -51,7 +36,7 @@ def zip_git_current(
 
     secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
 
-    filename = "CURRENT.zip"
+    filename = f"{runtime_name}.stash.zip"
 
     output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     stash_id = execute_cmd("git stash create")
@@ -65,12 +50,19 @@ def zip_git_current(
 
     execute_cmd(cmd)
 
-    return ProjectZipFile(
-        filepath=output_file, filename=filename, current=True, version="current"
+    return ProjectBundleFile(
+        filepath=output_file,
+        filename=filename,
+        current=False,
+        stash=True,
+        version="stash",
+        runtime_name=runtime_name,
     )
 
 
-def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
+def zip_git_head(
+    root, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
+) -> ProjectBundleFile:
     """Zip the head of the repository.
     Not commited files wouldn't included in this zip file
     """
@@ -88,7 +80,7 @@ def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
     if not tagname:
         tagname = git_short_head_id()
 
-    filename = f"{tagname}.zip"
+    filename = f"{runtime_name}.{tagname}.zip"
 
     output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     execute_cmd(
@@ -96,14 +88,20 @@ def zip_git_head(root, prefix_folder=defaults.ZIP_GIT_PREFIX) -> ProjectZipFile:
         f"--add-file {secrets_file} "
         f"-o {output_file} HEAD "
     )
-    return ProjectZipFile(
-        filepath=output_file, filename=filename, version=tagname.lower(), commit=tagname
+    return ProjectBundleFile(
+        runtime_name=runtime_name,
+        filepath=output_file,
+        filename=filename,
+        version=tagname.lower(),
+        commit=tagname,
     )
 
 
-def zip_all(root, prefix_folder=defaults.ZIP_GIT_PREFIX):
+def zip_current(
+    root, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
+) -> ProjectBundleFile:
 
-    filename = "ALL.zip"
+    filename = f"{runtime_name}.current.zip"
 
     output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     secrets_file = Path(".") / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
@@ -124,10 +122,16 @@ def zip_all(root, prefix_folder=defaults.ZIP_GIT_PREFIX):
                     z.write(i)
 
     dst.unlink(missing_ok=True)
-    return ProjectZipFile(filepath=output_file, filename=filename, version="all")
+    return ProjectBundleFile(
+        runtime_name=runtime_name,
+        filepath=output_file,
+        filename=filename,
+        version="current",
+        current=True,
+    )
 
 
-def zip_project(root, secrets_file, current=False, all_=False) -> ProjectZipFile:
+def zip_project_deprecated(root, stash=False, current=False) -> ProjectBundleFile:
     """Make a zip of this project.
     It uses git to skip files in the .gitignore file.
     After making the zip file with git,  it will add a secret file
@@ -136,30 +140,15 @@ def zip_project(root, secrets_file, current=False, all_=False) -> ProjectZipFile
     :param dev: default False, if True it will make a git stash
     of the current files. If False, then will zip the last commited changes.
     """
-
-    # secrets_file = write_secrets(root, private_key, vars_file)
-
-    zfile = None
-
-    if current:
-        zfile = zip_git_current(root)
-        if not zfile:
-            raise TypeError(
-                "There isn't changes in the git repository to perform a "
-                "CURRENT zip file. For untracked files you should add to "
-                "the stash the changes, perform: git add ."
-            )
-    elif all_:
-        zfile = zip_all(root)
-    else:
-        zfile = zip_git_head(root)
-
-    return zfile
+    pass
 
 
-def manage_upload(privkey, env_file, current, all_=False) -> ProjectZipFile:
+def bundle_project(
+    spec: RuntimeSpec, privkey, env_file, stash=False, current=False
+) -> ProjectBundleFile:
     """
-    It manages how to upload project files to the server.
+    It's in charge of bundle all the files needed to build a runtime.
+    This bundle could be uploaded to the server or used to build a local docker image.
 
     Right now AGENT_TOKEN and AGENT_REFRESH_TOKEN are injected dinamically
     generating the keys on the server and puting it encrypted in the .secrets's file
@@ -178,12 +167,32 @@ def manage_upload(privkey, env_file, current, all_=False) -> ProjectZipFile:
     # checks if AGENT_TOKEN and REFERSH exist?
 
     root = Path(os.getcwd())
+
+    if not (root / spec.container.requirements).is_file():
+        raise KeyError("A requirements file is missing")
+
     (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
 
     nbvars = secrets.load(str(root))
 
     secrets_file = write_secrets(root, privkey, nbvars)
-    zfile = zip_project(root, secrets_file, current, all_)
+
+    zfile = None
+
+    if stash and not current:
+        zfile = zip_git_stash(root, spec.name)
+        if not zfile:
+            raise TypeError(
+                "There isn't changes in the git repository to perform a "
+                "STASH zip file. For untracked files you should add to "
+                "the stash the changes, perform: git add ."
+            )
+    elif current and not stash:
+        zfile = zip_current(root, spec.name)
+    elif not current and not stash:
+        zfile = zip_git_head(root, spec.name)
+    else:
+        raise AttributeError("Bad option: current and stash are different options")
 
     Path(secrets_file).unlink(missing_ok=True)
 

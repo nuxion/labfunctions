@@ -12,13 +12,14 @@ from nb_workflows import defaults
 from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.defaults import API_VERSION
-from nb_workflows.executors.context import build_upload_uri, create_build_ctx
 from nb_workflows.managers import projects_mg, users_mg
+from nb_workflows.runtimes.context import build_upload_uri, create_build_ctx
 from nb_workflows.scheduler import SchedulerExecutor
 from nb_workflows.security import get_auth
 from nb_workflows.security.web import protected
 from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
 from nb_workflows.types.projects import ProjectBuildReq
+from nb_workflows.types.runtimes import RuntimeSpec
 from nb_workflows.types.user import AgentReq, UserOrm
 from nb_workflows.utils import run_async, secure_filename
 from nb_workflows.web.utils import get_query_param2, stream_reader
@@ -26,7 +27,7 @@ from nb_workflows.web.utils import get_query_param2, stream_reader
 projects_bp = Blueprint("projects", url_prefix="projects", version=API_VERSION)
 
 
-async def generate_id(session, retries=3) -> Union[str, None]:
+async def generate_id(session, base_name, retries=3) -> Union[str, None]:
     ix = 0
     while ix <= retries:
         id_ = projects_mg.generate_projectid()
@@ -194,6 +195,7 @@ async def project_get_agent_token(request, projectid):
 
 
 @projects_bp.post("/<projectid:str>/_build")
+@openapi.body({"application/json": RuntimeSpec})
 @openapi.parameter("version", str, "query")
 @protected()
 async def project_build(request, projectid):
@@ -201,6 +203,7 @@ async def project_build(request, projectid):
     Enqueue docker build image
     """
     # pylint: disable=unused-argument
+    spec = RuntimeSpec(**request.json)
 
     root = pathlib.Path(projectid)
 
@@ -211,7 +214,7 @@ async def project_build(request, projectid):
         pd = await projects_mg.get_by_projectid(session, projectid)
     if pd:
 
-        ctx = create_build_ctx(pd, version)
+        ctx = create_build_ctx(pd, spec, version, settings.DOCKER_REGISTRY)
 
         sche = _get_scheduler()
         job = await run_async(sche.enqueue_build, ctx)
@@ -222,6 +225,7 @@ async def project_build(request, projectid):
 
 @projects_bp.post("/<projectid:str>/_upload", stream=True)
 @openapi.parameter("version", str, "query")
+@openapi.parameter("runtime", str, "query")
 @protected()
 async def project_upload(request, projectid):
     """
@@ -231,11 +235,12 @@ async def project_upload(request, projectid):
 
     root = pathlib.Path(projectid)
     version = get_query_param2(request, "version", None)
+    runtime_name = get_query_param2(request, "runtime", None)
     session = request.ctx.session
     async with session.begin():
         pd = await projects_mg.get_by_projectid(session, projectid)
 
-    uri = build_upload_uri(pd, version)
+    uri = build_upload_uri(pd.projectid, runtime_name, version)
     fileserver = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}"
     dst_url = f"{fileserver}/{uri}"
     async with httpx.AsyncClient() as client:

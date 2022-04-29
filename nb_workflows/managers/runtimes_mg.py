@@ -23,6 +23,7 @@ def model2runtime(m: RuntimeModel) -> RuntimeData:
         docker_name=m.docker_name,
         spec=RuntimeSpec(**m.spec),
         project_id=m.project.projectid,
+        registry=m.registry,
         created_at=m.created_at.isoformat(),
         version=m.version,
     )

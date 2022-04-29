@@ -13,8 +13,6 @@ from rich.prompt import Confirm, Prompt
 from nb_workflows import client
 from nb_workflows.client import init_script
 from nb_workflows.conf import load_client
-from nb_workflows.executors.development import local_dev_exec
-from nb_workflows.executors.local import local_exec_env
 from nb_workflows.utils import mkdir_p
 
 service = os.getenv("NS_WORKFLOW_SERVICE", "http://localhost:8000")

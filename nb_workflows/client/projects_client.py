@@ -19,18 +19,22 @@ from nb_workflows.types import (
     WorkflowDataWeb,
     WorkflowsList,
 )
-from nb_workflows.types.docker import RuntimeVersionData
 from nb_workflows.types.projects import (
     ProjectBuildReq,
     ProjectBuildResp,
     ProjectCreated,
 )
+from nb_workflows.types.runtimes import (
+    ProjectBundleFile,
+    RuntimeData,
+    RuntimeReq,
+    RuntimeSpec,
+)
 from nb_workflows.types.user import AgentReq
 from nb_workflows.utils import binary_file_reader, parse_var_line
 
 from .base import BaseClient
-from .types import Credentials, ProjectZipFile, WFCreateRsp
-from .uploads import generate_dockerfile
+from .types import Credentials, WFCreateRsp
 from .utils import get_private_key, store_credentials_disk, store_private_key
 
 
@@ -73,7 +77,6 @@ class ProjectsClient(BaseClient):
         return None
 
     def projects_get(self) -> Union[ProjectData, None]:
-        breakpoint()
         r = self._http.get(f"/projects/{self.projectid}")
         if r.status_code == 200:
             return ProjectData(**r.json())
@@ -85,16 +88,23 @@ class ProjectsClient(BaseClient):
             data = r.json()
             return [ProjectData(**d) for d in data]
 
-    def projects_upload(self, zfile: ProjectZipFile):
+    def projects_upload(self, zfile: ProjectBundleFile):
+        url = (
+            f"/projects/{self.projectid}"
+            f"/_upload?runtime={zfile.runtime_name}&version={zfile.version}"
+        )
+
         r = self._http.post(
-            f"/projects/{self.projectid}/_upload?version={zfile.version}",
+            url,
             content=binary_file_reader(zfile.filepath),
         )
         if r.status_code != 201 and r.status_code != 204:
             raise ProjectUploadError(self.projectid)
 
-    def projects_build(self, version) -> Union[str, None]:
-        rsp = self._http.post(f"/projects/{self.projectid}/_build?version={version}")
+    def projects_build(self, spec: RuntimeSpec, version: str) -> Union[str, None]:
+        rsp = self._http.post(
+            f"/projects/{self.projectid}/_build?version={version}", json=spec.dict()
+        )
         if rsp.status_code == 202:
             return rsp.json()["execid"]
         return None
@@ -129,22 +139,20 @@ class ProjectsClient(BaseClient):
             return key
         return None
 
-    def runtimes_get_all(self, lt=5) -> List[RuntimeVersionData]:
+    def runtimes_get_all(self, lt=5) -> List[RuntimeData]:
         data = self._http.get(f"/runtimes/{self.projectid}?lt={lt}")
-        runtimes = [RuntimeVersionData(**dict_) for dict_ in data.json()]
+        runtimes = [RuntimeData(**dict_) for dict_ in data.json()]
         return runtimes
 
-    def runtime_create(self, docker_name, version):
-        rd = RuntimeVersionData(
-            projectid=self.projectid, docker_name=docker_name, version=version
-        )
-        rsp = self._http.post(f"/runtimes/{self.projectid}", json=rd.dict())
+    def runtime_create(self, req: RuntimeReq):
+
+        rsp = self._http.post(f"/runtimes/{self.projectid}", json=req.dict())
         if rsp.status_code != 201 and rsp.status_code != 200:
             raise RuntimeCreationError(
-                docker_name=docker_name, projectid=self.projectid
+                docker_name=req.docker_name, projectid=self.projectid
             )
 
-    def runtime_delete(self, id):
-        rsp = self._http.delete(f"/runtimes/{self.projectid}/{id}")
+    def runtime_delete(self, rid):
+        rsp = self._http.delete(f"/runtimes/{self.projectid}/{rid}")
         if rsp.status_code != 200:
-            raise RuntimeCreationError(docker_name=id, projectid=self.projectid)
+            raise RuntimeCreationError(docker_name=rid, projectid=self.projectid)

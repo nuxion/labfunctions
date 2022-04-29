@@ -21,7 +21,6 @@ from nb_workflows.types import (
     ProjectData,
     ScheduleData,
 )
-from nb_workflows.types.docker import DockerBuildCtx
 from nb_workflows.utils import format_bytes
 
 

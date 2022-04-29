@@ -35,7 +35,7 @@ from nb_workflows.types import (
     runtimes,
 )
 from nb_workflows.types.config import SecuritySettings
-from nb_workflows.types.docker import DockerBuildCtx, DockerfileImage
+from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.types.events import EventSSE
 from nb_workflows.types.user import UserOrm
 from nb_workflows.utils import run_sync
@@ -288,18 +288,6 @@ class ClusterStateFactory(factory.Factory):
     idle_by_agent = {"agent-0": 5, "agent-1": 0}
 
 
-class DockerBuildCtxFactory(factory.Factory):
-    class Meta:
-        model = DockerBuildCtx
-
-    projectid = factory.LazyAttribute(lambda n: generate_random(10))
-    project_zip_route = "/tmp/test.current.zip"
-    zip_name = "test.current.zip"
-    version = "current"
-    docker_name = "nbworkflows/test"
-    execid = factory.LazyAttribute(lambda n: generate_random(10))
-
-
 class DockerSpecFactory(factory.Factory):
     class Meta:
         model = runtimes.DockerSpec
@@ -343,6 +331,20 @@ class RuntimeReqFactory(factory.Factory):
     spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
     project_id = factory.LazyAttribute(lambda n: generate_random(10))
     version = factory.Sequence(lambda n: "%d" % n)
+
+
+class BuildCtxFactory(factory.Factory):
+    class Meta:
+        model = runtimes.BuildCtx
+
+    projectid = factory.LazyAttribute(lambda n: generate_random(10))
+    project_zip_route = "/tmp/test.current.zip"
+    dockerfile = "Dockerfile.default"
+    zip_name = "test.current.zip"
+    version = "current"
+    docker_name = "nbworkflows/test"
+    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    execid = factory.LazyAttribute(lambda n: generate_random(10))
 
 
 def create_runtime_model(project_id, *args, **kwargs) -> RuntimeModel:

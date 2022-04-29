@@ -221,7 +221,7 @@ class RuntimeModel(Base, ProjectRelationMixin):
     """
     Runtimes Register
     runtimeid = [projectid]/[runtime_name]/[version]
-    docker_name = should be [registry]/nbworkflows/[projectid]-[runtime_name]
+    docker_name = should be nbworkflows/[projectid]-[runtime_name]
     """
 
     __tablename__ = "nb_runtime"
@@ -232,7 +232,8 @@ class RuntimeModel(Base, ProjectRelationMixin):
     runtime_name = Column(String(), index=True, nullable=False)
     docker_name = Column(String(), nullable=False)
     spec = Column(JSON(), nullable=False)
-    version = Column(String(), index=True, nullable=False)
+    version = Column(String(), nullable=False)
+    registry = Column(String(), nullable=True)
 
     created_at = Column(
         DateTime(), server_default=functions.now(), nullable=False, index=True

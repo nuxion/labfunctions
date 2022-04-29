@@ -29,7 +29,7 @@ from nb_workflows.models import WorkflowModel
 
 # from nb_workflows.notebooks import nb_job_executor
 from nb_workflows.types import ExecutionNBTask, NBTask, ScheduleData, WorkflowDataWeb
-from nb_workflows.types.docker import DockerBuildCtx
+from nb_workflows.types.runtimes import BuildCtx
 from nb_workflows.utils import run_async
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
@@ -192,7 +192,7 @@ class SchedulerExecutor:
         )
         return job
 
-    def enqueue_build(self, build_ctx: DockerBuildCtx) -> Job:
+    def enqueue_build(self, build_ctx: BuildCtx) -> Job:
         """
         TODO: in the future a special queue should exists.
         TODO: set default timeout for build tasks,

@@ -23,8 +23,6 @@ from nb_workflows.types.workflows import WFCreateRsp, WFPushRsp
 from nb_workflows.utils import parse_var_line
 
 from .base import BaseClient
-from .types import Credentials, ProjectZipFile
-from .uploads import generate_dockerfile
 from .utils import get_private_key, store_credentials_disk, store_private_key
 
 

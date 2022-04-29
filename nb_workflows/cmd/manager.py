@@ -137,7 +137,7 @@ def users(sql, superuser, scopes, username, action):
 @click.option("--sql", "-s", default=settings.SQL, help="SQL Database")
 @click.option("--scopes", default="agent:r:w", help="agent scopes")
 @click.option("--username", "-u", default=None, help="Agent username")
-@click.option("--admin", "-A", default=None, help="Agent as admin")
+@click.option("--admin", "-A", default=False, is_flag=True, help="Agent as admin")
 @click.option("--exp", "-e", default=30, help="Expire time")
 @click.argument("action", type=click.Choice(["create", "get-token", "delete"]))
 def agent(sql, scopes, username, action, admin, exp):

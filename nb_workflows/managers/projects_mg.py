@@ -9,7 +9,7 @@ from sqlalchemy import select
 # from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
-from nb_workflows import secrets
+from nb_workflows import defaults, secrets
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import generate_random
 from nb_workflows.managers import users_mg
@@ -100,7 +100,9 @@ def normalize_name(name: str) -> str:
 
 
 def generate_projectid(name=None) -> str:
-    return generate_random(settings.PROJECTID_LEN)
+    return generate_random(
+        settings.PROJECTID_LEN, alphabet=defaults.PROJECT_ID_ALPHABET
+    )
 
 
 async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, None]:

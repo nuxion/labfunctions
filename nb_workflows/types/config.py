@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseSettings, RedisDsn
 
-from nb_workflows.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
+from nb_workflows.defaults import EXECID_LEN, PROJECTID_MIN_LEN, WFID_LEN
 
 
 class SecuritySettings(BaseSettings):
@@ -54,7 +54,7 @@ class ServerSettings(BaseSettings):
 
     # ids generations
     EXECID_LEN: int = EXECID_LEN
-    PROJECTID_LEN: int = PROJECTID_LEN
+    PROJECTID_LEN: int = PROJECTID_MIN_LEN
     WFID_LEN: int = WFID_LEN
 
     # eventes

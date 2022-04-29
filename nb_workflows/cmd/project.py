@@ -7,7 +7,6 @@ from rich.console import Console
 from rich.table import Table
 
 from nb_workflows import client, defaults, secrets
-from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import load_client
 from nb_workflows.errors.client import ProjectUploadError
 from nb_workflows.utils import execute_cmd
@@ -145,22 +144,6 @@ def upload(ctx, only_zip, env_file, current, all, watch):
 
     # elif action == "recreate":
     #     c.projects_create()
-
-
-@projectcli.command()
-@click.pass_context
-def dockerfile(ctx):
-    """Render  Dockerfile.nbruntime based on nb_app/settings.py"""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
-    root = Path(os.getcwd())
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
-
-    c = client.from_file(from_file, url_service)
-    generate_dockerfile(root, c.state.runtime.dict())
-    click.echo(f"{defaults.DOCKERFILE_RUNTIME_NAME} updated")
-    click.echo("Remember to add this change to git...")
 
 
 @projectcli.command(name="runtimes")

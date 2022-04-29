@@ -10,7 +10,7 @@ class DockerSpec(BaseModel):
     build_packages: str
     final_packages: Optional[str] = None
     user: Optional[Dict[str, int]] = None
-    base_template: str = "Dockerfile"
+    base_template: str = "Dockerfile.default"
     requirements: str = "requirements.txt"
 
 
@@ -20,6 +20,7 @@ class RuntimeSpec(BaseModel):
     machine: Optional[str] = None
     gpu_support: bool = False
     version: Optional[str] = None
+    registry: Optional[str] = None
 
 
 class RuntimeReq(BaseModel):
@@ -28,6 +29,7 @@ class RuntimeReq(BaseModel):
     spec: RuntimeSpec
     project_id: str
     version: str
+    registry: Optional[str]
 
 
 class RuntimeData(BaseModel):
@@ -42,7 +44,31 @@ class RuntimeData(BaseModel):
     project_id: str
     version: str
     created_at: Optional[str] = None
+    registry: Optional[str] = None
     id: Optional[int] = None
+
+
+class ProjectBundleFile(BaseModel):
+    runtime_name: str
+    version: str
+    filepath: str
+    filename: str
+    commit: Optional[str]
+    stash: Optional[bool] = False
+    current: Optional[bool] = False
+    format_type: str = "zip"
+
+
+class BuildCtx(BaseModel):
+    projectid: str
+    project_zip_route: str
+    dockerfile: str
+    zip_name: str
+    version: str
+    docker_name: str
+    execid: str
+    spec: RuntimeSpec
+    registry: Optional[str] = None
 
 
 # class RuntimeOrm(BaseModel):

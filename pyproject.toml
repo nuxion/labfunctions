@@ -48,7 +48,6 @@ click = "^8.0.1"
 cloudpickle = "^2.0.0"
 dateparser = "^1.1.0"
 nbconvert = "^6.2.0"
-papermill = "^2.3.3"
 jupytext = "^1.13.0"
 loky = "^3.0.0"
 aioredis = {extras = ["hiredis"], version = "^2.0.1"}
@@ -69,6 +68,7 @@ rich = "^12.0.0"
 aiosqlite = "^0.17.0"
 asyncssh = "^2.10.0"
 tenacity = "^8.0.1"
+papermill = "^2.3.4"
 
 [tool.poetry.extras]
 fsspec = ["fsspec"]

@@ -6,10 +6,9 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from nb_workflows import client, defaults, secrets
+from nb_workflows import client, defaults, runtimes, secrets
 from nb_workflows.conf import load_client
 from nb_workflows.errors.client import ProjectUploadError
-from nb_workflows.runtimes import generate_dockerfile
 from nb_workflows.types.runtimes import RuntimeSpec
 from nb_workflows.utils import execute_cmd, open_yaml
 
@@ -48,25 +47,25 @@ def runtimescli():
     help="env file to be encrypted",
 )
 @click.option(
-    "--current",
-    "-C",
+    "--stash",
+    "-S",
     is_flag=True,
     default=False,
-    help="untracked files are zipped too but the will exist in git stash",
+    help="untracked files are zipped",
 )
 @click.option(
-    "--all",
-    "-A",
+    "--current",
+    "-C",
     is_flag=True,
     default=False,
     help="It will zip all the files ignoring .gitignore =P",
 )
 @click.option(
-    "--only-zip",
+    "--only-bundle",
     "-z",
     is_flag=True,
     default=False,
-    help="Only generates the zip file",
+    help="Only generates the bundle file",
 )
 @click.option(
     "--watch",
@@ -75,33 +74,60 @@ def runtimescli():
     default=False,
     help="Get events & logs from the executions",
 )
-def deploy(url_service, from_file, only_zip, env_file, current, all, watch):
-    """Prepare and push your porject information to the server"""
+@click.argument("name", default="default")
+def build(url_service, from_file, only_bundle, env_file, current, stash, watch, name):
+    """Freeze and build a runtime for your proyect into the server"""
     c = client.from_file(from_file, url_service)
     # prepare secrets
     pv = c.get_private_key()
     if not pv:
-        console.print("[red bold]Not private key found or authentication error[/]")
+        console.print("[red bold](x) Not private key found or authentication error[/]")
         sys.exit(-1)
 
     # _agent_token = c.projects_agent_token()
 
-    zfile = client.manage_upload(pv, env_file, current, all)
-    click.echo(f"Zipfile generated in {zfile.filepath}")
-    if not only_zip:
+    spec = runtimes.get_from_file(name)
+    if not spec:
+        console.print(f"[red bold](x) Runtime {name} doesn't exists[/]")
+        sys.exit(-1)
+
+    console.print(f"=> Bundling runtime {name}")
+    try:
+        zfile = runtimes.bundle_project(spec, pv, env_file, stash, current)
+    except KeyError:
+        console.print(
+            f"[red bold](x) requirements file missing "
+            f"from {spec.container.requirements}[/]"
+        )
+        sys.exit(-1)
+    except TypeError:
+        console.print(
+            "[red bold](x) There isn't changes in the git repository to perform a "
+            "STASH zip file. For untracked files you should add to "
+            "the stash the changes, perform: git add .[/]"
+        )
+        sys.exit(-1)
+    except AttributeError:
+        console.print(
+            "[red bold](x) Bad option: current and stash are different options[/]"
+        )
+        sys.exit(-1)
+
+    console.print(f"=> Bundle generated in {zfile.filepath}")
+    if not only_bundle:
         try:
             c.projects_upload(zfile)
-            console.print("[bold green]Succesfully uploaded file[/]")
-            execid = c.projects_build(zfile.version)
+            console.print("[bold green]=> Succesfully uploaded file[/]")
+            execid = c.projects_build(spec, zfile.version)
             if not execid:
-                console.print("[bold red]Error sending build task [/]")
+                console.print("[bold red](x) Error sending build task [/]")
                 sys.exit(-1)
 
-            console.print(f"Build task sent with execid: [bold magenta]{execid}[/]")
+            console.print(f"=> Build task sent with execid: [bold magenta]{execid}[/]")
             if watch:
                 watcher(c, execid, stats=False)
         except ProjectUploadError:
-            console.print("[bold red]Error uploading file [/]")
+            console.print("[bold red](x) Error uploading file[/]")
 
     # elif action == "agent-token":
     #    creds = c.projects_agent_token()
@@ -122,11 +148,8 @@ def deploy(url_service, from_file, only_zip, env_file, current, all, watch):
 def generate(from_file, name):
     """Render  Dockerfile.[name] based on runtimes.yaml"""
     root = Path(os.getcwd())
-    data = open_yaml(from_file)
-    spec_data = data["runtimes"][name]
-    spec = RuntimeSpec(name=name, **spec_data)
-
-    generate_dockerfile(root, spec)
+    spec = runtimes.get_from_file(name, from_file)
+    runtimes.generate_dockerfile(root, spec)
     console.print(f"[green]Dockerfile generated as Dockerfiles.{name}[/]")
 
 

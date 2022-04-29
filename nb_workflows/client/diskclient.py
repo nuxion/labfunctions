@@ -27,8 +27,6 @@ from nb_workflows.utils import parse_var_line
 from .base import BaseClient
 from .history_client import HistoryClient
 from .projects_client import ProjectsClient
-from .types import Credentials, ProjectZipFile, WFCreateRsp
-from .uploads import generate_dockerfile
 from .utils import (
     get_credentials_disk,
     get_private_key,
@@ -122,10 +120,6 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
     #     else:
     #         raise errors.ProjectCreateError(pd.projectid)
     #     return None
-
-    def projects_generate_dockerfile(self, docker_opts):
-        root = Path.cwd()
-        generate_dockerfile(root, docker_opts)
 
     def get_private_key(self) -> str:
         """shortcut for getting a private key locally

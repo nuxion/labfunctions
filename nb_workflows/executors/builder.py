@@ -10,12 +10,8 @@ import docker
 from nb_workflows import client, defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.types import ProjectData
-from nb_workflows.types.docker import (
-    DockerBuildCtx,
-    DockerBuildLog,
-    DockerBuildLowLog,
-    DockerPushLog,
-)
+from nb_workflows.types.docker import DockerBuildLog, DockerBuildLowLog, DockerPushLog
+from nb_workflows.types.runtimes import BuildCtx, RuntimeReq
 
 
 def docker_build(
@@ -112,7 +108,7 @@ def _extract_project(project_zip_file, dst_dir):
         zo.extractall(dst_dir)
 
 
-def _download_zip_project(ctx: DockerBuildCtx, project_dir):
+def _download_zip_project(ctx: BuildCtx, project_dir):
 
     uri = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}/{ctx.project_zip_route}"
     with open(project_dir / ctx.zip_name, "wb") as f:
@@ -121,7 +117,7 @@ def _download_zip_project(ctx: DockerBuildCtx, project_dir):
                 f.write(chunk)
 
 
-def prepare_files(ctx: DockerBuildCtx):
+def prepare_files(ctx: BuildCtx):
 
     root = Path(settings.BASE_PATH)
     project_dir = root / settings.AGENT_DATA_FOLDER / ctx.projectid / "build"
@@ -136,7 +132,7 @@ def prepare_files(ctx: DockerBuildCtx):
     return project_dir, temp_dir
 
 
-def builder_exec(ctx: DockerBuildCtx):
+def builder_exec(ctx: BuildCtx):
     """It's in charge of building docker images for projects"""
 
     nb_client = client.agent(
@@ -150,8 +146,8 @@ def builder_exec(ctx: DockerBuildCtx):
     # pd = nb_client.projects_get()
     docker_tag = ctx.docker_name
     push = False
-    if settings.DOCKER_REGISTRY:
-        docker_tag = f"{settings.DOCKER_REGISTRY}/{docker_tag}"
+    if ctx.registry:
+        docker_tag = f"{ctx.registry}/{docker_tag}"
         push = True
 
     nb_client.events_publish(
@@ -159,12 +155,20 @@ def builder_exec(ctx: DockerBuildCtx):
     )
     logs = docker_build(
         f"{tmp_dir}/src",
-        defaults.DOCKERFILE_RUNTIME_NAME,
+        f"{ctx.dockerfile}",
         tag=docker_tag,
         version=ctx.version,
         push=push,
     )
-    nb_client.runtime_create(ctx.docker_name, ctx.version)
+    req = RuntimeReq(
+        runtime_name=ctx.spec.name,
+        docker_name=ctx.docker_name,
+        spec=ctx.spec,
+        project_id=ctx.projectid,
+        version=ctx.version,
+        registry=ctx.registry,
+    )
+    nb_client.runtime_create(req)
 
     nb_client.events_publish(ctx.execid, data="finished", event="result")
     nb_client.events_publish(ctx.execid, data="exit", event="control")

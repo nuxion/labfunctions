@@ -14,7 +14,6 @@ from nb_workflows.types import (
     ServerSettings,
     WorkflowDataWeb,
 )
-from nb_workflows.types.docker import DockerBuildCtx
 from nb_workflows.utils import (
     get_version,
     open_publickey,
@@ -172,32 +171,6 @@ def create_notebook_ctx(
         created_at=_now,
         notifications_ok=task.notifications_ok,
         notifications_fail=task.notifications_fail,
-    )
-
-
-def build_upload_uri(pd: ProjectData, version) -> str:
-    _name = f"{pd.name}.{version}.zip"
-    name = secure_filename(_name)
-
-    root = Path(pd.projectid)
-
-    uri = str(root / "uploads" / name)
-    return uri
-
-
-def create_build_ctx(pd: ProjectData, version) -> DockerBuildCtx:
-    _id = execid_for_build()
-    uri = build_upload_uri(pd, version)
-
-    zip_name = uri.split("/")[-1]
-    _version = secure_filename(version)
-    return DockerBuildCtx(
-        projectid=pd.projectid,
-        zip_name=zip_name,
-        project_zip_route=uri,
-        version=_version,
-        docker_name=f"{defaults.DOCKER_AUTHOR}/{pd.name}",
-        execid=_id,
     )
 
 
