@@ -59,7 +59,7 @@ def setupdb(connection):
     )
     pm = create_project_model(um, projectid="test", name="test")
     wm = create_workflow_model(pm, wfid="wfid-test", alias="alias_test")
-    rm = create_runtime_model(pm, project_id="test")
+    rm = create_runtime_model(project_id="test")
     hm = create_history_model(project_id="test", wfid="wfid-test", execid="exec-test")
 
     s.add(um)

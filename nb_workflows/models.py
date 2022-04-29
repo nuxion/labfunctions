@@ -205,12 +205,34 @@ class RuntimeVersionModel(Base, ProjectRelationMixin):
     Runtimes Register
     """
 
-    __tablename__ = "nb_runtime"
+    __tablename__ = "nb_runtime_version"
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(Integer, primary_key=True)
     docker_name = Column(String(), unique=True, index=True, nullable=False)
     version = Column(String(), nullable=False)
+
+    created_at = Column(
+        DateTime(), server_default=functions.now(), nullable=False, index=True
+    )
+
+
+class RuntimeModel(Base, ProjectRelationMixin):
+    """
+    Runtimes Register
+    runtimeid = [projectid]/[runtime_name]/[version]
+    docker_name = should be [registry]/nbworkflows/[projectid]-[runtime_name]
+    """
+
+    __tablename__ = "nb_runtime"
+    __mapper_args__ = {"eager_defaults": True}
+
+    id = Column(Integer, primary_key=True)
+    runtimeid = Column(String(), unique=True, index=True, nullable=False)
+    runtime_name = Column(String(), index=True, nullable=False)
+    docker_name = Column(String(), nullable=False)
+    spec = Column(JSON(), nullable=False)
+    version = Column(String(), index=True, nullable=False)
 
     created_at = Column(
         DateTime(), server_default=functions.now(), nullable=False, index=True

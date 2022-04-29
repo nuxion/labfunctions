@@ -12,7 +12,7 @@ from nb_workflows.hashes import generate_random
 from nb_workflows.models import (
     HistoryModel,
     ProjectModel,
-    RuntimeVersionModel,
+    RuntimeModel,
     UserModel,
     WorkflowModel,
 )
@@ -32,13 +32,10 @@ from nb_workflows.types import (
     agent,
     cluster,
     machine,
+    runtimes,
 )
 from nb_workflows.types.config import SecuritySettings
-from nb_workflows.types.docker import (
-    DockerBuildCtx,
-    DockerfileImage,
-    RuntimeVersionData,
-)
+from nb_workflows.types.docker import DockerBuildCtx, DockerfileImage
 from nb_workflows.types.events import EventSSE
 from nb_workflows.types.user import UserOrm
 from nb_workflows.utils import run_sync
@@ -303,19 +300,61 @@ class DockerBuildCtxFactory(factory.Factory):
     execid = factory.LazyAttribute(lambda n: generate_random(10))
 
 
-class RuntimeVersionFactory(factory.Factory):
+class DockerSpecFactory(factory.Factory):
     class Meta:
-        model = RuntimeVersionData
+        model = runtimes.DockerSpec
 
-    projectid = factory.LazyAttribute(lambda n: generate_random(10))
-    docker_name = "nbworkflows/test"
-    version = "current"
+    image = factory.Sequence(lambda n: "img-%d" % n)
+    maintener = factory.Sequence(lambda n: "maintener-%d" % n)
+    build_packages = factory.Sequence(lambda n: "pkg-%d" % n)
+    final_packages = factory.Sequence(lambda n: "pkg-%d" % n)
 
 
-def create_runtime_model(project: ProjectModel, *args, **kwargs) -> RuntimeVersionModel:
-    rv = RuntimeVersionFactory(*args, **kwargs)
-    rm = RuntimeVersionModel(
-        docker_name=rv.docker_name, project=project, version=rv.version
+class RuntimeSpecFactory(factory.Factory):
+    class Meta:
+        model = runtimes.RuntimeSpec
+
+    name = factory.Sequence(lambda n: "img-%d" % n)
+    container = factory.LazyAttribute(lambda n: DockerSpecFactory())
+    machine = factory.Sequence(lambda n: "mch-%d" % n)
+    version = factory.Sequence(lambda n: "%d" % n)
+    gpu_support = False
+
+
+class RuntimeDataFactory(factory.Factory):
+    class Meta:
+        model = runtimes.RuntimeData
+
+    runtimeid = factory.LazyAttribute(lambda n: generate_random(10))
+    runtime_name = factory.Sequence(lambda n: "rn-%d" % n)
+    docker_name = factory.Sequence(lambda n: "nbworkflows/docker-%d" % n)
+    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    project_id = factory.LazyAttribute(lambda n: generate_random(10))
+    version = factory.Sequence(lambda n: "%d" % n)
+    created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
+
+
+class RuntimeReqFactory(factory.Factory):
+    class Meta:
+        model = runtimes.RuntimeReq
+
+    runtime_name = factory.Sequence(lambda n: "rn-%d" % n)
+    docker_name = factory.Sequence(lambda n: "nbworkflows/docker-%d" % n)
+    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    project_id = factory.LazyAttribute(lambda n: generate_random(10))
+    version = factory.Sequence(lambda n: "%d" % n)
+
+
+def create_runtime_model(project_id, *args, **kwargs) -> RuntimeModel:
+    rd = RuntimeDataFactory(project_id=project_id, *args, **kwargs)
+    rd.runtimeid = f"{rd.project_id}/{rd.runtime_name}/{rd.version}"
+    rm = RuntimeModel(
+        runtimeid=rd.runtimeid,
+        runtime_name=rd.runtime_name,
+        docker_name=rd.docker_name,
+        spec=rd.spec.dict(),
+        project_id=project_id,
+        version=rd.version,
     )
     return rm
 

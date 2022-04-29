@@ -13,7 +13,6 @@ from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.defaults import API_VERSION
 from nb_workflows.executors.context import build_upload_uri, create_build_ctx
-from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg, users_mg
 from nb_workflows.scheduler import SchedulerExecutor
 from nb_workflows.security import get_auth

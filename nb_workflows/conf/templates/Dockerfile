@@ -4,7 +4,7 @@ FROM {{ data.image }} as builder
 # ADD dist/nb_workflows-0.5.0-py3-none-any.whl /tmp
 USER root
 SHELL ["/bin/bash", "-c"]
-ADD requirements.txt /tmp
+ADD {{ data.requirements }} /tmp
 # suppress warning
 ENV PATH=$PATH:/root/.local/bin
 
@@ -18,8 +18,12 @@ LABEL maintener="{{ data.maintener }}"
 RUN groupadd app -g {{ data.user.gid }} \
     && useradd -m -d /home/app app -u {{ data.user.uid }} -g {{ data.user.gid }} \
     && apt-get update -y  \
+    {% if data.final_packages -%}
     && apt-get install -y --no-install-recommends \
     {{ data.final_packages }}
+    {% else -%}
+    && apt-get install -y --no-install-recommends
+    {% endif %}
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
 COPY --chown=app:app . /app
 

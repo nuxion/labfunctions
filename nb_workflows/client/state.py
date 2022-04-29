@@ -5,7 +5,8 @@ import yaml
 
 from nb_workflows.types import NBTask, ProjectData, WorkflowDataWeb
 from nb_workflows.types.client import WorkflowsFile
-from nb_workflows.types.docker import DockerfileImage
+
+# from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.utils import Singleton, open_yaml, write_yaml
 
 
@@ -22,19 +23,19 @@ class WorkflowsState:
         self,
         project: Optional[ProjectData] = None,
         workflows: Optional[Dict[str, WorkflowDataWeb]] = None,
-        runtime: Optional[DockerfileImage] = None,
+        # runtime: Optional[DockerfileImage] = None,
         version="0.2.0",
     ):
         self._version = version
         self._project = project
         self._workflows = workflows or {}
-        self._runtime = runtime
+        # self._runtime = runtime
 
         self.snapshots: List[WorkflowsFile] = []
 
-    @property
-    def runtime(self) -> DockerfileImage:
-        return self._runtime
+    # @property
+    # def runtime(self) -> DockerfileImage:
+    #    return self._runtime
 
     @property
     def projectid(self) -> Union[str, None]:
@@ -82,7 +83,7 @@ class WorkflowsState:
             version=self._version,
             project=self._project,
             workflows=self._workflows,
-            runtime=self._runtime,
+            # runtime=self._runtime,
         )
 
     @property
@@ -135,5 +136,5 @@ def from_file(fpath="workflows.yaml") -> WorkflowsState:
         project=wf.project,
         version=wf.version,
         workflows=wf.workflows,
-        runtime=wf.runtime,
+        # runtime=wf.runtime,
     )
