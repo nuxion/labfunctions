@@ -13,8 +13,6 @@ from nb_workflows.utils import execute_cmd
 
 from .utils import watcher
 
-# from nb_workflows.uploads import manage_upload
-
 settings = load_client()
 
 console = Console()
@@ -71,103 +69,10 @@ def agent(ctx, action):
             console.print("[bold yellow] Agent creds fail [/]")
 
 
-@projectcli.command()
-@click.option(
-    "--env-file",
-    "-E",
-    default="local.nbvars",
-    help="env file to be encrypted",
-)
-@click.option(
-    "--current",
-    "-C",
-    is_flag=True,
-    default=False,
-    help="untracked files are zipped too but the will exist in git stash",
-)
-@click.option(
-    "--all",
-    "-A",
-    is_flag=True,
-    default=False,
-    help="It will zip all the files ignoring .gitignore =P",
-)
-@click.option(
-    "--only-zip",
-    "-z",
-    is_flag=True,
-    default=False,
-    help="Only generates the zip file",
-)
-@click.option(
-    "--watch",
-    "-w",
-    is_flag=True,
-    default=False,
-    help="Get events & logs from the executions",
-)
-@click.pass_context
-def upload(ctx, only_zip, env_file, current, all, watch):
-    """Prepare and push your porject information to the server"""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
-
-    c = client.from_file(from_file, url_service)
-    # prepare secrets
-    pv = c.get_private_key()
-    if not pv:
-        console.print("[red bold]Not private key found or authentication error[/]")
-        sys.exit(-1)
-
-    # _agent_token = c.projects_agent_token()
-
-    zfile = client.manage_upload(pv, env_file, current, all)
-    click.echo(f"Zipfile generated in {zfile.filepath}")
-    if not only_zip:
-        try:
-            c.projects_upload(zfile)
-            console.print("[bold green]Succesfully uploaded file[/]")
-            execid = c.projects_build(zfile.version)
-            if not execid:
-                console.print("[bold red]Error sending build task [/]")
-                sys.exit(-1)
-
-            console.print(f"Build task sent with execid: [bold magenta]{execid}[/]")
-            if watch:
-                watcher(c, execid, stats=False)
-        except ProjectUploadError:
-            console.print("[bold red]Error uploading file [/]")
-
-    # elif action == "agent-token":
-    #    creds = c.projects_agent_token()
-    #    click.echo(f"access token (keep private): \n{creds.access_token}")
-
-    # elif action == "recreate":
-    #     c.projects_create()
-
-
-@projectcli.command(name="runtimes")
-@click.pass_context
-def runtimescli(ctx):
-    """List of runtimes available for this project"""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
-    c = client.from_file(from_file, url_service)
-    runtimes = c.runtimes_get_all()
-    table = Table(title="Runtimes for the project")
-    # table.add_column("alias", style="cyan", no_wrap=True, justify="center")
-    table.add_column("id", style="cyan", justify="center")
-    table.add_column("docker_name", style="cyan", justify="center")
-    table.add_column("version", style="cyan", justify="center")
-    for runtime in runtimes:
-        table.add_row(str(runtime.id), runtime.docker_name, runtime.version)
-    console.print(table)
-
-
 @projectcli.command(name="list")
 @click.pass_context
 def listcli(ctx):
-    """List of runtimes available for this project"""
+    """List projects"""
     url_service = ctx.obj["URL"]
     from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service)

@@ -86,7 +86,7 @@ def build(url_service, from_file, only_bundle, env_file, current, stash, watch, 
 
     # _agent_token = c.projects_agent_token()
 
-    spec = runtimes.get_from_file(name)
+    spec = runtimes.get_spec_from_file(name)
     if not spec:
         console.print(f"[red bold](x) Runtime {name} doesn't exists[/]")
         sys.exit(-1)
@@ -137,6 +137,33 @@ def build(url_service, from_file, only_bundle, env_file, current, stash, watch, 
     #     c.projects_create()
 
 
+@runtimescli.command(name="list")
+@click.option(
+    "--from-file",
+    "-f",
+    default="workflows.yaml",
+    help="yaml file with the configuration",
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=settings.WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
+def listcli(from_file, url_service):
+    """List of runtimes available for this project"""
+    c = client.from_file(from_file, url_service)
+    runtimes = c.runtimes_get_all()
+    table = Table(title="Runtimes for the project")
+    # table.add_column("alias", style="cyan", no_wrap=True, justify="center")
+    table.add_column("id", style="cyan", justify="center")
+    table.add_column("docker_name", style="cyan", justify="center")
+    table.add_column("version", style="cyan", justify="center")
+    for runtime in runtimes:
+        table.add_row(str(runtime.runtimeid), runtime.docker_name, runtime.version)
+    console.print(table)
+
+
 @runtimescli.command()
 @click.option(
     "--from-file",
@@ -148,7 +175,7 @@ def build(url_service, from_file, only_bundle, env_file, current, stash, watch, 
 def generate(from_file, name):
     """Render  Dockerfile.[name] based on runtimes.yaml"""
     root = Path(os.getcwd())
-    spec = runtimes.get_from_file(name, from_file)
+    spec = runtimes.get_spec_from_file(name, from_file)
     runtimes.generate_dockerfile(root, spec)
     console.print(f"[green]Dockerfile generated as Dockerfiles.{name}[/]")
 

@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 
 from sqlalchemy import delete as sqldelete
 from sqlalchemy import insert as sqlinsert
@@ -6,8 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+from nb_workflows.errors.runtimes import RuntimeNotFound
 from nb_workflows.models import RuntimeModel
 from nb_workflows.types.runtimes import RuntimeData, RuntimeReq, RuntimeSpec
+from nb_workflows.utils import get_version
 
 
 def select_runtime():
@@ -72,6 +74,33 @@ async def get_by_rid(session, runtimeid: str) -> Union[RuntimeData, None]:
     return None
 
 
+def get_by_rid_sync(session, runtimeid: str) -> Union[RuntimeData, None]:
+    stmt = select_runtime().where(RuntimeModel.runtimeid == runtimeid).limit(1)
+
+    rsp = session.execute(stmt)
+    model = rsp.scalar_one_or_none()
+    if model:
+        rd = model2runtime(model)
+        return rd
+    return None
+
+
 async def delete_by_rid(session, runtimeid: int):
     stmt = sqldelete(RuntimeModel).where(RuntimeModel.runtimeid == runtimeid)
     await session.execute(stmt)
+
+
+# def docker_name_from_runtime(session, runtimeid: Optional[str] = None) -> RuntimeData:
+#     """ It returns the final docker name based on a runtime id,
+#     if an id is not provided then it will returns the default runtime. """
+#     if runtime:
+#         _runtime = get_by_rid_sync(session, runtime)
+#         if not _runtime:
+#             raise RuntimeNotFound(runtime)
+#         runtime = f"{_runtime.docker_name}:{_runtime.version}"
+#         if _runtime.registry:
+#             runtime = f"{_runtime.registry}/{runtime}"
+#     else:
+#         version = get_version()
+#         runtime = f"nuxion/nb_workflows:{version}"
+#     return runtime

@@ -3,10 +3,11 @@ from typing import Dict, List, Optional, Union
 
 import yaml
 
+from nb_workflows import runtimes
 from nb_workflows.types import NBTask, ProjectData, WorkflowDataWeb
 from nb_workflows.types.client import WorkflowsFile
 
-# from nb_workflows.types.docker import DockerfileImage
+# from nb_workflows.types.runtimes import RuntimeData
 from nb_workflows.utils import Singleton, open_yaml, write_yaml
 
 
@@ -15,7 +16,6 @@ class WFDumper(yaml.Dumper):
         return super(WFDumper, self).increase_indent(flow, False)
 
 
-# class WorkflowsState(metaclass=Singleton):
 class WorkflowsState:
     """This manage workflows state, is NOT Thread safe"""
 
@@ -23,19 +23,17 @@ class WorkflowsState:
         self,
         project: Optional[ProjectData] = None,
         workflows: Optional[Dict[str, WorkflowDataWeb]] = None,
-        # runtime: Optional[DockerfileImage] = None,
+        # runtimes: Optional[List[RuntimeData]] = None,
         version="0.2.0",
     ):
         self._version = version
         self._project = project
         self._workflows = workflows or {}
-        # self._runtime = runtime
-
-        self.snapshots: List[WorkflowsFile] = []
+        # self._runtimes = runtimes
 
     # @property
-    # def runtime(self) -> DockerfileImage:
-    #    return self._runtime
+    # def runtimes(self) -> Union[List[RuntimeData], None]:
+    #     return self._runtimes
 
     @property
     def projectid(self) -> Union[str, None]:
@@ -117,20 +115,25 @@ class WorkflowsState:
         Also perfoms some serializations
         """
         wf = self.snapshot()
-        wf_dict = wf.dict()
+        wf_dict = wf.dict(exclude_none=True)
         _dict = OrderedDict()
         _dict["version"] = wf.version
-        _dict["project"] = wf.project.dict()
-        if wf_dict.get("runtime"):
-            _dict["runtime"] = wf.runtime.dict()
+        _dict["project"] = wf.project.dict(exclude_none=True)
+        # if wf_dict.get("runtime"):
+        #    _dict["runtime"] = wf.runtime.dict(exclude_none=True)
         if wf_dict.get("workflows"):
-            _dict["workflows"] = {k: v.dict() for k, v in wf.workflows.items()}
+            _dict["workflows"] = {
+                k: v.dict(exclude_none=True, exclude_unset=True)
+                for k, v in wf.workflows.items()
+            }
         write_yaml(
             fp, dict(_dict), Dumper=WFDumper, default_flow_style=False, sort_keys=False
         )
 
 
-def from_file(fpath="workflows.yaml") -> WorkflowsState:
+def from_file(fpath="workflows.yaml", runtimes_path="runtimes.yaml") -> WorkflowsState:
+    # runtimes_data = open_yaml(runtimes_path)
+    # runtimes = [RuntimeData ]
     wf = WorkflowsState.read(fpath)
     return WorkflowsState(
         project=wf.project,

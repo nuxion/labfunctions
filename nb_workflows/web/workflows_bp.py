@@ -11,8 +11,11 @@ from sanic_ext import openapi
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.defaults import API_VERSION
 from nb_workflows.errors.generics import WorkflowRegisterError
-from nb_workflows.executors.context import ExecID, create_notebook_ctx_ondemand
+from nb_workflows.executors import ExecID
+
+# from nb_workflows.executors.context import ExecID, create_notebook_ctx_ondemand
 from nb_workflows.managers import projects_mg, workflows_mg
+from nb_workflows.notebooks import create_notebook_ctx
 from nb_workflows.scheduler import SchedulerExecutor, scheduler_dispatcher
 from nb_workflows.security.web import protected
 from nb_workflows.types import (
@@ -73,8 +76,11 @@ async def notebooks_run(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     pm = await projects_mg.get_by_projectid_model(session, projectid)
-    pd = ProjectData(name=pm.name, projectid=pm.projectid, owner=pm.owner.username)
-    nb_ctx = create_notebook_ctx_ondemand(pd, task)
+    # pd = ProjectData(name=pm.name, projectid=pm.projectid,
+    #                 owner=pm.owner.username)
+    execid = ExecID()
+    id_ = execid.firm_with(ExecID.types.web)
+    nb_ctx = create_notebook_ctx(pm.projectid, task, execid=id_)
     scheduler = get_scheduler(is_async=is_async)
     await run_async(scheduler.enqueue_notebook, nb_ctx, task.machine)
 
@@ -122,10 +128,8 @@ async def workflow_create(request, projectid):
             wfid = await workflows_mg.register(session, projectid, wfd)
             if wfd.schedule and wfd.enabled:
                 await scheduler.schedule(projectid, wfid, wfd)
-        except KeyError as e:
+        except WorkflowRegisterError as e:
             return json(dict(msg="workflow already exist"), status=200)
-        except AttributeError as e:
-            return json(dict(msg="project not found"), status=404)
 
         return json(dict(wfid=wfid), status=201)
 
@@ -204,7 +208,7 @@ async def workflow_enqueue(request, projectid, wfid):
     # pylint: disable=unused-argument
     sche = get_scheduler(is_async=is_async)
     execid = ExecID()
-    signed = execid.firm("web")
+    signed = execid.firm_with(ExecID.types.web)
     job = await run_async(sche.dispatcher, projectid, wfid, signed)
 
     return json(dict(execid=job.id), 202)
@@ -220,7 +224,8 @@ async def workflow_generate_ctx(request, projectid, wfid):
     """Enqueue a workflow on demand"""
     # pylint: disable=unused-argument
     execid = ExecID()
-    signed = execid.firm("web")
+    signed = execid.firm_with(ExecID.types.web)
+
     session = request.ctx.session
     async with session.begin():
         nb_ctx = await workflows_mg.prepare_notebook_job_async(

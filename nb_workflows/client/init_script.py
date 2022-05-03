@@ -62,10 +62,10 @@ def _example_workflow() -> WorkflowDataWeb:
         alias="a_workflow_example",
         nbtask=_example_task(),
         enabled=False,
-        schedule=ScheduleData(
-            repeat=1,
-            interval=10,
-        ),
+        # schedule=ScheduleData(
+        #    repeat=1,
+        #    interval=10,
+        # ),
     )
     return wd
 
@@ -127,7 +127,7 @@ def init_project_files(root, files):
             f["tpl"],
             str((root / f["dst"]).resolve()),
         )
-    runtime = runtimes.get_from_file("default")
+    runtime = runtimes.get_spec_from_file("default")
     runtimes.generate_dockerfile(root, runtime)
 
 

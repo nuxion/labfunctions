@@ -27,16 +27,16 @@ from nb_workflows.web.utils import get_query_param2, stream_reader
 projects_bp = Blueprint("projects", url_prefix="projects", version=API_VERSION)
 
 
-async def generate_id(session, base_name, retries=3) -> Union[str, None]:
-    ix = 0
-    while ix <= retries:
-        id_ = projects_mg.generate_projectid()
-        r = await projects_mg.get_by_projectid(session, id_)
-        if not r:
-            return id_
-        ix += 1
-
-    return None
+# async def generate_id(session, base_name, retries=3) -> Union[str, None]:
+#     ix = 0
+#     while ix <= retries:
+#         id_ = projects_mg.generate_projectid()
+#         r = await projects_mg.get_by_projectid(session, id_)
+#         if not r:
+#             return id_
+#         ix += 1
+#
+#     return None
 
 
 def _get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
@@ -50,20 +50,20 @@ def get_token_data(request: Request):
     return request.ctx.token_data
 
 
-@projects_bp.get("/_generateid")
-@openapi.response(200, "project")
-@openapi.response(500, "not found")
-async def project_generateid(request: Request):
-    """Generates a random projectid"""
-    # pylint: disable=unused-argument
-
-    session = request.ctx.session
-    id_ = projects_mg.generate_projectid()
-    async with session.begin():
-        id_ = await generate_id(session, retries=3)
-        if id_:
-            return json(dict(projectid=id_), 200)
-    return json(dict(msg="Error with generation of a id"), 500)
+# @projects_bp.get("/_generateid")
+# @openapi.response(200, "project")
+# @openapi.response(500, "not found")
+# async def project_generateid(request: Request):
+#     """Generates a random projectid"""
+#     # pylint: disable=unused-argument
+#
+#     session = request.ctx.session
+#     id_ = projects_mg.generate_projectid()
+#     async with session.begin():
+#         id_ = await generate_id(session, retries=3)
+#         if id_:
+#             return json(dict(projectid=id_), 200)
+#     return json(dict(msg="Error with generation of a id"), 500)
 
 
 @projects_bp.post("/")

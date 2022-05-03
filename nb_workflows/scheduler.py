@@ -2,7 +2,7 @@ import asyncio
 import logging
 from collections import namedtuple
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import redis
 from rq import Queue
@@ -20,36 +20,34 @@ from nb_workflows import errors
 # from nb_workflows.workflows.registers import register_history_db
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.sync import SQL
-from nb_workflows.executors import context
-from nb_workflows.executors.builder import builder_exec
-from nb_workflows.executors.docker import docker_exec
-from nb_workflows.managers import projects_mg, workflows_mg
-from nb_workflows.managers.workflows_mg import prepare_notebook_job
+from nb_workflows.errors.runtimes import RuntimeNotFound
+from nb_workflows.executors import ExecID, docker_exec
+from nb_workflows.managers import projects_mg, runtimes_mg, workflows_mg
 from nb_workflows.models import WorkflowModel
+from nb_workflows.notebooks import create_notebook_ctx
+from nb_workflows.runtimes.builder import builder_exec
 
 # from nb_workflows.notebooks import nb_job_executor
 from nb_workflows.types import ExecutionNBTask, NBTask, ScheduleData, WorkflowDataWeb
 from nb_workflows.types.runtimes import BuildCtx
-from nb_workflows.utils import run_async
+from nb_workflows.utils import get_version, run_async
 
 _DEFAULT_SCH_TASK_TO = 60 * 5  # 5 minutes
 
 
-def control_q(name=settings.RQ_CONTROL_QUEUE) -> str:
-    return f"{df.Q_NS.control}.{name}"
+def prepare_notebook_job(
+    session, projectid: str, wfid: str, execid: str
+) -> ExecutionNBTask:
+    """It prepares the task execution of the notebook"""
 
-
-def machine_q(name) -> str:
-    return f"{df.Q_NS.machine}.{name}"
-
-
-def firm_or_new(execid, firm):
-    if execid:
-        eid = context.ExecID.from_str(execid)
-        final_id = eid.firm(firm)
-    else:
-        final_id = context.ExecID().firm(firm)
-    return final_id
+    wm = workflows_mg.get_by_prj_and_wfid_sync(session, projectid, wfid)
+    if wm and wm.enabled:
+        task = NBTask(**wm.nbtask)
+        runtime = None
+        if task.runtime:
+            runtime = runtimes_mg.get_by_rid_sync(session, runtime)
+        exec_nb_ctx = create_notebook_ctx(projectid, task, execid, runtime, wfid=wfid)
+    return exec_nb_ctx
 
 
 def scheduler_dispatcher(
@@ -99,19 +97,22 @@ def scheduler_dispatcher(
 
     with Session() as session:
         try:
-            signed = firm_or_new(execid, "dispatcher")
+            # signed = firm_or_new(execid, "dispatcher")
+            if not execid:
+                execid = str(ExecID())
+            execid = ExecID(execid=execid).firm_with(ExecID.types.dispatcher)
+            exec_nb_ctx = prepare_notebook_job(session, projectid, wfid, execid)
 
-            exec_nb_ctx = workflows_mg.prepare_notebook_job(
-                session, projectid, wfid, signed
-            )
             scheduler.enqueue_notebook(exec_nb_ctx, qname=exec_nb_ctx.machine)
-            logger.info(f"SCHEDULING {wfid}")
+            logger.info(f"SCHEDULING {wfid} with {execid}")
 
-            # priv_key = projects_mg.get_private_key_sync(session, projectid)
         except errors.WorkflowNotFound as e:
             logger.error(e)
         except errors.WorkflowDisabled as e:
             logger.warning(e)
+            scheduler.cancel_job(wfid)
+        except RuntimeNotFound as e:
+            logger.error(e)
             scheduler.cancel_job(wfid)
 
 
@@ -153,7 +154,8 @@ class SchedulerExecutor:
 
         Every time a task is enqueue again the step MUST be moved.
         """
-        final_id = firm_or_new(execid, "dispatcher")
+        _id = ExecID(execid)
+        final_id = _id.firm_with(ExecID.types.dispatcher)
 
         j = self.Q.enqueue(
             scheduler_dispatcher,
@@ -180,10 +182,7 @@ class SchedulerExecutor:
         :rtype: rq.job.Job
         """
 
-        _qname = machine_q(qname)
-
-        # _id = context.execid_from_scheduler(execid)
-        Q = Queue(_qname, connection=self.redis, is_async=self.is_async)
+        Q = Queue(qname, connection=self.redis, is_async=self.is_async)
         job = Q.enqueue(
             docker_exec,
             nb_job_ctx,

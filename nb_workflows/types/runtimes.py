@@ -17,7 +17,6 @@ class DockerSpec(BaseModel):
 class RuntimeSpec(BaseModel):
     name: str
     container: DockerSpec
-    machine: Optional[str] = None
     gpu_support: bool = False
     version: Optional[str] = None
     registry: Optional[str] = None
@@ -61,7 +60,7 @@ class ProjectBundleFile(BaseModel):
 
 class BuildCtx(BaseModel):
     projectid: str
-    project_zip_route: str
+    download_zip: str
     dockerfile: str
     zip_name: str
     version: str

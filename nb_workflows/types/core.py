@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from nb_workflows import defaults
+
 from .docker import DockerfileImage
 
 
@@ -34,13 +36,12 @@ class NBTask(BaseModel):
 
     nb_name: str
     params: Dict[str, Any]
-    # output_ok: str "fileserver://outputs/ok"
-    # output_fail = "fileserver://outputs/errors"
-
-    machine: str = "default"
-    docker_version: Optional[str] = "latest"
-
-    enabled: bool = True
+    remote_input: Optional[str] = None
+    remote_output: Optional[str] = None
+    runtime: Optional[str] = None
+    version: Optional[str] = None
+    machine: str = defaults.MACHINE_TYPE
+    gpu_support: bool = False
     description: Optional[str] = None
     timeout: int = 10800  # secs 3h default
     notifications_ok: Optional[List[str]] = None
@@ -59,7 +60,7 @@ class ExecutionNBTask(BaseModel):
     nb_name: str
     params: Dict[str, Any]
     machine: str
-    docker_name: str
+    runtime: str
     # folders:
     pm_input: str
     pm_output: str
@@ -71,6 +72,8 @@ class ExecutionNBTask(BaseModel):
     today: str
     timeout: int
     created_at: str
+    remote_input: Optional[str]
+    remote_output: Optional[str]
     notifications_ok: Optional[List[str]] = None
     notifications_fail: Optional[List[str]] = None
 
@@ -86,12 +89,13 @@ class ExecutionResult(BaseModel):
     name: str
     params: Dict[str, Any]
     input_: str
-    output_name: str
-    output_dir: str
-    error_dir: str
     error: bool
     elapsed_secs: float
     created_at: str
+    output_name: Optional[str] = None
+    output_dir: Optional[str] = None
+    error_dir: Optional[str] = None
+    error_msg: Optional[str] = None
 
 
 @dataclass

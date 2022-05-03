@@ -7,10 +7,9 @@ from typing import Callable, Generator, List, Optional, Union
 import httpx
 import jwt
 
-from nb_workflows import defaults
+from nb_workflows import context, defaults
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
 from nb_workflows.events import EventManager
-from nb_workflows.executors import context
 from nb_workflows.hashes import generate_random
 from nb_workflows.security.errors import AuthValidationFailed
 from nb_workflows.types import (
@@ -145,7 +144,7 @@ class BaseClient:
         if _env:
             ctx = ExecutionNBTask(**json.loads(_env))
         else:
-            ctx = context.create_dummy_ctx(self.projectid, self.project_name, execid)
+            ctx = context.create_dummy_ctx(self.projectid, execid)
         return ctx
 
     def _auth_init(self) -> AuthFlow:

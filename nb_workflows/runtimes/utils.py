@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Union
 
 from nb_workflows import defaults
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
-from nb_workflows.types.runtimes import DockerSpec, RuntimeSpec
+from nb_workflows.types.runtimes import DockerSpec, RuntimeData, RuntimeSpec
 from nb_workflows.utils import execute_cmd, open_yaml
 
 
@@ -15,11 +15,15 @@ def generate_dockerfile(dst_root: Path, runtime: RuntimeSpec):
     )
 
 
-def get_from_file(name: str, from_file="runtimes.yaml") -> RuntimeSpec:
+def get_runtimes_specs(from_file="runtimes.yaml") -> Dict[str, RuntimeSpec]:
     data = open_yaml(from_file)
-    spec_data = data["runtimes"][name]
-    spec = RuntimeSpec(name=name, **spec_data)
-    return spec
+    runtimes = {k: RuntimeSpec(name=k, **v) for k, v in data["runtimes"].items()}
+    return runtimes
+
+
+def get_spec_from_file(name: str, from_file="runtimes.yaml") -> RuntimeSpec:
+    specs = get_runtimes_specs(from_file)
+    return specs[name]
 
 
 def git_short_head_id():

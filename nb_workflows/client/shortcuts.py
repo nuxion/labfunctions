@@ -8,7 +8,6 @@ import httpx
 
 from nb_workflows import defaults, secrets
 from nb_workflows.conf import load_client
-from nb_workflows.executors import context
 from nb_workflows.io import MemoryStore
 from nb_workflows.types import (
     ClientSettings,
@@ -60,7 +59,8 @@ def from_file(
         url_service=wf_service,
         wf_state=wf_state,
     )
-    dc.logincli()
+    if not os.environ.get("DEBUG"):
+        dc.logincli()
     return dc
 
 
@@ -108,25 +108,3 @@ def agent(url_service, token, refresh, projectid) -> NBClient:
     wf = WorkflowsState(ProjectData(name="", projectid=projectid))
     creds = Credentials(access_token=token, refresh_token=refresh)
     return NBClient(url_service=url_service, creds=creds, wf_state=wf)
-
-
-# def create_ctx(wfid=None) -> ExecutionNBTask:
-#     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
-#     if ctx_str:
-#         exec_ctx = ExecutionNBTask(**json.loads(ctx_str))
-#     else:
-#         execid = context.ExecID()
-#         wf = NBClient.read("workflows.yaml")
-#         pd = wf.project
-#         pd.username = "dummy"
-#         wf_data = None
-#         if wfid:
-#             for w in wf.workflows:
-#                 if w.wfid == wfid:
-#                     wf_data = w
-#         else:
-#             # TODO: dumy nb_name
-#             wf_data = NBTask(nb_name="test", params={})
-#
-#         exec_ctx = context.create_notebook_ctx(pd, wf_data, execid.pure())
-#     return exec_ctx

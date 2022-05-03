@@ -58,6 +58,8 @@ PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
 NANO_MACHINE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 
+MACHINE_TYPE = "default.cpu"
+
 AGENT_HOMEDIR = "/home/op"
 AGENT_DOCKER_IMG = "nuxion/nb_workflows"
 AGENT_ENV_TPL = "agent.docker.envfile"

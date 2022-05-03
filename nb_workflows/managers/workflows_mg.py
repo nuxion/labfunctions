@@ -1,15 +1,15 @@
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
+from nb_workflows import context as ctx
 from nb_workflows import defaults, errors
 from nb_workflows.errors.generics import WorkflowRegisterError
-from nb_workflows.executors import context as ctx
 from nb_workflows.hashes import generate_random
-from nb_workflows.managers import projects_mg
+from nb_workflows.managers import projects_mg, runtimes_mg
 from nb_workflows.models import WorkflowModel
 from nb_workflows.types import (
     ExecutionNBTask,
@@ -20,6 +20,7 @@ from nb_workflows.types import (
     WorkflowDataWeb,
     WorkflowsList,
 )
+from nb_workflows.utils import get_version
 
 WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
 
@@ -136,11 +137,15 @@ async def register(session, projectid: str, wfd: WorkflowDataWeb, update=False) 
 
     data_dict = wfd.dict()
     data_dict["wfid"] = wfid
+    schedule = None
+    if wfd.schedule:
+        schedule = wfd.schedule.dict()
+
     obj = WorkflowModel(
         wfid=wfid,
         alias=wfd.alias,
         nbtask=wfd.nbtask.dict(),
-        schedule=wfd.schedule.dict(),
+        schedule=schedule,
         project_id=projectid,
         enabled=wfd.enabled,
     )
@@ -160,35 +165,6 @@ async def delete_wf(session, project_id, wfid):
         .where(WorkflowModel.wfid == wfid)
     )
     await session.execute(stmt)
-
-
-def prepare_notebook_job(
-    session, projectid: str, wfid: str, execid: str
-) -> ExecutionNBTask:
-    """It prepares the task execution of the notebook"""
-    wm = get_by_prj_and_wfid_sync(session, projectid, wfid)
-    if wm and wm.enabled:
-        # pm = projects_mg.get_by_projectid_model_sync(session, projectid)
-        pm = wm.project
-        task = NBTask(**wm.nbtask)
-        wd = WorkflowDataWeb(
-            alias=wm.alias,
-            nbtask=task,
-            wfid=wm.wfid,
-        )
-
-        pd = ProjectData(
-            name=pm.name,
-            projectid=pm.projectid,
-            owner=pm.owner.username,
-        )
-
-        exec_notebook_ctx = ctx.create_notebook_ctx(pd, wd, execid)
-        return exec_notebook_ctx
-    elif not wm.enabled:
-        raise errors.WorkflowDisabled(projectid, wfid)
-
-    raise errors.WorkflowNotFound(projectid, wfid)
 
 
 async def prepare_notebook_job_async(

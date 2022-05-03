@@ -200,21 +200,33 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     updated_at = Column(DateTime(), server_default=functions.now())
 
 
-class RuntimeVersionModel(Base, ProjectRelationMixin):
+class NotebookFile(Base, ProjectRelationMixin):
     """
-    Runtimes Register
+    Notebook Register
     """
 
-    __tablename__ = "nb_runtime_version"
-    __mapper_args__ = {"eager_defaults": True}
-
-    id = Column(Integer, primary_key=True)
-    docker_name = Column(String(), unique=True, index=True, nullable=False)
-    version = Column(String(), nullable=False)
-
-    created_at = Column(
-        DateTime(), server_default=functions.now(), nullable=False, index=True
+    __tablename__ = "nb_notebook_file"
+    __table_args__ = (
+        UniqueConstraint(
+            "nb_name", "project_id", name="_nb_notebook_file__name_project"
+        ),
     )
+    __mapper_args__ = {"eager_defaults": True}
+    id = Column(Integer, primary_key=True)
+    nb_name = Column(String(24), index=True)
+    remote_path = Column(String(24), nullable=True)
+
+    params = Column(String(), nullable=True)
+    runtimeid = Column(String(), index=True, nullable=False)
+    owner = relationship(
+        "nb_workflows.models.UserModel", foreign_keys="NotebookFile.owner_id"
+    )
+    owner_id = Column(
+        BigInteger,
+        ForeignKey("nb_user.id", ondelete="SET NULL"),
+        nullable=False,
+    )
+    created_at = Column(DateTime(), server_default=functions.now(), nullable=False)
 
 
 class RuntimeModel(Base, ProjectRelationMixin):
@@ -265,30 +277,3 @@ class MachineModel(Base):
         server_default=functions.now(),
         nullable=False,
     )
-
-
-# class UserModel(Base):
-#
-#     __tablename__ = "nb_auth_user"
-#     __mapper_args__ = {"eager_defaults": True}
-#
-#     id = Column(BigInteger, primary_key=True)
-#     username = Column(String(), index=True, unique=True, nullable=False)
-#     password = Column(BINARY, nullable=True)
-#     is_superuser = Column(Boolean, default=False, nullable=False)
-#     is_active = Column(Boolean, default=True, nullable=False)
-#     scopes = Column(String(), default="user", nullable=False)
-#
-#     projects = relationship(
-#         "ProjectModel", secondary=assoc_projects_users, back_populates="users"
-#     )
-#     created_at = Column(
-#         DateTime(),
-#         server_default=functions.now(),
-#         nullable=False,
-#     )
-#     updated_at = Column(
-#         DateTime(),
-#         server_default=functions.now(),
-#         nullable=False,
-#     )

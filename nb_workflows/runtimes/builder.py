@@ -8,8 +8,8 @@ import httpx
 
 import docker
 from nb_workflows import client, defaults
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.types import ProjectData
+from nb_workflows.conf import load_server
+from nb_workflows.types import ProjectData, ServerSettings
 from nb_workflows.types.docker import DockerBuildLog, DockerBuildLowLog, DockerPushLog
 from nb_workflows.types.runtimes import BuildCtx, RuntimeReq
 
@@ -110,14 +110,15 @@ def _extract_project(project_zip_file, dst_dir):
 
 def _download_zip_project(ctx: BuildCtx, project_dir):
 
-    uri = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}/{ctx.project_zip_route}"
+    # uri = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}/{ctx.project_zip_route}"
+    uri = ctx.download_zip
     with open(project_dir / ctx.zip_name, "wb") as f:
         with httpx.stream("GET", uri, timeout=100) as r:
             for chunk in r.iter_raw():
                 f.write(chunk)
 
 
-def prepare_files(ctx: BuildCtx):
+def prepare_files(ctx: BuildCtx, settings: ServerSettings):
 
     root = Path(settings.BASE_PATH)
     project_dir = root / settings.AGENT_DATA_FOLDER / ctx.projectid / "build"
@@ -135,13 +136,15 @@ def prepare_files(ctx: BuildCtx):
 def builder_exec(ctx: BuildCtx):
     """It's in charge of building docker images for projects"""
 
+    settings = load_server()
+
     nb_client = client.agent(
         url_service=settings.WORKFLOW_SERVICE,
         token=settings.AGENT_TOKEN,
         refresh=settings.AGENT_REFRESH_TOKEN,
         projectid=ctx.projectid,
     )
-    project_dir, tmp_dir = prepare_files(ctx)
+    project_dir, tmp_dir = prepare_files(ctx, settings)
 
     # pd = nb_client.projects_get()
     docker_tag = ctx.docker_name
