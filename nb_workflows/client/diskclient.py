@@ -5,6 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import httpx
 from rich.console import Console
 from rich.panel import Panel
 
@@ -85,7 +86,10 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
         """Gets private key to be shared to the docker container of a
         workflow task
         """
-        r = self._http.get(f"/projects/{self.projectid}/_private_key")
+        try:
+            r = self._http.get(f"/projects/{self.projectid}/_private_key")
+        except httpx.ConnectError:
+            raise errors.PrivateKeyNotFound(self.projectid)
 
         key = None
         if r.status_code == 200:

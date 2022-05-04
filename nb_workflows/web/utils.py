@@ -2,6 +2,7 @@ from sanic import Blueprint, Request, Sanic
 
 from nb_workflows import defaults
 from nb_workflows.conf.server_settings import settings
+from nb_workflows.io.kvspec import AsyncKVSpec
 from nb_workflows.scheduler import SchedulerExecutor
 
 
@@ -24,6 +25,10 @@ def get_scheduler(qname=settings.RQ_CONTROL_QUEUE, is_async=True) -> SchedulerEx
     current_app = Sanic.get_app(defaults.SANIC_APP_NAME)
     r = current_app.ctx.rq_redis
     return SchedulerExecutor(r, qname=qname, is_async=is_async)
+
+
+def get_kvstore(request: Request) -> AsyncKVSpec:
+    return Sanic.get_app(request.app.name).ctx.kv_store
 
 
 async def stream_reader(request: Request):

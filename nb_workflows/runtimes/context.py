@@ -57,7 +57,6 @@ def build_upload_uri(projectid, runtime_name, version) -> str:
 def create_build_ctx(
     pd: ProjectData,
     spec: RuntimeSpec,
-    project_store: str,
     version,
     registry=None,
 ) -> BuildCtx:
@@ -69,8 +68,9 @@ def create_build_ctx(
     zip_name = uri.split("/")[-1]
     return BuildCtx(
         projectid=pd.projectid,
+        dockerfile=dockerfile,
         zip_name=zip_name,
-        download_zip=f"{project_store}/{uri}",
+        download_zip=uri,
         project_zip_route=uri,
         version=version,
         docker_name=docker,

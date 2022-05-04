@@ -60,7 +60,10 @@ def from_file(
         wf_state=wf_state,
     )
     if not os.environ.get("DEBUG"):
-        dc.logincli()
+        try:
+            dc.logincli()
+        except httpx.ConnectError:
+            print("No connection with server")
     return dc
 
 

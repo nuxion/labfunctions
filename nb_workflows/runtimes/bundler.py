@@ -106,7 +106,8 @@ def zip_current(
     output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     secrets_file = Path(".") / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
     dst = root / ".secrets"
-    dst.write_bytes(secrets_file.read_bytes())
+    if dst.is_file():
+        dst.write_bytes(secrets_file.read_bytes())
 
     with ZipFile(output_file, "w") as z:
         for i in Path(".").glob("**/*"):
@@ -144,7 +145,7 @@ def zip_project_deprecated(root, stash=False, current=False) -> ProjectBundleFil
 
 
 def bundle_project(
-    spec: RuntimeSpec, privkey, env_file, stash=False, current=False
+    spec: RuntimeSpec, privkey=None, stash=False, current=False
 ) -> ProjectBundleFile:
     """
     It's in charge of bundle all the files needed to build a runtime.
@@ -175,7 +176,8 @@ def bundle_project(
 
     nbvars = secrets.load(str(root))
 
-    secrets_file = write_secrets(root, privkey, nbvars)
+    if privkey:
+        secrets_file = write_secrets(root, privkey, nbvars)
 
     zfile = None
 
@@ -194,6 +196,7 @@ def bundle_project(
     else:
         raise AttributeError("Bad option: current and stash are different options")
 
-    Path(secrets_file).unlink(missing_ok=True)
+    if privkey:
+        Path(secrets_file).unlink(missing_ok=True)
 
     return zfile

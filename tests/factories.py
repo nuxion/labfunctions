@@ -81,8 +81,6 @@ class NBTaskFactory(factory.Factory):
     class Meta:
         model = NBTask
 
-    wfid = factory.LazyAttribute(lambda n: generate_random(24))
-    alias = factory.Sequence(lambda n: "nb-alias%d" % n)
     nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
     params = {"TEST": True, "TIMEOUT": 5}
 

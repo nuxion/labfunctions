@@ -22,21 +22,9 @@ from nb_workflows.types.projects import ProjectBuildReq
 from nb_workflows.types.runtimes import RuntimeSpec
 from nb_workflows.types.user import AgentReq, UserOrm
 from nb_workflows.utils import run_async, secure_filename
-from nb_workflows.web.utils import get_query_param2, stream_reader
+from nb_workflows.web.utils import get_kvstore, get_query_param2, stream_reader
 
 projects_bp = Blueprint("projects", url_prefix="projects", version=API_VERSION)
-
-
-# async def generate_id(session, base_name, retries=3) -> Union[str, None]:
-#     ix = 0
-#     while ix <= retries:
-#         id_ = projects_mg.generate_projectid()
-#         r = await projects_mg.get_by_projectid(session, id_)
-#         if not r:
-#             return id_
-#         ix += 1
-#
-#     return None
 
 
 def _get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
@@ -48,22 +36,6 @@ def _get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
 
 def get_token_data(request: Request):
     return request.ctx.token_data
-
-
-# @projects_bp.get("/_generateid")
-# @openapi.response(200, "project")
-# @openapi.response(500, "not found")
-# async def project_generateid(request: Request):
-#     """Generates a random projectid"""
-#     # pylint: disable=unused-argument
-#
-#     session = request.ctx.session
-#     id_ = projects_mg.generate_projectid()
-#     async with session.begin():
-#         id_ = await generate_id(session, retries=3)
-#         if id_:
-#             return json(dict(projectid=id_), 200)
-#     return json(dict(msg="Error with generation of a id"), 500)
 
 
 @projects_bp.post("/")
@@ -241,13 +213,20 @@ async def project_upload(request, projectid):
         pd = await projects_mg.get_by_projectid(session, projectid)
 
     uri = build_upload_uri(pd.projectid, runtime_name, version)
-    fileserver = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}"
-    dst_url = f"{fileserver}/{uri}"
-    async with httpx.AsyncClient() as client:
-        r = await client.put(dst_url, content=stream_reader(request))
-    if r.status_code == 204:
+
+    kv = get_kvstore(request)
+    rsp = await kv.put_stream(uri, stream_reader(request))
+    if rsp:
+        return json(dict(msg="ok"), 201)
+    else:
         return empty()
-    return json(dict(msg="ok"), r.status_code)
+
+    # fileserver = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}"
+    # dst_url = f"{fileserver}/{uri}"
+    # async with httpx.AsyncClient() as client:
+    #    r = await client.put(dst_url, content=stream_reader(request))
+    # if r.status_code == 204:
+    #    return empty()
 
 
 @projects_bp.get("/<projectid:str>/_private_key")

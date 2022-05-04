@@ -1,7 +1,9 @@
 import json
 import logging
+import tempfile
 from io import BytesIO
 from pathlib import Path
+from typing import Optional
 from zipfile import ZipFile
 
 import httpx
@@ -9,6 +11,7 @@ import httpx
 import docker
 from nb_workflows import client, defaults
 from nb_workflows.conf import load_server
+from nb_workflows.io.kvspec import GenericKVSpec
 from nb_workflows.types import ProjectData, ServerSettings
 from nb_workflows.types.docker import DockerBuildLog, DockerBuildLowLog, DockerPushLog
 from nb_workflows.types.runtimes import BuildCtx, RuntimeReq
@@ -103,7 +106,7 @@ def docker_low_build(path, dockerfile, tag, rm=False) -> DockerBuildLowLog:
     return DockerBuildLowLog(error=error, logs=log)
 
 
-def _extract_project(project_zip_file, dst_dir):
+def unzip_runtime(project_zip_file, dst_dir):
     with ZipFile(project_zip_file, "r") as zo:
         zo.extractall(dst_dir)
 
@@ -128,52 +131,118 @@ def prepare_files(ctx: BuildCtx, settings: ServerSettings):
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     _download_zip_project(ctx, project_dir)
-    _extract_project(project_dir / ctx.zip_name, temp_dir)
+    unzip_runtime(project_dir / ctx.zip_name, temp_dir)
 
     return project_dir, temp_dir
 
 
-def builder_exec(ctx: BuildCtx):
-    """It's in charge of building docker images for projects"""
+class BuildTask:
+    def __init__(
+        self,
+        projectid: str,
+        kvstore: GenericKVSpec,
+        nbclient: Optional[client.nbclient.NBClient] = None,
+    ):
+        self.settings = load_server()
+        self.client = nbclient or client.agent(
+            url_service=self.settings.WORKFLOW_SERVICE,
+            token=self.settings.AGENT_TOKEN,
+            refresh=self.settings.AGENT_REFRESH_TOKEN,
+            projectid=projectid,
+        )
+        self.projectid = projectid
+        self.kv = kvstore
 
+    def get_runtime_file(self, zip_file, download_zip, dst_dir):
+        with open(zip_file, "wb") as f:
+            for chunk in self.kv.get_stream(download_zip):
+                f.write(chunk)
+
+    def run(self, ctx: BuildCtx):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            zip_file = f"{tmp_dir}/{ctx.zip_name}"
+            self.get_runtime_file(zip_file, ctx.download_zip, tmp_dir)
+            unzip_runtime(zip_file, tmp_dir)
+            docker_tag = ctx.docker_name
+            push = False
+            if ctx.registry:
+                docker_tag = f"{ctx.registry}/{docker_tag}"
+                push = True
+            # nb_client.events_publish(
+            #    ctx.execid, f"Starting build for {docker_tag}", event="log"
+            # )
+            logs = docker_build(
+                f"{tmp_dir}/src",
+                f"{ctx.dockerfile}",
+                tag=docker_tag,
+                version=ctx.version,
+                push=push,
+            )
+            req = RuntimeReq(
+                runtime_name=ctx.spec.name,
+                docker_name=ctx.docker_name,
+                spec=ctx.spec,
+                project_id=ctx.projectid,
+                version=ctx.version,
+                registry=ctx.registry,
+            )
+        return logs
+        # nb_client.runtime_create(req)
+
+
+def builder_exec(ctx: BuildCtx) -> str:
     settings = load_server()
+    PROJECTS_STORE_CLASS = "nb_workflows.io.kv_local.KVLocal"
+    PROJECTS_STORE_BUCKET = "nbworkflows"
 
-    nb_client = client.agent(
-        url_service=settings.WORKFLOW_SERVICE,
-        token=settings.AGENT_TOKEN,
-        refresh=settings.AGENT_REFRESH_TOKEN,
-        projectid=ctx.projectid,
+    task = BuildTask(
+        ctx.projectid, GenericKVSpec.create(PROJECTS_STORE_CLASS, PROJECTS_STORE_BUCKET)
     )
-    project_dir, tmp_dir = prepare_files(ctx, settings)
+    rsp = task.run(ctx)
+    return rsp
 
-    # pd = nb_client.projects_get()
-    docker_tag = ctx.docker_name
-    push = False
-    if ctx.registry:
-        docker_tag = f"{ctx.registry}/{docker_tag}"
-        push = True
 
-    nb_client.events_publish(
-        ctx.execid, f"Starting build for {docker_tag}", event="log"
-    )
-    logs = docker_build(
-        f"{tmp_dir}/src",
-        f"{ctx.dockerfile}",
-        tag=docker_tag,
-        version=ctx.version,
-        push=push,
-    )
-    req = RuntimeReq(
-        runtime_name=ctx.spec.name,
-        docker_name=ctx.docker_name,
-        spec=ctx.spec,
-        project_id=ctx.projectid,
-        version=ctx.version,
-        registry=ctx.registry,
-    )
-    nb_client.runtime_create(req)
-
-    nb_client.events_publish(ctx.execid, data="finished", event="result")
-    nb_client.events_publish(ctx.execid, data="exit", event="control")
-
-    return logs
+# def builder_exec(ctx: BuildCtx):
+#    """It's in charge of building docker images for projects"""
+#
+#    settings = load_server()
+#
+#    nb_client = client.agent(
+#        url_service=settings.WORKFLOW_SERVICE,
+#        token=settings.AGENT_TOKEN,
+#        refresh=settings.AGENT_REFRESH_TOKEN,
+#        projectid=ctx.projectid,
+#    )
+#    project_dir, tmp_dir = prepare_files(ctx, settings)
+#
+#    # pd = nb_client.projects_get()
+#    docker_tag = ctx.docker_name
+#    push = False
+#    if ctx.registry:
+#        docker_tag = f"{ctx.registry}/{docker_tag}"
+#        push = True
+#
+#    nb_client.events_publish(
+#        ctx.execid, f"Starting build for {docker_tag}", event="log"
+#    )
+#    logs = docker_build(
+#        f"{tmp_dir}/src",
+#        f"{ctx.dockerfile}",
+#        tag=docker_tag,
+#        version=ctx.version,
+#        push=push,
+#    )
+#    req = RuntimeReq(
+#        runtime_name=ctx.spec.name,
+#        docker_name=ctx.docker_name,
+#        spec=ctx.spec,
+#        project_id=ctx.projectid,
+#        version=ctx.version,
+#        registry=ctx.registry,
+#    )
+#    nb_client.runtime_create(req)
+#
+#    nb_client.events_publish(ctx.execid, data="finished", event="result")
+#    nb_client.events_publish(ctx.execid, data="exit", event="control")
+#
+#    return logs

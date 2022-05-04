@@ -17,6 +17,7 @@ from nb_workflows.managers.users_mg import inject_user
 from nb_workflows.security.web import protected
 from nb_workflows.types import ExecutionResult, HistoryRequest, NBTask
 from nb_workflows.utils import get_query_param, today_string
+from nb_workflows.web.utils import get_kvstore
 
 history_bp = Blueprint("history", url_prefix="history", version=API_VERSION)
 
@@ -88,7 +89,9 @@ async def history_output_ok(request, projectid):
     Upload a workflow project
     """
     # pylint: disable=unused-argument
-    fsrv = AsyncFileserver(settings.FILESERVER)
+    # fsrv = AsyncFileserver(settings.FILESERVER)
+    kv_store = get_kvstore(request)
+
     today = today_string(format_="day")
     root = pathlib.Path(projectid)
     output_dir = root / defaults.NB_OUTPUTS / "ok" / today
@@ -97,7 +100,8 @@ async def history_output_ok(request, projectid):
     output_name = request.form["output_name"][0]
 
     fp = str(output_dir / output_name)
-    await fsrv.put(fp, file_body)
+    # await fsrv.put(fp, file_body)
+    await kv_store.put(fp, file_body)
 
     return json(dict(msg="OK"), 201)
 

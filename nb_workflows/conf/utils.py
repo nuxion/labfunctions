@@ -1,5 +1,7 @@
 import importlib
+import json
 import logging
+import logging.config
 import os
 import subprocess
 import sys
@@ -7,6 +9,8 @@ from pathlib import Path
 
 from nb_workflows import defaults
 from nb_workflows.types import ClientSettings, ServerSettings
+
+# from nb_workflows.types.config import SecuritySettings
 
 # from nb_workflows.utils import define_base_path
 # from logging import NullHandler
@@ -99,8 +103,9 @@ def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
     # set BASE_PATH
     # os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
 
-    logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
-    log = logging.getLogger(__name__)
+    # logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
+    logging.config.dictConfig(cfg.LOGCONFIG)
+    log = logging.getLogger("nbwork.client")
     log.debug("Using {cfg.SETTINGS_MODULE} as config module")
 
     return cfg
@@ -118,6 +123,8 @@ def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
             value = getattr(mod, m)
             settings_dict[m] = value
 
+    # if settings_dict.get("SECURITY"):
+    #    settings_dict["SECURITY"] = json.dumps(settings_dict["SECURITY"])
     cfg = ServerSettings(**settings_dict)
     cfg.SETTINGS_MODULE = settings_module
 
@@ -127,8 +134,10 @@ def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
         _level = logging.DEBUG
 
     # set BASE_PATH
-    os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
 
-    logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
+    os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
+    logging.config.dictConfig(cfg.LOGCONFIG)
+    log = logging.getLogger("nbwork.server")
+    log.debug("Using {cfg.SETTINGS_MODULE} as config module")
 
     return cfg

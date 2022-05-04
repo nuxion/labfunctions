@@ -6,9 +6,12 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from nb_workflows import client, defaults, runtimes, secrets
+from nb_workflows import client, defaults, errors, runtimes, secrets
 from nb_workflows.conf import load_client
 from nb_workflows.errors.client import ProjectUploadError
+from nb_workflows.io.kvspec import GenericKVSpec
+from nb_workflows.runtimes.builder import builder_exec
+from nb_workflows.runtimes.context import build_upload_uri, create_build_ctx
 from nb_workflows.types.runtimes import RuntimeSpec
 from nb_workflows.utils import execute_cmd, open_yaml
 
@@ -74,15 +77,26 @@ def runtimescli():
     default=False,
     help="Get events & logs from the executions",
 )
+@click.option(
+    "--dev",
+    "-D",
+    is_flag=True,
+    default=False,
+    help="Build runtime locally",
+)
 @click.argument("name", default="default")
-def build(url_service, from_file, only_bundle, env_file, current, stash, watch, name):
+def build(
+    url_service, from_file, only_bundle, env_file, current, stash, watch, name, dev
+):
     """Freeze and build a runtime for your proyect into the server"""
     c = client.from_file(from_file, url_service)
     # prepare secrets
-    pv = c.get_private_key()
-    if not pv:
-        console.print("[red bold](x) Not private key found or authentication error[/]")
-        sys.exit(-1)
+    try:
+        pv = c.get_private_key()
+    except errors.PrivateKeyNotFound:
+        console.print("[cyan bold]=> Not private key found for this project[/]")
+        pv = None
+        # sys.exit(-1)
 
     # _agent_token = c.projects_agent_token()
 
@@ -91,9 +105,10 @@ def build(url_service, from_file, only_bundle, env_file, current, stash, watch, 
         console.print(f"[red bold](x) Runtime {name} doesn't exists[/]")
         sys.exit(-1)
 
-    console.print(f"=> Bundling runtime {name}")
+    console.print(f"=> Bundling runtime [bold magenta]{name}[/]")
     try:
-        zfile = runtimes.bundle_project(spec, pv, env_file, stash, current)
+        zfile = runtimes.bundle_project(spec, pv, stash, current)
+        breakpoint()
     except KeyError:
         console.print(
             f"[red bold](x) requirements file missing "
@@ -114,7 +129,7 @@ def build(url_service, from_file, only_bundle, env_file, current, stash, watch, 
         sys.exit(-1)
 
     console.print(f"=> Bundle generated in {zfile.filepath}")
-    if not only_bundle:
+    if not only_bundle and not dev:
         try:
             c.projects_upload(zfile)
             console.print("[bold green]=> Succesfully uploaded file[/]")
@@ -128,6 +143,16 @@ def build(url_service, from_file, only_bundle, env_file, current, stash, watch, 
                 watcher(c, execid, stats=False)
         except ProjectUploadError:
             console.print("[bold red](x) Error uploading file[/]")
+    elif dev:
+        pd = c.state.project
+        PROJECTS_STORE_CLASS = "nb_workflows.io.kv_local.KVLocal"
+        PROJECTS_STORE_BUCKET = "nbworkflows"
+        kv = GenericKVSpec.create(PROJECTS_STORE_CLASS, PROJECTS_STORE_BUCKET)
+        ctx = create_build_ctx(pd, spec, zfile.version)
+        kv.put_stream(ctx.download_zip, kv.from_file_gen(zfile.filepath))
+
+        rs = builder_exec(ctx)
+        console.print(rs)
 
     # elif action == "agent-token":
     #    creds = c.projects_agent_token()

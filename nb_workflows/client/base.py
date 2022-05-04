@@ -120,6 +120,7 @@ class BaseClient:
         self._timeout = timeout
         self._http_creator = http_init_func
         self._http: httpx.Client = self._http_init()
+        self.logger = logging.getLogger("nbwork.client")
 
     @property
     def http(self) -> httpx.Client:

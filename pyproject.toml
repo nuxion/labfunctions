@@ -40,6 +40,7 @@ asyncpg = { version="^0.24.0", optional=true}
 alembic = { version="^1.6.5", optional=true}
 rq-scheduler = { version="^0.11.0", optional=true }
 rq = {version="^1.10.0", optional=true}
+smart-open = {extras = ["gcs"], version = "^6.0.0"}
 # cluster
 apache-libcloud = {version="^3.5.1", optional=true}
 # both
@@ -60,7 +61,6 @@ aiofiles = "^0.8.0"
 nanoid = "^2.0.0"
 PyYAML = "^6.0"
 pydantic = "^1.9.0"
-fsspec = {version="^2022.2.0", optional=true }
 PyJWT = ">=2.1.0,<2.2.0"
 ipython = "^8.1.1"
 ipykernel = "^6.9.1"
@@ -71,7 +71,7 @@ tenacity = "^8.0.1"
 papermill = "^2.3.4"
 
 [tool.poetry.extras]
-fsspec = ["fsspec"]
+# fsspec = ["fsspec", "gcsfs"]
 server = [
 	"uvloop",
 	"sanic",
@@ -87,6 +87,7 @@ server = [
 	"rq",
 	"apache-libcloud",
 	"asyncssh",
+	"smart-open",
 ]
 
 [tool.poetry.dev-dependencies]

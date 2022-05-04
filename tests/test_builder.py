@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from nb_workflows.conf.server_settings import settings
-from nb_workflows.executors import builder
+from nb_workflows.runtimes import builder
 
 from .factories import BuildCtxFactory, ProjectDataFactory
 

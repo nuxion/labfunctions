@@ -1,23 +1,11 @@
 import os
-
-# detailed_format = "[%(asctime)s] - %(name)s %(lineno)d - %(levelname)s - %(message)s"
-detailed_format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
-
-AGENT_TOKEN = os.getenv("NB_AGENT_TOKEN", "changeme")
-AGENT_REFRESH_TOKEN = os.getenv("NB_AGENT_REFRESH_TOKEN", "changeme")
+import sys
 
 AGENT_TOKEN_EXP = (60 * 60) * 12
 # Services
-SQL = os.getenv("NB_SQL", "postgresql://postgres:secret@postgres:5432/nb_workflows")
-ASQL = os.getenv(
-    "NB_ASQL", "postgresql+asyncpg://postgres:secret@postgres:5432/nb_workflows"
-)
-FILESERVER = os.getenv("NB_FILESERVER")
-FILESERVER_BUCKET = "nbwf"
-
+SQL = os.getenv("NB_SQL", "sqlite:///db.sqlite")
+ASQL = os.getenv("NB_ASQL", "sqlite+aiosqlite:///db.sqlite")
 WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
-# Logs
-LOGFORMAT = detailed_format
 
 # General Folders for the server
 BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
@@ -29,5 +17,37 @@ SECURITY = {
     "AUTH_FUNCTION": "nb_workflows.managers.users_mg.authenticate",
 }
 
-NB_WORKFLOWS = os.getenv("NB_WORKFLOWS", "workflows/")
-NB_OUTPUT = os.getenv("NB_NB_OUTPUT", "outputs/")
+# Logs
+LOGLEVEL = "INFO"
+LOGCONFIG = dict(  # no cov
+    version=1,
+    disable_existing_loggers=False,
+    loggers={
+        "nbwork.server": {"level": LOGLEVEL, "handlers": ["console"]},
+        "nbwork.error": {
+            "level": LOGLEVEL,
+            "handlers": ["error_console"],
+            "propagate": True,
+            "qualname": "nbwork.error",
+        },
+    },
+    handlers={
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "generic",
+            "stream": sys.stdout,
+        },
+        "error_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "generic",
+            "stream": sys.stderr,
+        },
+    },
+    formatters={
+        "generic": {
+            "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+            "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+            "class": "logging.Formatter",
+        },
+    },
+)
