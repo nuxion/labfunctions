@@ -134,15 +134,19 @@ class WorkflowsClient(BaseClient):
         self,
         nb_name: str,
         params: Optional[Dict[str, Any]] = None,
+        cluster=None,
         machine=None,
-        docker_version=None,
+        runtime=None,
+        version=None,
     ) -> ExecutionNBTask:
 
         task = NBTask(
             nb_name=nb_name,
             params=params,
+            cluster=cluster,
             machine=machine,
-            docker_version=docker_version,
+            runtime=runtime,
+            version=version,
         )
         rsp = self._http.post(
             f"/workflows/{self.projectid}/notebooks/_run", json=task.dict()

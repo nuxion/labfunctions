@@ -429,3 +429,11 @@ def get_class(fullclass_path):
     mod = import_module(module)
     cls = getattr(mod, class_)
     return cls
+
+
+def normalize_name(name: str) -> str:
+    """evaluates and verify if a string is secure to be stored"""
+    evaluate = name.lower()
+    evaluate = evaluate.replace(" ", "_")
+    evaluate = secure_filename(name)
+    return evaluate

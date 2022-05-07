@@ -1,7 +1,7 @@
 import io
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, Generator, Union
+from typing import Any, AsyncGenerator, Dict, Generator, Union
 
 from google.cloud.storage import Client
 from smart_open import open
@@ -85,5 +85,5 @@ class AsyncKVGS(AsyncKVSpec):
         rsp = await run_async(self.client.get, key)
         return rsp
 
-    async def get_stream(self, key: str) -> Generator[bytes, None, None]:
+    async def get_stream(self, key: str) -> AsyncGenerator[bytes, None]:
         yield await run_async(self.client.get_stream, key)

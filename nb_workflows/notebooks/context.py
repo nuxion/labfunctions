@@ -72,6 +72,7 @@ def create_notebook_ctx(
     output_name = f"{wfid}.{task.nb_name}.{execid}.ipynb"
     _runtime = prepare_runtime(runtime)
     machine = task.machine or defaults.MACHINE_TYPE
+    cluster = task.cluster or defaults.CLUSTER_NAME
 
     return ExecutionNBTask(
         projectid=projectid,
@@ -80,6 +81,7 @@ def create_notebook_ctx(
         nb_name=task.nb_name,
         runtime=_runtime,
         machine=task.machine,
+        cluster=cluster,
         params=_params,
         pm_input=str(papermill_input),
         pm_output=f"{output_dir}/{output_name}",

@@ -23,7 +23,7 @@ class RedisTokenStore(TokenStoreSpec):
     async def get(self, key: str) -> str:
         val = await self.redis.get(f"{self.ns}:{key}")
         value = val
-        if not isinstance(val, str):
+        if not isinstance(val, str) and val:
             value = val.decode("utf-8")
 
         return value

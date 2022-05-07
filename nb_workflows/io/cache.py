@@ -78,8 +78,8 @@ def _restore_pickle(name, ctx: SimpleExecCtx):
 
 
 def _write_fileserver(name, data, ctx: SimpleExecCtx):
-    urlpath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}"
-    metapath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}.json"
+    urlpath = f"{settings.EXT_KV_LOCAL_ROOT}/cache/{ctx.wfid}.{ctx.execid}.{name}"
+    metapath = f"{settings.EXT_KV_LOCAL_ROOT}/cache/{ctx.wfid}.{ctx.execid}.{name}.json"
     blob = cloudpickle.dumps(data)
     rsp = httpx.put(urlpath, content=blob)
     rsp2 = httpx.put(metapath, json=asdict(ctx))
@@ -90,8 +90,8 @@ def _write_fileserver(name, data, ctx: SimpleExecCtx):
 
 
 def _restore_fileserver(name, ctx: SimpleExecCtx):
-    urlpath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}"
-    metapath = f"{settings.FILESERVER}/cache/{ctx.wfid}.{ctx.execid}.{name}.json"
+    urlpath = f"{settings.EXT_KV_LOCAL_ROOT}/cache/{ctx.wfid}.{ctx.execid}.{name}"
+    metapath = f"{settings.EXT_KV_LOCAL_ROOT}/cache/{ctx.wfid}.{ctx.execid}.{name}.json"
     data = None
     meta = None
 

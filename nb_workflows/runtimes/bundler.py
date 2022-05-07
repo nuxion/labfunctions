@@ -15,11 +15,16 @@ from .utils import git_last_tag, git_short_head_id
 logger = logging.getLogger(__name__)
 
 
-def write_secrets(root, private_key, nbvars_dict) -> str:
+def get_secrets_filepath(working_area: Path) -> Path:
+
+    return working_area / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
+
+
+def write_secrets(working_area, private_key, nbvars_dict) -> Path:
     _vars = secrets.encrypt_nbvars(private_key, nbvars_dict)
     newline = "\n"
     encoded_vars = f'{newline.join(f"{key}={value}" for key, value in _vars.items())}'
-    outfile = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
+    outfile = get_secrets_filepath(working_area)
     with open(outfile, "w") as f:
         f.write(encoded_vars)
 
@@ -27,18 +32,18 @@ def write_secrets(root, private_key, nbvars_dict) -> str:
 
 
 def zip_git_stash(
-    root, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
+    root, working_area, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
 ) -> Union[ProjectBundleFile, None]:
     """Zip the actual folder state
     using git stash, this should be used only when testing or developing
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
 
-    secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
+    secrets_file = get_secrets_filepath(working_area)
 
     filename = f"{runtime_name}.stash.zip"
 
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
+    output_file = f"{str(working_area)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     stash_id = execute_cmd("git stash create")
     if not stash_id:
         return None
@@ -61,14 +66,14 @@ def zip_git_stash(
 
 
 def zip_git_head(
-    root, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
+    root, working_area, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
 ) -> ProjectBundleFile:
     """Zip the head of the repository.
     Not commited files wouldn't included in this zip file
     """
     # project = str(root).rsplit("/", maxsplit=1)[-1]
 
-    secrets_file = root / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
+    secrets_file = get_secrets_filepath(working_area)
 
     tagname = None
     try:
@@ -82,7 +87,7 @@ def zip_git_head(
 
     filename = f"{runtime_name}.{tagname}.zip"
 
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
+    output_file = f"{str(working_area)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     execute_cmd(
         f"git archive --prefix={prefix_folder} "
         f"--add-file {secrets_file} "
@@ -98,13 +103,14 @@ def zip_git_head(
 
 
 def zip_current(
-    root, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
+    root, working_area, runtime_name, prefix_folder=defaults.ZIP_GIT_PREFIX
 ) -> ProjectBundleFile:
 
     filename = f"{runtime_name}.current.zip"
 
-    output_file = f"{str(root)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
-    secrets_file = Path(".") / defaults.CLIENT_TMP_FOLDER / defaults.SECRETS_FILENAME
+    output_file = f"{str(working_area)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
+
+    secrets_file = get_secrets_filepath(working_area)
     dst = root / ".secrets"
     if dst.is_file():
         dst.write_bytes(secrets_file.read_bytes())
@@ -132,20 +138,12 @@ def zip_current(
     )
 
 
-def zip_project_deprecated(root, stash=False, current=False) -> ProjectBundleFile:
-    """Make a zip of this project.
-    It uses git to skip files in the .gitignore file.
-    After making the zip file with git,  it will add a secret file
-    with the values of "[filename].nbvars" encrypted on it.
-
-    :param dev: default False, if True it will make a git stash
-    of the current files. If False, then will zip the last commited changes.
-    """
-    pass
-
-
 def bundle_project(
-    spec: RuntimeSpec, privkey=None, stash=False, current=False
+    working_area: Union[str, Path],
+    spec: RuntimeSpec,
+    privkey=None,
+    stash=False,
+    current=False,
 ) -> ProjectBundleFile:
     """
     It's in charge of bundle all the files needed to build a runtime.
@@ -168,21 +166,22 @@ def bundle_project(
     # checks if AGENT_TOKEN and REFERSH exist?
 
     root = Path(os.getcwd())
+    wa = Path(working_area)
 
     if not (root / spec.container.requirements).is_file():
         raise KeyError("A requirements file is missing")
 
-    (root / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
+    (wa / defaults.CLIENT_TMP_FOLDER).mkdir(parents=True, exist_ok=True)
 
     nbvars = secrets.load(str(root))
 
     if privkey:
-        secrets_file = write_secrets(root, privkey, nbvars)
+        secrets_file = write_secrets(wa, privkey, nbvars)
 
     zfile = None
 
     if stash and not current:
-        zfile = zip_git_stash(root, spec.name)
+        zfile = zip_git_stash(root, wa, spec.name)
         if not zfile:
             raise TypeError(
                 "There isn't changes in the git repository to perform a "
@@ -190,9 +189,9 @@ def bundle_project(
                 "the stash the changes, perform: git add ."
             )
     elif current and not stash:
-        zfile = zip_current(root, spec.name)
+        zfile = zip_current(root, wa, spec.name)
     elif not current and not stash:
-        zfile = zip_git_head(root, spec.name)
+        zfile = zip_git_head(root, wa, spec.name)
     else:
         raise AttributeError("Bad option: current and stash are different options")
 

@@ -78,15 +78,15 @@ def runtimescli():
     help="Get events & logs from the executions",
 )
 @click.option(
-    "--dev",
-    "-D",
+    "--local",
+    "-L",
     is_flag=True,
     default=False,
     help="Build runtime locally",
 )
 @click.argument("name", default="default")
 def build(
-    url_service, from_file, only_bundle, env_file, current, stash, watch, name, dev
+    url_service, from_file, only_bundle, env_file, current, stash, watch, name, local
 ):
     """Freeze and build a runtime for your proyect into the server"""
     c = client.from_file(from_file, url_service)
@@ -107,8 +107,7 @@ def build(
 
     console.print(f"=> Bundling runtime [bold magenta]{name}[/]")
     try:
-        zfile = runtimes.bundle_project(spec, pv, stash, current)
-        breakpoint()
+        zfile = runtimes.bundle_project(c.working_area, spec, pv, stash, current)
     except KeyError:
         console.print(
             f"[red bold](x) requirements file missing "
@@ -129,7 +128,7 @@ def build(
         sys.exit(-1)
 
     console.print(f"=> Bundle generated in {zfile.filepath}")
-    if not only_bundle and not dev:
+    if not only_bundle and not local:
         try:
             c.projects_upload(zfile)
             console.print("[bold green]=> Succesfully uploaded file[/]")
@@ -143,16 +142,28 @@ def build(
                 watcher(c, execid, stats=False)
         except ProjectUploadError:
             console.print("[bold red](x) Error uploading file[/]")
-    elif dev:
-        pd = c.state.project
+    elif local:
         PROJECTS_STORE_CLASS = "nb_workflows.io.kv_local.KVLocal"
         PROJECTS_STORE_BUCKET = "nbworkflows"
+        os.environ["NB_AGENT_TOKEN"] = "asara"
+        os.environ["NB_AGENT_REFRESH_TOKEN"] = "asara"
         kv = GenericKVSpec.create(PROJECTS_STORE_CLASS, PROJECTS_STORE_BUCKET)
-        ctx = create_build_ctx(pd, spec, zfile.version)
+        ctx = create_build_ctx(
+            c.projectid,
+            spec,
+            zfile.version,
+            PROJECTS_STORE_CLASS,
+            PROJECTS_STORE_BUCKET,
+        )
         kv.put_stream(ctx.download_zip, kv.from_file_gen(zfile.filepath))
 
         rs = builder_exec(ctx)
-        console.print(rs)
+        # console.print(rs)
+        console.print(f"=> Image: [magenta]{ctx.docker_name}:{ctx.version}[/]")
+        console.print(f"=> Version: [magenta]{ctx.version}[/]")
+        if ctx.registry:
+            console.print(f"=> Registry: [magenta]{ctx.registry}[/]")
+        console.print("[green bold]=> Succesfully[/]")
 
     # elif action == "agent-token":
     #    creds = c.projects_agent_token()
@@ -181,11 +192,11 @@ def listcli(from_file, url_service):
     runtimes = c.runtimes_get_all()
     table = Table(title="Runtimes for the project")
     # table.add_column("alias", style="cyan", no_wrap=True, justify="center")
-    table.add_column("id", style="cyan", justify="center")
+    table.add_column("runtime_name", style="cyan", justify="center")
     table.add_column("docker_name", style="cyan", justify="center")
     table.add_column("version", style="cyan", justify="center")
     for runtime in runtimes:
-        table.add_row(str(runtime.runtimeid), runtime.docker_name, runtime.version)
+        table.add_row(str(runtime.runtime_name), runtime.docker_name, runtime.version)
     console.print(table)
 
 

@@ -31,11 +31,10 @@ from nb_workflows.types import (
     WorkflowDataWeb,
     agent,
     cluster,
-    machine,
-    runtimes,
 )
+from nb_workflows.types import docker as docker_types
+from nb_workflows.types import machine, runtimes
 from nb_workflows.types.config import SecuritySettings
-from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.types.events import EventSSE
 from nb_workflows.types.user import UserOrm
 from nb_workflows.utils import run_sync
@@ -190,10 +189,35 @@ class HistoryResultFactory(factory.Factory):
 
 class DockerfileImageFactory(factory.Factory):
     class Meta:
-        model = DockerfileImage
+        model = docker_types.DockerfileImage
 
     maintener = factory.Sequence(lambda n: "maintener-%d" % n)
     image = "python-3.7"
+
+
+class DockerBuildLowLogFactory(factory.Factory):
+    class Meta:
+        model = docker_types.DockerBuildLowLog
+
+    logs = factory.Sequence(lambda n: "msg-%d" % n)
+    error = False
+
+
+class DockerPushLogFactory(factory.Factory):
+    class Meta:
+        model = docker_types.DockerPushLog
+
+    logs = factory.Sequence(lambda n: "msg-%d" % n)
+    error = False
+
+
+class DockerBuildLogFactory(factory.Factory):
+    class Meta:
+        model = docker_types.DockerBuildLog
+
+    build_log = factory.LazyAttribute(lambda n: DockerBuildLowLogFactory())
+    push_log = factory.LazyAttribute(lambda n: DockerPushLogFactory())
+    error = False
 
 
 class MachineRequestFactory(factory.Factory):
@@ -336,13 +360,16 @@ class BuildCtxFactory(factory.Factory):
         model = runtimes.BuildCtx
 
     projectid = factory.LazyAttribute(lambda n: generate_random(10))
-    project_zip_route = "/tmp/test.current.zip"
+    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    docker_name = "nbworkflows/test"
+    version = "current"
     dockerfile = "Dockerfile.default"
     zip_name = "test.current.zip"
-    version = "current"
-    docker_name = "nbworkflows/test"
-    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    download_zip = "/tmp/test.current.zip"
     execid = factory.LazyAttribute(lambda n: generate_random(10))
+    project_store_class = "nb_workflows.io.kv_local.KVLocal"
+    project_store_bucket = "nbworkflows"
+    registry = None
 
 
 def create_runtime_model(project_id, *args, **kwargs) -> RuntimeModel:

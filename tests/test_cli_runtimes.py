@@ -13,10 +13,10 @@ def test_cli_runtimes_main(mocker: MockerFixture):
     assert result.exit_code == 0
 
 
-def test_cli_runtimes_machine_create(mocker: MockerFixture, redis):
+def test_cli_runtimes_generate(mocker: MockerFixture, redis):
     runner = CliRunner()
     spy = mocker.patch(
-        "nb_workflows.cmd.runtimes.generate_dockerfile", return_value=None
+        "nb_workflows.cmd.runtimes.runtimes.generate_dockerfile", return_value=None
     )
     result = runner.invoke(
         runtimes.generate,

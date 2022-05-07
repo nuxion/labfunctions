@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generator, Union
+from typing import Any, AsyncGenerator, Dict, Generator, Union
 
 import httpx
 
@@ -77,7 +77,7 @@ class AsyncKVFiles(AsyncKVSpec):
             r = await client.get(f"{self.url}/{key}")
             return r.content
 
-    async def get_stream(self, key: str) -> Generator[bytes, None, None]:
+    async def get_stream(self, key: str) -> AsyncGenerator[bytes, None]:
         u = f"{self.url}/{key}"
         ts = self._opts.get("timeout", 60)
         async with httpx.AsyncClient(timeout=ts) as client:

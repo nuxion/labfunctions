@@ -11,7 +11,6 @@ from sanic_ext import openapi
 from nb_workflows import defaults
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.defaults import API_VERSION
-from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import history_mg
 from nb_workflows.managers.users_mg import inject_user
 from nb_workflows.security.web import protected
@@ -89,7 +88,6 @@ async def history_output_ok(request, projectid):
     Upload a workflow project
     """
     # pylint: disable=unused-argument
-    # fsrv = AsyncFileserver(settings.FILESERVER)
     kv_store = get_kvstore(request)
 
     today = today_string(format_="day")
@@ -115,7 +113,8 @@ async def history_output_fail(request, projectid):
     """
     # pylint: disable=unused-argument
 
-    fsrv = AsyncFileserver(settings.FILESERVER)
+    kv_store = get_kvstore(request)
+
     today = today_string(format_="day")
     root = pathlib.Path(projectid)
     output_dir = root / defaults.NB_OUTPUTS / "errors" / today
@@ -124,7 +123,7 @@ async def history_output_fail(request, projectid):
     output_name = request.form["output_name"][0]
 
     fp = str(output_dir / output_name)
-    await fsrv.put(fp, file_body)
+    await kv_store.put(fp, file_body)
 
     return json(dict(msg="OK"), 201)
 
@@ -132,17 +131,16 @@ async def history_output_fail(request, projectid):
 @history_bp.get("/<projectid>/_get_output")
 @openapi.parameter("projectid", str, "path")
 @openapi.parameter("file", str, "query")
+@protected()
 async def history_get_output(request, projectid):
     """
     Upload a workflow project
     """
     # pylint: disable=unused-argument
     uri = request.args.get("file")
+    # fullurl = f"{settings.FILESERVER}/{projectid}/{uri}"
     response = await request.respond(content_type="application/octet-stream")
-    fullurl = f"{settings.FILESERVER}/{projectid}/{uri}"
-    async with httpx.AsyncClient() as client:
-        async with client.stream("GET", fullurl) as r:
-            async for chunk in r.aiter_bytes():
-                await response.send(chunk)
-
+    kv_store = get_kvstore(request)
+    async for chunk in kv_store.get_stream(uri):
+        await response.send(chunk)
     await response.eof()

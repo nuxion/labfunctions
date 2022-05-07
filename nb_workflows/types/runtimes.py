@@ -3,15 +3,25 @@ from typing import Dict, Optional
 
 from pydantic import BaseModel
 
+from nb_workflows import defaults
+
+
+class DockerGPUSpec(BaseModel):
+    cuda: str = "11.6"
+    cudnn: str = "8.4.0.27-1+cuda11.6"
+    cudnn_major_version = "8"
+    nvdia_gpg_url = defaults.NVIDIA_GPG_URL
+
 
 class DockerSpec(BaseModel):
     image: str
-    maintener: str
-    build_packages: str
+    maintainer: str
+    build_packages: Optional[str] = None
     final_packages: Optional[str] = None
     user: Optional[Dict[str, int]] = None
     base_template: str = "Dockerfile.default"
     requirements: str = "requirements.txt"
+    gpu: Optional[DockerGPUSpec] = None
 
 
 class RuntimeSpec(BaseModel):
@@ -59,22 +69,35 @@ class ProjectBundleFile(BaseModel):
 
 
 class BuildCtx(BaseModel):
-    projectid: str
-    download_zip: str
+    """
+    It's is in charg of bring all the information needed to build
+    docker containers.
+
+    It has two entries: projects_bp and cli
+
+    :param projectid: is needed to register the runtime built
+    :param spec: Spec of the runtime to built
+    :param docker_name: name of the docker
+    :param version: version of the runtime, used to tag the docker image
+    :param dockerfile: Name of the Dockerfile, by default is: "Dockerfile.default"
+    :param zip_name: zip name: CURRENT.zip
+    :param download_zip: path to the zip file, this shouldn't include
+    nor bucket nor url
+    :param execid: random id to register this task
+    :param project_store_class: which type of storage use to download the bundle
+    :param project_store_bucket: bucket to find the bundle file.
+
+    :param registry: registry to push the docker image built
+    """
+
+    projectid: str  # ok
+    spec: RuntimeSpec
+    docker_name: str
+    version: str
     dockerfile: str
     zip_name: str
-    version: str
-    docker_name: str
+    download_zip: str
     execid: str
-    spec: RuntimeSpec
+    project_store_class: str
+    project_store_bucket: str
     registry: Optional[str] = None
-
-
-# class RuntimeOrm(BaseModel):
-#     docker_name: str
-#     runtime_name: str
-#     spec: RuntimeSpec
-#     version: str
-#     project_id: str
-#     created_at: datetime
-#     id: Optional[int] = None

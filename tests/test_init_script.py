@@ -2,10 +2,12 @@ from pathlib import Path
 
 from pytest_mock import MockerFixture
 
+from nb_workflows import defaults
 from nb_workflows.client import init_script
 from nb_workflows.client.state import WorkflowsState
 from nb_workflows.types import NBTask, WorkflowDataWeb
 from nb_workflows.types.docker import DockerfileImage
+from nb_workflows.utils import get_version
 
 
 def test_init_script_example_task():
@@ -22,10 +24,18 @@ def test_init_script_example_workflow():
     assert t.enabled is False
 
 
-def test_init_script_default_runtime():
-    d = init_script.default_runtime()
-    assert d.final_packages == "vim-tiny"
-    assert isinstance(d, DockerfileImage)
+def test_init_script_default_runtime(mocker: MockerFixture):
+    root = Path(".")
+    render_mock = mocker.patch(
+        "nb_workflows.client.init_script.render_to_file", return_value=None
+    )
+    init_script._default_runtime(root)
+
+    docker_name = render_mock.call_args_list[0][1]["data"]["version"]
+    version = get_version()
+    assert render_mock.called
+    assert docker_name.startswith(defaults.DOCKERFILE_IMAGE)
+    assert docker_name.endswith(version)
 
 
 def test_init_script_empty_file(tempdir):

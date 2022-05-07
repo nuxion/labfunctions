@@ -14,7 +14,7 @@ from nb_workflows.errors.generics import WorkflowRegisterError
 from nb_workflows.executors import ExecID
 
 # from nb_workflows.executors.context import ExecID, create_notebook_ctx_ondemand
-from nb_workflows.managers import projects_mg, workflows_mg
+from nb_workflows.managers import projects_mg, runtimes_mg, workflows_mg
 from nb_workflows.notebooks import create_notebook_ctx
 from nb_workflows.scheduler import SchedulerExecutor, scheduler_dispatcher
 from nb_workflows.security.web import protected
@@ -75,14 +75,18 @@ async def notebooks_run(request, projectid):
     except ValidationError:
         return json(dict(msg="wrong params"), 400)
 
-    pm = await projects_mg.get_by_projectid_model(session, projectid)
-    # pd = ProjectData(name=pm.name, projectid=pm.projectid,
-    #                 owner=pm.owner.username)
     execid = ExecID()
     id_ = execid.firm_with(ExecID.types.web)
-    nb_ctx = create_notebook_ctx(pm.projectid, task, execid=id_)
-    scheduler = get_scheduler(is_async=is_async)
-    await run_async(scheduler.enqueue_notebook, nb_ctx, task.machine)
+    runtime = None
+    breakpoint()
+    if task.runtime:
+        runtime = await runtimes_mg.get_runtime(
+            session, projectid, task.runtime, task.version
+        )
+
+    nb_ctx = create_notebook_ctx(projectid, task, execid=id_, runtime=runtime)
+    scheduler = get_scheduler(request, is_async=is_async)
+    await run_async(scheduler.enqueue_notebook, nb_ctx)
 
     return json(nb_ctx.dict(), 202)
 
@@ -121,7 +125,7 @@ async def workflow_create(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
-    scheduler = get_scheduler(is_async=is_async)
+    scheduler = get_scheduler(request, is_async=is_async)
 
     async with session.begin():
         try:
@@ -151,7 +155,7 @@ async def workflow_update(request, projectid):
         return json(dict(msg="wrong params"), 400)
 
     session = request.ctx.session
-    scheduler = get_scheduler(is_async=is_async)
+    scheduler = get_scheduler(request, is_async=is_async)
 
     async with session.begin():
         try:
@@ -172,7 +176,7 @@ async def workflow_delete(request, projectid, wfid):
     """Delete from db and queue a workflow"""
     # pylint: disable=unused-argument
     session = request.ctx.session
-    scheduler = get_scheduler(is_async=is_async)
+    scheduler = get_scheduler(request, is_async=is_async)
     async with session.begin():
         await scheduler.delete_workflow(session, projectid, wfid)
         await session.commit()
@@ -206,7 +210,7 @@ async def workflow_get(request, projectid, wfid):
 async def workflow_enqueue(request, projectid, wfid):
     """Enqueue a worflow"""
     # pylint: disable=unused-argument
-    sche = get_scheduler(is_async=is_async)
+    sche = get_scheduler(request, is_async=is_async)
     execid = ExecID()
     signed = execid.firm_with(ExecID.types.web)
     job = await run_async(sche.dispatcher, projectid, wfid, signed)

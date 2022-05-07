@@ -1,8 +1,30 @@
-from typing import Optional
+from dataclasses import dataclass
+from typing import List, Optional
 
 from pydantic import BaseModel
 
-from .core import ProjectData
+
+class ProjectData(BaseModel):
+    name: str
+    projectid: str
+    # username: Optional[str] = None
+    owner: Optional[str] = None
+    agent: Optional[str] = None  # to deprecate
+    users: Optional[List[str]] = None
+    description: Optional[str] = None
+    repository: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+@dataclass
+class ProjectReq:
+    name: str
+    private_key: str
+    projectid: Optional[str] = None
+    description: Optional[str] = None
+    repository: Optional[str] = None
 
 
 class ProjectBuildReq(BaseModel):

@@ -47,8 +47,8 @@ class ServerSettings(BaseSettings):
     DEV_MODE: bool = False
     WEB_REDIS: Optional[RedisDsn] = None
     RQ_REDIS: Optional[RedisDsn] = None
-    RQ_CONTROL_QUEUE: str = "default.control"
-    RQ_BUILD_QUEUE: str = "default.build"
+    CONTROL_QUEUE: str = "default.control"
+    BUILD_QUEUE: str = "default.build"
 
     # ids generations
     EXECID_LEN: int = EXECID_LEN
@@ -78,7 +78,8 @@ class ServerSettings(BaseSettings):
     LOGCONFIG: Dict[str, Any] = {}
     DEBUG: bool = False
 
-    PROJECTS_STORE_CLASS = "nb_workflows.io.kv_local.AsyncKVLocal"
+    PROJECTS_STORE_CLASS_ASYNC = "nb_workflows.io.kv_local.AsyncKVLocal"
+    PROJECTS_STORE_CLASS_SYNC = "nb_workflows.io.kv_local.KVLocal"
     PROJECTS_STORE_BUCKET = "nbworkflows"
     EXT_KV_LOCAL_ROOT: Optional[str] = None
     EXT_KV_FILE_URL: Optional[str] = None

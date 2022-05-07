@@ -26,7 +26,12 @@ class NBTask(BaseModel):
     :param nb_name: is the name of the notebook to run
     :param params: a dict with the params to run the specific notebook,
     wrapper around papermill.
-    :param wfid: wfid from WorkflowModel
+    :param remote_input: optional to get a remote notebook (not implemented)
+    :param remote_output: optional to put in a remote place (not implemented)
+    :param runtime: name of the runtime (`runtime_name`)
+    :param version: Version of the runtime
+    :param machine: where to run
+    :param gpu_support: if it needs gpu support
     :param timeout: time in secs to wait from the start of the task
     to mark the task as failed.
     :param notifications_ok: If ok send a notification to discord or slack.
@@ -40,6 +45,7 @@ class NBTask(BaseModel):
     remote_output: Optional[str] = None
     runtime: Optional[str] = None
     version: Optional[str] = None
+    cluster: str = defaults.CLUSTER_NAME
     machine: str = defaults.MACHINE_TYPE
     gpu_support: bool = False
     description: Optional[str] = None
@@ -59,6 +65,7 @@ class ExecutionNBTask(BaseModel):
     execid: str
     nb_name: str
     params: Dict[str, Any]
+    cluster: str
     machine: str
     runtime: str
     # folders:
@@ -86,12 +93,16 @@ class ExecutionResult(BaseModel):
     projectid: str
     execid: str
     wfid: str
+
     name: str
     params: Dict[str, Any]
     input_: str
     error: bool
     elapsed_secs: float
     created_at: str
+    cluster: Optional[str] = None
+    machine: Optional[str] = None
+    runtime: Optional[str] = None
     output_name: Optional[str] = None
     output_dir: Optional[str] = None
     error_dir: Optional[str] = None
@@ -122,39 +133,6 @@ class HistoryRequest(BaseModel):
 
 class HistoryLastResponse(BaseModel):
     rows: List[HistoryResult]
-
-
-class ProjectData(BaseModel):
-    name: str
-    projectid: str
-    # username: Optional[str] = None
-    owner: Optional[str] = None
-    agent: Optional[str] = None
-    users: Optional[List[str]] = None
-    description: Optional[str] = None
-    repository: Optional[str] = None
-
-    class Config:
-        orm_mode = True
-
-
-@dataclass
-class ProjectReq:
-    name: str
-    private_key: str
-    projectid: Optional[str] = None
-    description: Optional[str] = None
-    repository: Optional[str] = None
-
-
-@dataclass
-class ProjectWebRsp:
-    name: str
-    created_at: str
-    updated_at: str
-    username: Optional[str] = None
-    description: Optional[str] = None
-    repository: Optional[str] = None
 
 
 class WorkflowData(BaseModel):

@@ -11,6 +11,7 @@ API_VERSION = "v1"
 
 AGENT_USER_PREFIX = "agt"
 AGENT_SCOPES = "agent:rw"
+AGENT_ADMIN_SCOPES = "agent:r:w,admin:r"
 AGENT_LEN = 8
 
 NOTEBOOKS_DIR = "notebooks/"
@@ -28,6 +29,8 @@ PRIVKEY_VAR_NAME = "PRIVATE_KEY"
 CLIENT_TMP_FOLDER = ".nb_tmp"
 CLIENT_HOME_DIR = ".nb_workflows/"
 CLIENT_TIMEOUT = 60
+CLIENT_CREDS_FILE = "credentials.json"
+CLIENT_AGENT_CREDS_FILE = "agent.creds.json"
 
 DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
 DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
@@ -49,7 +52,7 @@ PROJECT_UPLOADS = "uploads"
 PROJECT_HISTORY = "history"
 
 # see https://zelark.github.io/nano-id-cc/
-PROJECT_ID_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz-"
+PROJECT_ID_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 PROJECTID_MIN_LEN = 10  # 13 years 1% collision at 100 projects creations per hour
 PROJECTID_MAX_LEN = 16
 WFID_LEN = 11  # ~139 thousand years 1% collision at 1000 jobs creation per hour
@@ -58,8 +61,11 @@ PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
 NANO_MACHINE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 
-MACHINE_TYPE = "default.cpu"
+MACHINE_TYPE = "cpu"
+CLUSTER_NAME = "default"
 
 AGENT_HOMEDIR = "/home/op"
 AGENT_DOCKER_IMG = "nuxion/nb_workflows"
 AGENT_ENV_TPL = "agent.docker.envfile"
+
+NVIDIA_GPG_URL = "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/3bf863cc.pub"

@@ -2,7 +2,7 @@ import asyncio
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Generator, Union
+from typing import Any, AsyncGenerator, Dict, Generator, Union
 
 import aiofiles
 from smart_open import open as sopen
@@ -12,23 +12,13 @@ from nb_workflows.utils import mkdir_p
 from .kvspec import AsyncKVSpec, GenericKVSpec, KeyReadError, KeyWriteError
 
 
-def get_root_dir() -> str:
-    root = os.getenv("KVLOCAL_ROOT")
-    if root:
-        mkdir_p(root)
-        return root
-    tpdir = tempfile.TemporaryDirectory().name
-    mkdir_p(tpdir)
-    return tpdir
-
-
 class KVLocal(GenericKVSpec):
     """https://googleapis.dev/python/storage/latest/client.html"""
 
     def __init__(self, bucket: str, client_opts: Dict[str, Any] = {}):
         self._opts = client_opts
         self._bucket = bucket
-        self._root = client_opts.get("root") or get_root_dir()
+        self._root = os.getenv("NB_EXT_KV_LOCAL_ROOT", ".nb_tmp")
         mkdir_p(f"{self._root}/{self._bucket}")
 
     def uri(self, key):
@@ -84,7 +74,8 @@ class AsyncKVLocal(AsyncKVSpec):
     def __init__(self, bucket: str, client_opts: Dict[str, Any] = {}):
         self._opts = client_opts
         self._bucket = bucket
-        self._root = client_opts.get("root") or get_root_dir()
+        self._root = os.getenv("NB_EXT_KV_LOCAL_ROOT", ".nb_tmp")
+        mkdir_p(f"{self._root}/{self._bucket}")
 
     def uri(self, key):
         return f"{self._root}/{self._bucket}/{key}"
@@ -105,13 +96,8 @@ class AsyncKVLocal(AsyncKVSpec):
         mkdir_p(Path(uri).parent)
         try:
             async with aiofiles.open(uri, mode="wb") as f:
-                data = True
-                while data:
-                    try:
-                        _data = generator.__next__()
-                        await f.write(_data)
-                    except StopIteration:
-                        data = False
+                async for data in generator:
+                    await f.write(data)
         except Exception as e:
             raise KeyWriteError(self._bucket, key, str(e))
 
@@ -126,7 +112,7 @@ class AsyncKVLocal(AsyncKVSpec):
         except Exception as e:
             raise KeyReadError(self._bucket, key, str(e))
 
-    async def get_stream(self, key: str) -> Generator[bytes, None, None]:
+    async def get_stream(self, key: str) -> AsyncGenerator[bytes, None]:
         """PEP 0525 for Asynchronous generators"""
         uri = self.uri(key)
         try:

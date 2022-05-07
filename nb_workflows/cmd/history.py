@@ -17,6 +17,31 @@ from nb_workflows.utils import format_seconds, mkdir_p
 console = Console()
 
 
+def get_notebook(url_service, pid, row):
+    output_result = False
+    if row.status == 0:
+        uri = f"{row.result.output_dir}/{row.result.output_name}"
+        if row.result.output_dir:
+            mkdir_p(row.result.output_dir)
+            output_result = True
+    else:
+        uri = f"{row.result.error_dir}/{row.result.output_name}"
+        if row.result.output_dir:
+            mkdir_p(row.result.error_dir)
+            output_result = True
+    if not Path(uri).exists() and output_result:
+        fullurl = (
+            f"{url_service}/{defaults.API_VERSION}/history/{pid}/_get_output?file={uri}"
+        )
+        nb = httpx.get(fullurl)
+        if nb.status_code == 200:
+            with open(uri, "wb") as f:
+                f.write(nb.content)
+        else:
+            console.print(f"[bold red]Error getting result from {fullurl}[/]")
+    return output_result, uri
+
+
 @click.command(name="history")
 @click.option(
     "--from-file",
@@ -52,22 +77,11 @@ def historycli(from_file, url_service, last, wfid):
         dt = datetime.fromisoformat(r.created_at)
         now = datetime.utcnow()
         diff = (now - dt).total_seconds()
-        run = format_seconds(diff)
+        run = f"[blue]{format_seconds(diff)}[/]"
+        out, uri = get_notebook(url_service, pid, r)
+        if not out:
+            uri = "[red bold]Output not generated[/]"
 
-        if r.status == 0:
-            uri = f"{r.result.output_dir}/{r.result.output_name}"
-            mkdir_p(r.result.output_dir)
-        else:
-            uri = f"{r.result.error_dir}/{r.result.output_name}"
-            mkdir_p(r.result.error_dir)
-        if not Path(uri).exists():
-            fullurl = f"{url_service}/{defaults.API_VERSION}/history/{pid}/_get_output?file={uri}"
-            nb = httpx.get(fullurl)
-            if nb.status_code == 200:
-                with open(uri, "wb") as f:
-                    f.write(nb.content)
-            else:
-                console.print(f"[bold red]Error getting result from {fullurl}[/]")
         # print(f"{r.wfid} | {r.execid} | {status} | {uri}")
         table.add_row(r.wfid, r.execid, status, uri, run)
 

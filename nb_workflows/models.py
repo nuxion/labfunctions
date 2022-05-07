@@ -124,19 +124,19 @@ class ProjectModel(Base, SerializerMixin):
     owner_id = Column(
         BigInteger,
         ForeignKey("nb_user.id", ondelete="SET NULL"),
-        nullable=False,
+        nullable=True,
     )
     owner = relationship(
         "nb_workflows.models.UserModel", foreign_keys="ProjectModel.owner_id"
     )
-    agent_id = Column(
-        BigInteger,
-        ForeignKey("nb_user.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    agent = relationship(
-        "nb_workflows.models.UserModel", foreign_keys="ProjectModel.agent_id"
-    )
+    # agent_id = Column(
+    #     BigInteger,
+    #     ForeignKey("nb_user.id", ondelete="SET NULL"),
+    #     nullable=True,
+    # )
+    # agent = relationship(
+    #     "nb_workflows.models.UserModel", foreign_keys="ProjectModel.agent_id"
+    # )
     users = relationship(
         "nb_workflows.models.UserModel",
         secondary=assoc_projects_users,
@@ -160,6 +160,7 @@ class UserModel(UserMixin, Base):
 
     username = Column(String(), index=True, unique=True, nullable=False)
     email = Column(String(), index=True, nullable=True)
+    is_agent = Column(Boolean(), index=True, nullable=False, default=False)
     projects = relationship(
         "ProjectModel", secondary=assoc_projects_users, back_populates="users"
     )
@@ -233,7 +234,7 @@ class RuntimeModel(Base, ProjectRelationMixin):
     """
     Runtimes Register
     runtimeid = [projectid]/[runtime_name]/[version]
-    docker_name = should be nbworkflows/[projectid]-[runtime_name]
+    runtime_name = should be nbworkflows/[projectid]-[runtime_name]
     """
 
     __tablename__ = "nb_runtime"

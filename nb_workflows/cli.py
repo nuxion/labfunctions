@@ -3,7 +3,7 @@ import os
 import click
 from rich.console import Console
 
-from nb_workflows.cmd.common import login, startproject
+from nb_workflows.cmd.common import info, login, startproject
 
 
 def load_client_cli(cli):
@@ -67,6 +67,7 @@ def init_cli():
     cli.add_command(startproject)
     cli.add_command(login)
     cli.add_command(version)
+    cli.add_command(info)
     return cli
 
 

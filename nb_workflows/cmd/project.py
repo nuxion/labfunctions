@@ -19,6 +19,20 @@ console = Console()
 
 
 @click.group(name="project")
+def projectcli():
+    """
+    Synchronize project with the server
+
+    """
+
+
+@projectcli.command()
+@click.option(
+    "--url-service",
+    "-u",
+    default=settings.WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
 @click.option(
     "--from-file",
     "-f",
@@ -26,30 +40,14 @@ console = Console()
     help="yaml file with the configuration",
 )
 @click.option(
-    "--url-service",
-    "-u",
-    default=settings.WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
+    "--agentname",
+    "-a",
+    default=None,
+    help="Agent Name",
 )
-@click.pass_context
-def projectcli(ctx, url_service, from_file):
-    """
-    Synchronize project with the server
-
-    """
-    ctx.ensure_object(dict)
-
-    ctx.obj["URL"] = url_service
-    ctx.obj["WF_FILE"] = from_file
-
-
-@projectcli.command()
-@click.argument("action", type=click.Choice(["create", "token"]))
-@click.pass_context
-def agent(ctx, action):
-    """Create/delete or get credentials of an agent"""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
+@click.argument("action", type=click.Choice(["create", "del", "list", "token"]))
+def agent(url_service, from_file, agentname, action):
+    """[create, list, del, token]  of an agent"""
 
     c = client.from_file(from_file, url_service)
 
@@ -61,20 +59,48 @@ def agent(ctx, action):
             console.print("[bold yellow] Agent creation fail [/]")
 
     elif action == "token":
-        res = c.projects_agent_token()
+        res = c.projects_agent_token(agentname)
         if res:
-            console.print(f"[bold magenta]access token:[/] {res.access_token}")
-            console.print(f"[bold magenta]refresh token:[/] {res.refresh_token}")
+            console.print(f"[bold magenta]agent name:[/] {res.agent_name}")
+            console.print(f"[bold magenta]access token:[/] {res.creds.access_token}")
+            console.print(f"[bold magenta]refresh token:[/] {res.creds.refresh_token}")
         else:
             console.print("[bold yellow] Agent creds fail [/]")
 
+    elif action == "list":
+        res = c.projects_agent_list()
+        table = Table(title="Agents")
+        table.add_column("name", style="cyan", justify="center")
+        for a in res:
+            table.add_row(a)
+        console.print(table)
+
+    elif action == "del":
+        if not agentname:
+            console.print("[red bold]A agent name must be provided[/]")
+            sys.exit(-1)
+        res = c.project_agent_delete(agentname)
+        if res:
+            console.print("[bold green]Agent deleted[/]")
+        else:
+            console.print("[bold red]Something went wrong[/]")
+
 
 @projectcli.command(name="list")
-@click.pass_context
-def listcli(ctx):
+@click.option(
+    "--url-service",
+    "-u",
+    default=settings.WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
+@click.option(
+    "--from-file",
+    "-f",
+    default="workflows.yaml",
+    help="yaml file with the configuration",
+)
+def listcli(url_service, from_file):
     """List projects"""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service)
 
     projects = c.projects_list()
@@ -89,9 +115,19 @@ def listcli(ctx):
 
 
 @projectcli.command()
-@click.pass_context
-def info(ctx):
+@click.option(
+    "--url-service",
+    "-u",
+    default=settings.WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
+@click.option(
+    "--from-file",
+    "-f",
+    default="workflows.yaml",
+    help="yaml file with the configuration",
+)
+def info(url_service, from_file):
     """Project's summary"""
-    url_service = ctx.obj["URL"]
     c = client.from_file(url_service=url_service)
     c.info()

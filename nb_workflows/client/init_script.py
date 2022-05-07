@@ -25,9 +25,7 @@ from nb_workflows.types import (
 from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.types.projects import ProjectCreated
 from nb_workflows.types.runtimes import RuntimeSpec
-from nb_workflows.utils import get_parent_folder, get_version, mkdir_p
-
-from .utils import normalize_name
+from nb_workflows.utils import get_parent_folder, get_version, mkdir_p, normalize_name
 
 console = Console()
 
@@ -165,10 +163,12 @@ def create_on_the_server(
     if rsp:
         dc.state.projectid = rsp.pd.projectid
         # valid_agent = dc.projects_create_agent()
-        agent_creds = dc.projects_agent_token()
-        with open(f"{root}/local.nbvars", "a") as f:
-            f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
-            f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}")
+        # agent_creds = dc.projects_agent_token(rsp.pd.agent)
+        # with open(f"{dc.working_area}/{defaults.CLIENT_AGENT_CREDS_FILE}", "w") as f:
+        #    f.write(agent_creds.json())
+        # with open(f"{root}/local.nbvars", "a") as f:
+        #    f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
+        #    f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}\n")
         return rsp
     return None
 

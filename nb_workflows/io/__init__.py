@@ -1,8 +1,8 @@
-from .fileserver import AsyncFileserver, Fileserver
+from .kvspec import AsyncKVSpec, GenericKVSpec
 from .memory_store import MemoryStore
 
-__all__ = [
-    "MemoryStore",
-    "AsyncFileserver",
-    "Fileserver",
-]
+# __all__ = [
+#    "MemoryStore",
+#    "AsyncFileserver",
+#    "Fileserver",
+# ]

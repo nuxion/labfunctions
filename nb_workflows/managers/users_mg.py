@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from nb_workflows import defaults
 from nb_workflows.hashes import generate_random
-from nb_workflows.models import UserModel, assoc_projects_users
+from nb_workflows.models import ProjectModel, UserModel, assoc_projects_users
 from nb_workflows.security import AuthSpec, PasswordScript, get_delta
 from nb_workflows.security.errors import (
     AuthValidationFailed,
@@ -32,6 +32,16 @@ def select_user():
     return stmt
 
 
+def join_with_project(username):
+    stmt = select_user().join(ProjectModel.users).where(UserModel.username == username)
+    return stmt
+
+
+def join_by_project():
+    stmt = select_user().join(ProjectModel.users)
+    return stmt
+
+
 def model2orm(user: UserModel) -> UserOrm:
     projects = []
     if user.projects:
@@ -44,6 +54,7 @@ def model2orm(user: UserModel) -> UserOrm:
         password=user.password,
         scopes=user.scopes,
         is_superuser=user.is_superuser,
+        is_agent=user.is_agent,
         projects=projects,
     )
 
@@ -92,8 +103,12 @@ def create(
     return None
 
 
-async def get_user_async(session, username: str) -> Union[UserModel, None]:
+async def get_user_async(
+    session, username: str, projectid: Optional[str] = None
+) -> Union[UserModel, None]:
     stmt = select_user().where(UserModel.username == username).limit(1)
+    if projectid:
+        stmt = join_with_project(username).limit(1)
 
     rsp = await session.execute(stmt)
     return rsp.scalar_one_or_none()
@@ -201,19 +216,6 @@ async def authenticate(request: Request, *args, **kwargs):
             raise AuthValidationFailed()
 
         return user
-
-
-async def create_agent(session, projectid=None, scopes=defaults.AGENT_SCOPES):
-    name = projectid or generate_random(defaults.AGENT_LEN)
-    fullname = f"{defaults.AGENT_USER_PREFIX}{name}"
-
-    u = UserModel(
-        username=fullname,
-        scopes=scopes,
-    )
-
-    session.add(u)
-    return u
 
 
 async def get_jwt_token(auth: AuthSpec, user: UserModel, exp=30) -> JWTResponse:

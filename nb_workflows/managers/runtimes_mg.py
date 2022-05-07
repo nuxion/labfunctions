@@ -74,6 +74,31 @@ async def get_by_rid(session, runtimeid: str) -> Union[RuntimeData, None]:
     return None
 
 
+async def get_runtime(
+    session, projectid: str, runtime_name: str, version=None
+) -> Union[RuntimeData, None]:
+    stmt = select_runtime().where(RuntimeModel.project_id == projectid)
+    if version:
+        stmt = (
+            stmt.where(RuntimeModel.runtime_name == runtime_name)
+            .where(RuntimeModel.version == version)
+            .limit(1)
+        )
+    else:
+        stmt = (
+            stmt.where(RuntimeModel.runtime_name == runtime_name)
+            .order_by(RuntimeModel.created_at.desc())
+            .limit(1)
+        )
+
+    rsp = await session.execute(stmt)
+    model = rsp.scalar_one_or_none()
+    if model:
+        rd = model2runtime(model)
+        return rd
+    return None
+
+
 def get_by_rid_sync(session, runtimeid: str) -> Union[RuntimeData, None]:
     stmt = select_runtime().where(RuntimeModel.runtimeid == runtimeid).limit(1)
 

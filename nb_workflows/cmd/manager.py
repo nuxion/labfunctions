@@ -190,5 +190,23 @@ def agent(sql, scopes, username, action, admin, exp):
         console.print("[bold green]Agent deleted[/]")
 
 
+@managercli.command()
+def shell():
+    """starts a IPython REPL console with db objects and models"""
+    from IPython import start_ipython
+
+    db = SQL(settings.SQL)
+    Session = db.sessionmaker()
+    start_ipython(
+        argv=[],
+        user_ns={
+            "settings": settings,
+            "Session": Session,
+            "db": db,
+            "session": Session(),
+        },
+    )
+
+
 # managercli.add_command(db)
 # managercli.add_command(users)

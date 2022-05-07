@@ -4,38 +4,13 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from nb_workflows import defaults, errors, secrets
+from nb_workflows import defaults, errors, secrets, types
 from nb_workflows.errors.client import ProjectCreateError, ProjectUploadError
 from nb_workflows.errors.runtimes import RuntimeCreationError
-from nb_workflows.types import (
-    ExecutionResult,
-    HistoryRequest,
-    HistoryResult,
-    NBTask,
-    ProjectData,
-    ProjectReq,
-    ScheduleData,
-    WorkflowData,
-    WorkflowDataWeb,
-    WorkflowsList,
-)
-from nb_workflows.types.projects import (
-    ProjectBuildReq,
-    ProjectBuildResp,
-    ProjectCreated,
-)
-from nb_workflows.types.runtimes import (
-    ProjectBundleFile,
-    RuntimeData,
-    RuntimeReq,
-    RuntimeSpec,
-)
-from nb_workflows.types.user import AgentReq
 from nb_workflows.utils import binary_file_reader, parse_var_line
 
 from .base import BaseClient
-from .types import Credentials, WFCreateRsp
-from .utils import get_private_key, store_credentials_disk, store_private_key
+from .utils import store_private_key
 
 
 class ProjectsClient(BaseClient):
@@ -47,7 +22,7 @@ class ProjectsClient(BaseClient):
         desc: Optional[str] = None,
         repository: Optional[str] = None,
         store_key: bool = True,
-    ) -> Union[ProjectCreated, None]:
+    ) -> Union[types.projects.ProjectCreated, None]:
         """
         A staless project creator it don't use any internal state of the client
         instead, all values should be provided in this method for a project to be
@@ -55,7 +30,7 @@ class ProjectsClient(BaseClient):
         """
 
         pkey = secrets.generate_private_key()
-        pq = ProjectReq(
+        pq = types.ProjectReq(
             name=name,
             private_key=pkey,
             description=desc,
@@ -67,8 +42,8 @@ class ProjectsClient(BaseClient):
         )
         created = False
         if r.status_code == 201:
-            pd = ProjectData(**r.json())
-            pc = ProjectCreated(pd=pd, private_key=pkey)
+            pd = types.ProjectData(**r.json())
+            pc = types.projects.ProjectCreated(pd=pd, private_key=pkey)
             if store_key:
                 store_private_key(pkey, pd.projectid)
             return pc
@@ -76,19 +51,20 @@ class ProjectsClient(BaseClient):
             raise ProjectCreateError(name)
         return None
 
-    def projects_get(self) -> Union[ProjectData, None]:
+    def projects_get(self) -> Union[types.ProjectData, None]:
         r = self._http.get(f"/projects/{self.projectid}")
         if r.status_code == 200:
-            return ProjectData(**r.json())
+            return types.ProjectData(**r.json())
         return None
 
-    def projects_list(self) -> List[ProjectData]:
+    def projects_list(self) -> List[types.ProjectData]:
         r = self._http.get(f"/projects")
         if r.status_code == 200:
             data = r.json()
-            return [ProjectData(**d) for d in data]
+            return [types.ProjectData(**d) for d in data]
+        return []
 
-    def projects_upload(self, zfile: ProjectBundleFile):
+    def projects_upload(self, zfile: types.ProjectBundleFile):
         url = (
             f"/projects/{self.projectid}"
             f"/_upload?runtime={zfile.runtime_name}&version={zfile.version}"
@@ -101,7 +77,7 @@ class ProjectsClient(BaseClient):
         if r.status_code != 201 and r.status_code != 204:
             raise ProjectUploadError(self.projectid)
 
-    def projects_build(self, spec: RuntimeSpec, version: str) -> Union[str, None]:
+    def projects_build(self, spec: types.RuntimeSpec, version: str) -> Union[str, None]:
         rsp = self._http.post(
             f"/projects/{self.projectid}/_build?version={version}", json=spec.dict()
         )
@@ -117,13 +93,45 @@ class ProjectsClient(BaseClient):
 
         return None
 
-    def projects_agent_token(self) -> Union[Credentials, None]:
-        r = self._http.post(f"/projects/{self.projectid}/agent/_token")
+    def projects_agent_token(
+        self, agentname: Optional[str] = None
+    ) -> Union[types.user.AgentJWTResponse, None]:
+        """
+        If an agentname is given then it will ask for that agent, if not, then it will
+        get the token for the last agent created for this project.
+        """
+
+        url = f"/projects/{self.projectid}/agent/_token"
+        if agentname:
+            url = f"/projects/{self.projectid}/agent/{agentname}/_token"
+
+        r = self._http.post(url)
 
         if r.status_code == 200:
-            return Credentials(**r.json())
+            return types.user.AgentJWTResponse(**r.json())
 
         return None
+
+    def projects_agent_list(self) -> List[str]:
+        """
+        If an agentname is given then it will ask for that agent, if not, then it will
+        get the token for the last agent created for this project.
+        """
+
+        url = f"/projects/{self.projectid}/agent"
+        r = self._http.get(url)
+
+        if r.status_code == 200:
+            return r.json()
+        return []
+
+    def project_agent_delete(self, agentname) -> bool:
+
+        url = f"/projects/{self.projectid}/agent/{agentname}"
+        r = self._http.delete(url)
+        if r.status_code == 200:
+            return True
+        return False
 
     def projects_private_key(self, store_key=False) -> Union[str, None]:
         """
@@ -139,12 +147,12 @@ class ProjectsClient(BaseClient):
             return key
         return None
 
-    def runtimes_get_all(self, lt=5) -> List[RuntimeData]:
+    def runtimes_get_all(self, lt=5) -> List[types.RuntimeData]:
         data = self._http.get(f"/runtimes/{self.projectid}?lt={lt}")
-        runtimes = [RuntimeData(**dict_) for dict_ in data.json()]
+        runtimes = [types.RuntimeData(**dict_) for dict_ in data.json()]
         return runtimes
 
-    def runtime_create(self, req: RuntimeReq):
+    def runtime_create(self, req: types.RuntimeReq):
 
         rsp = self._http.post(f"/runtimes/{self.projectid}", json=req.dict())
         if rsp.status_code != 201 and rsp.status_code != 200:

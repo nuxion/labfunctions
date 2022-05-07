@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generator, Union
+from typing import Any, AsyncGenerator, Dict, Generator, Union
 
 from nb_workflows.utils import get_class
 
@@ -84,7 +84,7 @@ class AsyncKVSpec(ABC):
         pass
 
     @abstractmethod
-    async def get_stream(self, key: str) -> Generator[bytes, None, None]:
+    async def get_stream(self, key: str) -> AsyncGenerator[bytes, None]:
         pass
 
     @staticmethod

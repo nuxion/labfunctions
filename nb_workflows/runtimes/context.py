@@ -55,26 +55,28 @@ def build_upload_uri(projectid, runtime_name, version) -> str:
 
 
 def create_build_ctx(
-    pd: ProjectData,
+    projectid: str,
     spec: RuntimeSpec,
-    version,
+    version: str,
+    project_store_class: str,
+    project_store_bucket: str,
     registry=None,
 ) -> BuildCtx:
     _id = execid_for_build()
-    uri = build_upload_uri(pd.projectid, spec.name, version)
-    docker = make_docker_name(pd.projectid, spec)
+    uri = build_upload_uri(projectid, spec.name, version)
+    docker = make_docker_name(projectid, spec)
     dockerfile = f"Dockerfile.{spec.name}"
-
     zip_name = uri.split("/")[-1]
     return BuildCtx(
-        projectid=pd.projectid,
+        projectid=projectid,
+        spec=spec,
+        docker_name=docker,
+        version=version,
         dockerfile=dockerfile,
         zip_name=zip_name,
         download_zip=uri,
-        project_zip_route=uri,
-        version=version,
-        docker_name=docker,
-        spec=spec,
         execid=_id,
+        project_store_class=project_store_class,
+        project_store_bucket=project_store_bucket,
         registry=registry,
     )

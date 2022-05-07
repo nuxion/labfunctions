@@ -8,12 +8,6 @@ import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-# from nb_workflows.auth import (
-#     NBAuthStandalone,
-#     ProjectClaim,
-#     initialize,
-#     scope_extender_sync,
-# )
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.db.sync import SQL
@@ -58,12 +52,15 @@ def setupdb(connection):
         username="admin_test", password="meolvide", salt=settings.SECURITY.AUTH_SALT
     )
     pm = create_project_model(um, projectid="test", name="test")
+    pm2 = create_project_model(um, projectid="test2", name="test2")
     wm = create_workflow_model(pm, wfid="wfid-test", alias="alias_test")
     rm = create_runtime_model(project_id="test")
     hm = create_history_model(project_id="test", wfid="wfid-test", execid="exec-test")
+    um.projects.append(pm)
 
     s.add(um)
     s.add(pm)
+    s.add(pm2)
     s.add(wm)
     s.add(rm)
     s.add(hm)

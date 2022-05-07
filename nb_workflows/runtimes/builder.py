@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -10,130 +11,18 @@ import httpx
 
 import docker
 from nb_workflows import client, defaults
-from nb_workflows.conf import load_server
+from nb_workflows.commands import DockerCommand
+from nb_workflows.conf import load_client, load_server
 from nb_workflows.io.kvspec import GenericKVSpec
-from nb_workflows.types import ProjectData, ServerSettings
-from nb_workflows.types.docker import DockerBuildLog, DockerBuildLowLog, DockerPushLog
+
+# from nb_workflows.types.docker import DockerBuildLog, DockerBuildLowLog, DockerPushLog
+from nb_workflows.types.docker import DockerBuildLog
 from nb_workflows.types.runtimes import BuildCtx, RuntimeReq
-
-
-def docker_build(
-    path, dockerfile, tag, version, rm=False, push=False
-) -> DockerBuildLog:
-    """Build docker
-    :param path: path to the Dockerfile
-    :param dockerfile: name of the Dockerfile
-    :param tag: fullname of the dokcer image to build
-    :param rm: remove intermediate build images
-    :param push: Push docker image to a repository
-    """
-
-    error = False
-    error_build = False
-    error_push = False
-
-    client = docker.from_env()
-
-    build_log = docker_low_build(path, dockerfile, tag, rm)
-    if not build_log.error:
-        img = client.images.get(tag)
-        img.tag(tag, tag=version)
-
-    error_build = build_log.error
-
-    push_log = None
-    if push:
-        # push_log = docker_push_image(tag)
-        push_log = docker_push_image(f"{tag}:{version}")
-        error_push = push_log.error
-
-    if error_build or error_push:
-        error = True
-
-    return DockerBuildLog(build_log=build_log, push_log=push_log, error=error)
-
-
-def docker_push_image(tag) -> DockerPushLog:
-
-    dock = docker.from_env()
-    error = False
-    try:
-        push_log_str = dock.images.push(tag)
-    except docker.errors.APIError as e:
-        error = True
-        push_log_str = str(e)
-
-    return DockerPushLog(logs=push_log_str, error=error)
-
-
-def docker_low_build(path, dockerfile, tag, rm=False) -> DockerBuildLowLog:
-    """It uses the low API of python sdk.
-    :param path: path to the Dockerfile
-    :param dockerfile: name of the Dockerfile
-    :param tag: fullname of the dokcer image to build
-    :param rm: remove intermediate build images
-    """
-
-    # obj = _open_dockerfile(dockerfile)
-    # build(fileobj=obj...
-    _client = docker.APIClient(base_url="unix://var/run/docker.sock")
-    generator = _client.build(path=path, dockerfile=dockerfile, tag=tag, rm=rm)
-    error = False
-    log = ""
-    while True:
-        try:
-            output = generator.__next__()
-            output = output.decode().strip("\r\n")
-            json_output = json.loads(output)
-            if "stream" in json_output:
-                logging.info(json_output["stream"].strip("\n"))
-                log += json_output["stream"]
-            elif "errorDetail" in json_output:
-                logging.error(json_output["error"])
-                log += json_output["error"]
-                error = True
-
-        except StopIteration:
-            logging.info("Docker image build complete.")
-            log += "Docker image build complete.\n"
-            break
-        except ValueError:
-            logging.info("Error parsing output from docker image build: %s" % output)
-            log += "Error parsing output from docker image build:{output}\n"
-            # raise ValueError(log)
-            error = True
-
-    return DockerBuildLowLog(error=error, logs=log)
 
 
 def unzip_runtime(project_zip_file, dst_dir):
     with ZipFile(project_zip_file, "r") as zo:
         zo.extractall(dst_dir)
-
-
-def _download_zip_project(ctx: BuildCtx, project_dir):
-
-    # uri = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}/{ctx.project_zip_route}"
-    uri = ctx.download_zip
-    with open(project_dir / ctx.zip_name, "wb") as f:
-        with httpx.stream("GET", uri, timeout=100) as r:
-            for chunk in r.iter_raw():
-                f.write(chunk)
-
-
-def prepare_files(ctx: BuildCtx, settings: ServerSettings):
-
-    root = Path(settings.BASE_PATH)
-    project_dir = root / settings.AGENT_DATA_FOLDER / ctx.projectid / "build"
-    project_dir.mkdir(parents=True, exist_ok=True)
-
-    temp_dir = project_dir / "tmp"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-
-    _download_zip_project(ctx, project_dir)
-    unzip_runtime(project_dir / ctx.zip_name, temp_dir)
-
-    return project_dir, temp_dir
 
 
 class BuildTask:
@@ -142,26 +31,29 @@ class BuildTask:
         projectid: str,
         kvstore: GenericKVSpec,
         nbclient: Optional[client.nbclient.NBClient] = None,
+        workflow_service: Optional[str] = None,
+        agent_token: Optional[str] = None,
+        refresh_token: Optional[str] = None,
     ):
-        self.settings = load_server()
         self.client = nbclient or client.agent(
-            url_service=self.settings.WORKFLOW_SERVICE,
-            token=self.settings.AGENT_TOKEN,
-            refresh=self.settings.AGENT_REFRESH_TOKEN,
+            url_service=workflow_service,
+            token=agent_token,
+            refresh=refresh_token,
             projectid=projectid,
         )
         self.projectid = projectid
         self.kv = kvstore
 
-    def get_runtime_file(self, zip_file, download_zip, dst_dir):
-        with open(zip_file, "wb") as f:
-            for chunk in self.kv.get_stream(download_zip):
+    def get_runtime_file(self, full_zip_file_path, download_key_zip):
+        with open(full_zip_file_path, "wb") as f:
+            print("KV: ", type(self.kv))
+            for chunk in self.kv.get_stream(download_key_zip):
                 f.write(chunk)
 
-    def run(self, ctx: BuildCtx):
+    def run(self, ctx: BuildCtx) -> DockerBuildLog:
         with tempfile.TemporaryDirectory() as tmp_dir:
             zip_file = f"{tmp_dir}/{ctx.zip_name}"
-            self.get_runtime_file(zip_file, ctx.download_zip, tmp_dir)
+            self.get_runtime_file(zip_file, ctx.download_zip)
             unzip_runtime(zip_file, tmp_dir)
             docker_tag = ctx.docker_name
             push = False
@@ -171,34 +63,48 @@ class BuildTask:
             # nb_client.events_publish(
             #    ctx.execid, f"Starting build for {docker_tag}", event="log"
             # )
-            logs = docker_build(
+            cmd = DockerCommand()
+            logs = cmd.build(
                 f"{tmp_dir}/src",
                 f"{ctx.dockerfile}",
                 tag=docker_tag,
                 version=ctx.version,
                 push=push,
             )
-            req = RuntimeReq(
-                runtime_name=ctx.spec.name,
-                docker_name=ctx.docker_name,
-                spec=ctx.spec,
-                project_id=ctx.projectid,
-                version=ctx.version,
-                registry=ctx.registry,
-            )
+
         return logs
-        # nb_client.runtime_create(req)
+
+    def register(self, ctx: BuildCtx):
+        req = RuntimeReq(
+            runtime_name=ctx.spec.name,
+            docker_name=ctx.docker_name,
+            spec=ctx.spec,
+            project_id=ctx.projectid,
+            version=ctx.version,
+            registry=ctx.registry,
+        )
+
+        self.client.runtime_create(req)
 
 
-def builder_exec(ctx: BuildCtx) -> str:
-    settings = load_server()
-    PROJECTS_STORE_CLASS = "nb_workflows.io.kv_local.KVLocal"
-    PROJECTS_STORE_BUCKET = "nbworkflows"
+def builder_exec(ctx: BuildCtx):
+    """
+    It will get the bundle file, build the container and register it
+    """
+    url_service = os.getenv("NB_WORKFLOW_SERVICE")
+    access_token = os.getenv("NB_AGENT_TOKEN")
+    refresh_token = os.getenv("NB_AGENT_REFRESH_TOKEN")
 
+    kv = GenericKVSpec.create(ctx.project_store_class, ctx.project_store_bucket)
     task = BuildTask(
-        ctx.projectid, GenericKVSpec.create(PROJECTS_STORE_CLASS, PROJECTS_STORE_BUCKET)
+        ctx.projectid,
+        kvstore=kv,
+        workflow_service=url_service,
+        agent_token=access_token,
+        refresh_token=refresh_token,
     )
     rsp = task.run(ctx)
+    task.register(ctx)
     return rsp
 
 

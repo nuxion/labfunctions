@@ -32,7 +32,7 @@ def agentcli():
     "--cluster",
     "-C",
     default="default",
-    help="Cluster name, also it will be added as qname",
+    help="Cluster name, it will be added as qname",
 )
 @click.option(
     "--ip-address",

@@ -25,15 +25,21 @@ class WorkflowsState:
         workflows: Optional[Dict[str, WorkflowDataWeb]] = None,
         # runtimes: Optional[List[RuntimeData]] = None,
         version="0.2.0",
+        workflow_file: Optional[str] = None,
     ):
         self._version = version
         self._project = project
         self._workflows = workflows or {}
+        self._file = workflow_file
         # self._runtimes = runtimes
 
     # @property
     # def runtimes(self) -> Union[List[RuntimeData], None]:
     #     return self._runtimes
+
+    @property
+    def workflows_file(self) -> Union[str, None]:
+        return self._file
 
     @property
     def projectid(self) -> Union[str, None]:
@@ -106,7 +112,7 @@ class WorkflowsState:
         # data_dict = open_toml(filepath)
         data_dict = open_yaml(filepath)
 
-        wf = WorkflowsFile(**data_dict)
+        wf = WorkflowsFile(**data_dict, workflows_file=filepath)
         return wf
 
     def write(self, fp="workflows.yaml"):

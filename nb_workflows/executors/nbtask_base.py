@@ -1,23 +1,24 @@
 import json
+import logging
 import shutil
 import time
+import warnings
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-import papermill as pm
-
 from nb_workflows import defaults
 from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.client.nbclient import NBClient
-from nb_workflows.log import agent_logger
+from nb_workflows.commands import DockerCommand, DockerRunResult
 from nb_workflows.types import ExecutionNBTask, ExecutionResult, NBTask
 from nb_workflows.types.runtimes import RuntimeData
 from nb_workflows.utils import get_version, today_string
 
-from .commands import CommandResult, DockerCommand
 from .execid import ExecID
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def _prepare_runtime(runtime: Optional[RuntimeData] = None) -> str:
@@ -47,6 +48,7 @@ class NBTaskExecBase:
 
     def __init__(self, client: Union[NBClient, DiskClient]):
         self.client = client
+        self.logger = logging.getLogger("nbworkf.server")
 
     @property
     def projectid(self) -> str:
@@ -87,7 +89,7 @@ class NBTaskDocker(NBTaskExecBase):
         _started = time.time()
         env = self.build_env(ctx.dict())
         cmd = DockerCommand()
-        result = cmd.run(self.cmd, ctx.runtime, ctx.timeout)
+        result = cmd.run(self.cmd, ctx.runtime, ctx.timeout, env_data=env)
         error = False
         if result.status != 0:
             error = True
@@ -97,6 +99,9 @@ class NBTaskDocker(NBTaskExecBase):
             projectid=ctx.projectid,
             execid=ctx.execid,
             wfid=ctx.wfid,
+            cluster=ctx.cluster,
+            machine=ctx.machine,
+            runtime=ctx.runtime,
             name=ctx.nb_name,
             params=ctx.params,
             input_=ctx.pm_input,
@@ -112,13 +117,15 @@ class NBTaskDocker(NBTaskExecBase):
 
 class NBTaskLocal(NBTaskExecBase):
     def run(self, ctx: ExecutionNBTask) -> ExecutionResult:
+        import papermill as pm
+
         _started = time.time()
         _error = False
         Path(ctx.output_dir).mkdir(parents=True, exist_ok=True)
         try:
             pm.execute_notebook(ctx.pm_input, ctx.pm_output, parameters=ctx.params)
         except pm.exceptions.PapermillExecutionError as e:
-            agent_logger.error(f"jobdid:{ctx.wfid} execid:{ctx.execid} failed {e}")
+            self.logger.error(f"jobdid:{ctx.wfid} execid:{ctx.execid} failed {e}")
             _error = True
             self._error_handler(ctx)
 

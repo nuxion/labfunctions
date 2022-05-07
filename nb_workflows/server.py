@@ -52,10 +52,9 @@ def create_rq_redis(url):
     return redis.from_url(url)
 
 
-def create_projects_store(settings: ServerSettings) -> AsyncKVSpec:
-    class_ = settings.PROJECTS_STORE_CLASS
-    Class = get_class(class_)
-    return Class(settings.PROJECTS_STORE_BUCKET)
+def create_projects_store(store_class, store_bucket) -> AsyncKVSpec:
+    Class = get_class(store_class)
+    return Class(store_bucket)
 
 
 def create_app(
@@ -103,7 +102,9 @@ def create_app(
         _db = db_func(settings.ASQL)
         _base_model_session_ctx = ContextVar("session")
 
-        current_app.ctx.kv_store = projects_store_func(settings)
+        current_app.ctx.kv_store = projects_store_func(
+            settings.PROJECTS_STORE_CLASS_ASYNC, settings.PROJECTS_STORE_BUCKET
+        )
         current_app.ctx.web_redis = web_redis.client()
         current_app.ctx.rq_redis = rq_func(settings.RQ_REDIS)
         current_app.ctx.db = _db

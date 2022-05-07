@@ -1,31 +1,21 @@
 import json
 import logging
 import os
-from dataclasses import asdict
-from typing import Callable, Generator, List, Optional, Union
+from pathlib import Path
+from typing import Any, Callable, Dict, Generator, List, Optional, Union
 
 import httpx
 import jwt
 
-from nb_workflows import context, defaults
+from nb_workflows import defaults, types
 from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
 from nb_workflows.events import EventManager
 from nb_workflows.hashes import generate_random
 from nb_workflows.security.errors import AuthValidationFailed
-from nb_workflows.types import (
-    ExecutionNBTask,
-    NBTask,
-    ProjectData,
-    ScheduleData,
-    WorkflowData,
-)
-from nb_workflows.types.client import WorkflowsFile
-from nb_workflows.types.events import EventSSE
-from nb_workflows.utils import open_yaml, write_yaml
+from nb_workflows.utils import mkdir_p, open_yaml, write_yaml
 
 from .state import WorkflowsState
-from .types import Credentials
-from .utils import store_credentials_disk
+from .utils import get_credentials_disk
 
 
 def get_http_client(**kwargs) -> httpx.Client:
@@ -93,7 +83,7 @@ class BaseClient:
 
     :param url_service: base url of the WORKFLOWS_SERVICE
     :param projectid: projectid realted to ProjectsModel
-    :param creds: Credentials type, it includes access_token and refresh_token
+    :param creds: TokenCreds type, it includes access_token and refresh_token
     :param store_creds: Optional, if true the credentials will be stored on disk
     :param project: Optional[Project] type
     :param version: version api, not implemented yet
@@ -104,23 +94,59 @@ class BaseClient:
     def __init__(
         self,
         url_service: str,
-        creds: Optional[Credentials] = None,
+        creds: Optional[types.TokenCreds] = None,
         wf_state: Optional[WorkflowsState] = None,
         version=defaults.API_VERSION,
         http_init_func=get_http_client,
         timeout=defaults.CLIENT_TIMEOUT,
+        base_path: Optional[str] = None,
     ):
-
         self._addr = url_service
         self._creds = creds
         self._auth: Optional[AuthFlow] = None
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("nbwork.agent")
         self.state = wf_state
         self._version = version
         self._timeout = timeout
         self._http_creator = http_init_func
         self._http: httpx.Client = self._http_init()
         self.logger = logging.getLogger("nbwork.client")
+        self.base_path = base_path
+        self._home = Path.home() / defaults.CLIENT_HOME_DIR
+
+    @property
+    def working_area(self) -> Path:
+        """Working area is used to store related project data as private keys
+        temp build generation files and so on"""
+
+        return self._home / self.projectid
+
+    @property
+    def homedir(self) -> Path:
+        return self._home
+
+    def create_homedir(self) -> Path:
+        if not self._home.is_dir():
+            mkdir_p(self._home)
+            self._home.chmod(0o700)
+        return self._home
+
+    def info(self) -> Dict[str, Any]:
+        workflows = None
+        if self.state.workflows:
+            workflows = list(self.state.workflows.keys())
+
+        return {
+            "projectid": self.projectid,
+            "project_name": self.project_name,
+            "workflows_service": self._addr,
+            "homedir": str(self.homedir),
+            "working_area": str(self.working_area),
+            "file": self.state.workflows_file,
+            "workflows": workflows,
+            "user": self.user,
+            "base_path": self.base_path,
+        }
 
     @property
     def http(self) -> httpx.Client:
@@ -140,13 +166,13 @@ class BaseClient:
         else:
             raise WorkflowStateNotSetError(__name__)
 
-    def get_context(self, execid=None) -> ExecutionNBTask:
-        _env = os.getenv(defaults.EXECUTIONTASK_VAR)
-        if _env:
-            ctx = ExecutionNBTask(**json.loads(_env))
-        else:
-            ctx = context.create_dummy_ctx(self.projectid, execid)
-        return ctx
+    # def get_context(self, execid=None) -> ExecutionNBTask:
+    #    _env = os.getenv(defaults.EXECUTIONTASK_VAR)
+    #    if _env:
+    #        ctx = ExecutionNBTask(**json.loads(_env))
+    #    else:
+    #        ctx = context.create_dummy_ctx(self.projectid, execid)
+    #    return ctx
 
     def _auth_init(self) -> AuthFlow:
         self._auth = AuthFlow(
@@ -178,20 +204,27 @@ class BaseClient:
         return None
 
     @property
-    def creds(self) -> Credentials:
-        return Credentials(
+    def creds(self) -> types.TokenCreds:
+        return types.TokenCreds(
             access_token=self._auth.access_token,
             refresh_token=self._auth.refresh_token,
         )
 
     @creds.setter
-    def creds(self, creds: Credentials):
+    def creds(self, creds: types.TokenCreds):
         """
         If credentials are set, the http client should be
         re-initialized
         """
         self._creds = creds
         self._http = self._http_init()
+
+    def load_creds(self):
+        at = os.getenv("NB_AGENT_TOKEN")
+        rt = os.getenv("NB_AGENT_REFRESH_TOKEN")
+        if at and rt:
+            self.creds = types.TokenCreds(access_token=at, refresh_token=rt)
+        self.creds = get_credentials_disk(self.homedir)
 
     def login(self, u: str, p: str):
         rsp = httpx.post(
@@ -200,7 +233,7 @@ class BaseClient:
             timeout=self._timeout,
         )
         if rsp.status_code == 200:
-            self.creds = Credentials(**rsp.json())
+            self.creds = types.TokenCreds(**rsp.json())
             # self._http = self.http_init()
         else:
             raise LoginError(self._addr, u)
@@ -223,7 +256,7 @@ class BaseClient:
 
     def events_listen(
         self, execid, last=None, timeout=None
-    ) -> Generator[EventSSE, None, None]:
+    ) -> Generator[types.events.EventSSE, None, None]:
         timeout = timeout or self._timeout
         # uri = f"/events/{self.projectid}/{execid}/_listen"
         uri = f"{self._addr}/{self._version}/events/{self.projectid}/{execid}/_listen"
@@ -249,7 +282,7 @@ class BaseClient:
         if isinstance(data, dict):
             final = json.dumps(data)
         if final:
-            evt = EventSSE(data=final, event=event)
+            evt = types.events.EventSSE(data=final, event=event)
             self._http.post(
                 f"/events/{self.projectid}/{execid}/_publish", json=evt.dict()
             )

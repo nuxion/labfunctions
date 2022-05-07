@@ -155,11 +155,11 @@ def docker(from_file, url_service, notebook, wfid, action):
     "--param", "-p", multiple=True, help="Params to be passed to the notebook file"
 )
 @click.option(
-    "--machine", "-M", default="default", help="Machine where the notebook should run"
+    "--machine", "-m", default="cpu", help="Machine where the notebook should run"
 )
-@click.option(
-    "--docker-version", "-D", default="latest", help="Docker image where it should run"
-)
+@click.option("--runtime", "-r", default=None, help="Runtime to use")
+@click.option("--cluster", "-c", default="default", help="Cluster where it should run")
+@click.option("--version", "-v", default=None, help="Runtime version to run")
 @click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
 @click.option(
     "--watch",
@@ -168,16 +168,18 @@ def docker(from_file, url_service, notebook, wfid, action):
     default=False,
     help="Get events & logs from the executions",
 )
-@click.option(
-    "--stats",
-    "-s",
-    is_flag=True,
-    default=False,
-    help="Show stats as memory usage from the execution",
-)
 @click.argument("notebook")
 def notebook(
-    url_service, from_file, param, machine, docker_version, dev, notebook, watch, stats
+    url_service,
+    from_file,
+    param,
+    cluster,
+    runtime,
+    machine,
+    version,
+    dev,
+    notebook,
+    watch,
 ):
     """On demand execution of a notebook file, with custom parameters"""
     # from nb_workflows.executors.development import local_nb_dev_exec
@@ -187,11 +189,16 @@ def notebook(
 
     if not dev:
         rsp = c.notebook_run(
-            notebook, params_dict, machine=machine, docker_version=docker_version
+            notebook,
+            params_dict,
+            cluster=cluster,
+            machine=machine,
+            runtime=runtime,
+            version=version,
         )
         # print_json(rsp.json())
         if watch:
-            watcher(c, rsp.execid, stats=stats)
+            watcher(c, rsp.execid, stats=False)
         print_json(data=rsp.dict())
     else:
         ctx = create_dummy_ctx(c.projectid, notebook, params_dict)

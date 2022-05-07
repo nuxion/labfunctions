@@ -27,3 +27,11 @@ class UserLogin(BaseModel):
 class JWTResponse(BaseModel):
     access_token: str
     refresh_token: Optional[str]
+
+
+class TokenCreds(BaseModel):
+    access_token: str
+    refresh_token: Optional[str] = None
+
+    class Config:
+        extra = "forbid"

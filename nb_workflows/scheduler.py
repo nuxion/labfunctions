@@ -88,7 +88,7 @@ def scheduler_dispatcher(
     """
     _db = db or SQL(settings.SQL)
     _redis = redis_obj or redis.from_url(settings.RQ_REDIS)
-    _q = settings.RQ_CONTROL_QUEUE  # control_q
+    _q = settings.CONTROL_QUEUE  # control_q
     scheduler = SchedulerExecutor(redis_obj=_redis, qname=_q, is_async=is_async)
 
     logger = logging.getLogger(__name__)
@@ -167,7 +167,7 @@ class SchedulerExecutor:
         )
         return j
 
-    def enqueue_notebook(self, nb_job_ctx: ExecutionNBTask, qname: str) -> Job:
+    def enqueue_notebook(self, nb_job_ctx: ExecutionNBTask, qname=None) -> Job:
         """
         It executes a :class:`nb_workflows.types.core.NBTask`
         in the remote machine with runtime configuration of
@@ -181,10 +181,11 @@ class SchedulerExecutor:
         :return: An RQ Job
         :rtype: rq.job.Job
         """
+        qname = qname or f"{nb_job_ctx.cluster}.{nb_job_ctx.machine}"
 
         Q = Queue(qname, connection=self.redis, is_async=self.is_async)
         job = Q.enqueue(
-            docker_exec,
+            docker_exec.docker_exec,
             nb_job_ctx,
             job_id=nb_job_ctx.execid,
             job_timeout=nb_job_ctx.timeout,
@@ -199,7 +200,7 @@ class SchedulerExecutor:
         TODO: design internal, onpremise or external docker registries.
         """
 
-        Q = Queue(settings.RQ_BUILD_QUEUE, connection=self.redis)
+        Q = Queue(settings.BUILD_QUEUE, connection=self.redis)
         job = Q.enqueue(
             builder_exec,
             build_ctx,

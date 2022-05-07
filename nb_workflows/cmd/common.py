@@ -6,6 +6,7 @@ import click
 # from nb_workflows.io.fileserver import FileFileserver
 import httpx
 from httpx import ConnectError
+from rich import print_json
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
@@ -92,3 +93,29 @@ def startproject(url_service, create_dirs, base_path):
             else:
                 created = True
                 init_script.final_words(state.project_name)
+
+
+@click.command()
+@click.option(
+    "--url-service",
+    "-u",
+    default=None,
+    help="URL of the NB Workflow Service",
+)
+@click.option(
+    "--from-file",
+    "-f",
+    default="workflows.yaml",
+    help="yaml file with the configuration",
+)
+def info(url_service, from_file):
+    """General info and status of the client"""
+    # click.echo(f"\nLogin to NB Workflows services {url_service}\n")
+    if Path(from_file).is_file():
+        c = client.from_file()
+    else:
+        settings = load_client()
+        url_service = settings.WORKFLOW_SERVICE
+        c = client.from_env(settings)
+
+    print_json(data=c.info())
