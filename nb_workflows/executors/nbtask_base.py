@@ -98,7 +98,9 @@ class NBTaskDocker(NBTaskExecBase):
             }
         )
         cmd = DockerCommand()
-        result = cmd.run(self.cmd, ctx.runtime, ctx.timeout, env_data=env)
+        result = cmd.run(
+            self.cmd, ctx.runtime, ctx.timeout, env_data=env, require_gpu=ctx
+        )
         error = False
         if result.status != 0:
             error = True
