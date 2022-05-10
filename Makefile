@@ -115,10 +115,7 @@ docker-client-gpu:
 
 .PHONY: docker-all
 docker-all:
-	mkdir -p docker/all/dist
-	cp dist/*.whl docker/all/dist
-	cp requirements/requirements.txt  docker/all/requirements.txt
-	docker build -t ${DOCKERID}/${PROJECTNAME} -f docker/all/Dockerfile docker/all
+	docker build -t ${DOCKERID}/${PROJECTNAME} -f Dockerfile .
 	docker tag ${DOCKERID}/${PROJECTNAME}:latest ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
 
 .PHONY: docker
