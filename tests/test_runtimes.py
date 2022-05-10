@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from nb_workflows.defaults import API_VERSION
-from nb_workflows.managers import runtimes_mg
-from nb_workflows.runtimes import generate_dockerfile
-from nb_workflows.types.runtimes import RuntimeData, RuntimeReq
+from labfunctions.defaults import API_VERSION
+from labfunctions.managers import runtimes_mg
+from labfunctions.runtimes import generate_dockerfile
+from labfunctions.types.runtimes import RuntimeData, RuntimeReq
 
 from .factories import (
     RuntimeDataFactory,
@@ -57,13 +57,13 @@ async def test_runtimes_mg_delete(async_session):
 @pytest.mark.asyncio
 async def test_runtimes_bp_create(async_session, sanic_app, access_token, mocker):
     rq = RuntimeReqFactory()
-    mocker.patch("nb_workflows.web.runtimes_bp.runtimes_mg.create", return_value=True)
+    mocker.patch("labfunctions.web.runtimes_bp.runtimes_mg.create", return_value=True)
     _, res = await sanic_app.asgi_client.post(
         f"{version}/runtimes/test",
         headers={"Authorization": f"Bearer {access_token}"},
         json=rq.dict(),
     )
-    mocker.patch("nb_workflows.web.runtimes_bp.runtimes_mg.create", return_value=False)
+    mocker.patch("labfunctions.web.runtimes_bp.runtimes_mg.create", return_value=False)
     _, res2 = await sanic_app.asgi_client.post(
         f"{version}/runtimes/test",
         headers={"Authorization": f"Bearer {access_token}"},
@@ -78,7 +78,7 @@ async def test_runtimes_bp_create(async_session, sanic_app, access_token, mocker
 async def test_runtimes_bp_list(async_session, sanic_app, access_token, mocker):
     runtimes = RuntimeDataFactory.create_batch(size=5)
     mocker.patch(
-        "nb_workflows.web.runtimes_bp.runtimes_mg.get_list", return_value=runtimes
+        "labfunctions.web.runtimes_bp.runtimes_mg.get_list", return_value=runtimes
     )
     _, res = await sanic_app.asgi_client.get(
         f"{version}/runtimes/test",
@@ -92,7 +92,7 @@ async def test_runtimes_bp_list(async_session, sanic_app, access_token, mocker):
 @pytest.mark.asyncio
 async def test_runtimes_bp_delete(async_session, sanic_app, access_token, mocker):
     mocker.patch(
-        "nb_workflows.web.runtimes_bp.runtimes_mg.delete_by_rid", return_value=None
+        "labfunctions.web.runtimes_bp.runtimes_mg.delete_by_rid", return_value=None
     )
     _, res = await sanic_app.asgi_client.get(
         f"{version}/runtimes/test",

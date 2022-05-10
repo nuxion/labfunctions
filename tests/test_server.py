@@ -1,9 +1,9 @@
 import pytest
 from sanic import Sanic, response
 
-from nb_workflows import server
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.db.nosync import AsyncSQL
+from labfunctions import server
+from labfunctions.conf.server_settings import settings
+from labfunctions.db.nosync import AsyncSQL
 
 
 def test_server_app():

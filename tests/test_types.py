@@ -1,6 +1,6 @@
-from nb_workflows.models import ProjectModel
-from nb_workflows.types import NBTask, ProjectData, ScheduleData
-from nb_workflows.types.user import UserOrm
+from labfunctions.models import ProjectModel
+from labfunctions.types import NBTask, ProjectData, ScheduleData
+from labfunctions.types.user import UserOrm
 
 from .factories import (
     NBTaskFactory,

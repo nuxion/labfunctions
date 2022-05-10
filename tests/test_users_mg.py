@@ -1,10 +1,10 @@
 import pytest
 
-from nb_workflows import context
-from nb_workflows.managers import users_mg
-from nb_workflows.models import UserModel
-from nb_workflows.types.security import JWTResponse
-from nb_workflows.types.user import UserOrm
+from labfunctions import context
+from labfunctions.managers import users_mg
+from labfunctions.models import UserModel
+from labfunctions.types.security import JWTResponse
+from labfunctions.types.user import UserOrm
 
 from .factories import UserOrmFactory, create_user_model2
 

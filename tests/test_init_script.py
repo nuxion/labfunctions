@@ -2,12 +2,12 @@ from pathlib import Path
 
 from pytest_mock import MockerFixture
 
-from nb_workflows import defaults
-from nb_workflows.client import init_script
-from nb_workflows.client.state import WorkflowsState
-from nb_workflows.types import NBTask, WorkflowDataWeb
-from nb_workflows.types.docker import DockerfileImage
-from nb_workflows.utils import get_version
+from labfunctions import defaults
+from labfunctions.client import init_script
+from labfunctions.client.state import WorkflowsState
+from labfunctions.types import NBTask, WorkflowDataWeb
+from labfunctions.types.docker import DockerfileImage
+from labfunctions.utils import get_version
 
 
 def test_init_script_example_task():
@@ -27,7 +27,7 @@ def test_init_script_example_workflow():
 def test_init_script_default_runtime(mocker: MockerFixture):
     root = Path(".")
     render_mock = mocker.patch(
-        "nb_workflows.client.init_script.render_to_file", return_value=None
+        "labfunctions.client.init_script.render_to_file", return_value=None
     )
     init_script._default_runtime(root)
 
@@ -45,15 +45,15 @@ def test_init_script_empty_file(tempdir):
 
 
 def test_init_script_ask_prj(mocker: MockerFixture):
-    mocker.patch("nb_workflows.client.init_script.Prompt.ask", return_value="demo test")
+    mocker.patch("labfunctions.client.init_script.Prompt.ask", return_value="demo test")
     name = init_script.ask_project_name()
     assert name == "demo_test"
 
 
 def test_init_script_workflow_state(mocker: MockerFixture, tempdir):
-    mocker.patch("nb_workflows.client.init_script.Prompt.ask", return_value="demo test")
+    mocker.patch("labfunctions.client.init_script.Prompt.ask", return_value="demo test")
     mocker.patch(
-        "nb_workflows.client.init_script.WorkflowsState.write", return_value=None
+        "labfunctions.client.init_script.WorkflowsState.write", return_value=None
     )
     state = init_script.workflow_state_init(
         Path(tempdir), "demo_test", projectid="test"

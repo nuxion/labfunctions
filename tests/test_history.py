@@ -1,11 +1,11 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from nb_workflows.defaults import API_VERSION
-from nb_workflows.managers import history_mg
-from nb_workflows.managers.history_mg import HistoryLastResponse
-from nb_workflows.models import HistoryModel
-from nb_workflows.types import HistoryLastResponse
+from labfunctions.defaults import API_VERSION
+from labfunctions.managers import history_mg
+from labfunctions.managers.history_mg import HistoryLastResponse
+from labfunctions.models import HistoryModel
+from labfunctions.types import HistoryLastResponse
 
 from .factories import (
     ExecutionResultFactory,
@@ -21,7 +21,7 @@ async def test_history_bp_create(
     async_session, sanic_app, async_redis_web, access_token, mocker: MockerFixture
 ):
 
-    mocker.patch("nb_workflows.web.history_bp.history_mg.create", return_value=5)
+    mocker.patch("labfunctions.web.history_bp.history_mg.create", return_value=5)
     hreq = create_history_request()
     exec_res = ExecutionResultFactory()
     req, res = await sanic_app.asgi_client.post(
@@ -39,7 +39,7 @@ async def test_history_bp_last(
 
     h = HistoryResultFactory()
     rows = HistoryLastResponse(rows=[h])
-    mocker.patch("nb_workflows.web.history_bp.history_mg.get_last", return_value=rows)
+    mocker.patch("labfunctions.web.history_bp.history_mg.get_last", return_value=rows)
     req, res = await sanic_app.asgi_client.get(
         f"{version}/history/test/test?lt=1",
         headers={"Authorization": f"Bearer {access_token}"},
@@ -59,7 +59,7 @@ async def test_history_bp_get_all(
 
     h = HistoryResultFactory()
     rows = HistoryLastResponse(rows=[h])
-    mocker.patch("nb_workflows.web.history_bp.history_mg.get_last", return_value=rows)
+    mocker.patch("labfunctions.web.history_bp.history_mg.get_last", return_value=rows)
     req, res = await sanic_app.asgi_client.get(
         f"{version}/history/test?lt=1",
         headers={"Authorization": f"Bearer {access_token}"},

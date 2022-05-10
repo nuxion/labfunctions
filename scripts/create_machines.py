@@ -1,10 +1,10 @@
 from rich.console import Console
 
-from nb_workflows.conf import load_server
-from nb_workflows.db.sync import SQL
-from nb_workflows.managers import machine_mg
-from nb_workflows.types.cluster import MachineOrm
-from nb_workflows.utils import open_yaml
+from labfunctions.conf import load_server
+from labfunctions.db.sync import SQL
+from labfunctions.managers import machine_mg
+from labfunctions.types.cluster import MachineOrm
+from labfunctions.utils import open_yaml
 
 console = Console()
 

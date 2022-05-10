@@ -1,14 +1,14 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from nb_workflows.cluster import Inventory, ProviderSpec, get_spec_from_file
-from nb_workflows.cluster.cluster_file import load_cluster_file, load_spec
-from nb_workflows.cluster.control import ClusterControl, apply_scale_items
-from nb_workflows.cluster.inventory import Inventory
-from nb_workflows.cluster.shortcuts import create_cluster_control
-from nb_workflows.control_plane.register import AgentRegister
-from nb_workflows.errors.cluster import ClusterSpecNotFound
-from nb_workflows.types.cluster import (
+from labfunctions.cluster import Inventory, ProviderSpec, get_spec_from_file
+from labfunctions.cluster.cluster_file import load_cluster_file, load_spec
+from labfunctions.cluster.control import ClusterControl, apply_scale_items
+from labfunctions.cluster.inventory import Inventory
+from labfunctions.cluster.shortcuts import create_cluster_control
+from labfunctions.control_plane.register import AgentRegister
+from labfunctions.errors.cluster import ClusterSpecNotFound
+from labfunctions.types.cluster import (
     ClusterFile,
     ClusterPolicy,
     ClusterSpec,
@@ -16,7 +16,7 @@ from nb_workflows.types.cluster import (
     ScaleIdle,
     ScaleItems,
 )
-from nb_workflows.utils import open_yaml
+from labfunctions.utils import open_yaml
 
 from .factories import ClusterStateFactory
 
@@ -82,7 +82,7 @@ def test_cluster_file_get_spec():
 
 
 def test_cluster_control_create(mocker: MockerFixture, redis):
-    mocker.patch("nb_workflows.cluster.shortcuts.redis.from_url", return_value=redis)
+    mocker.patch("labfunctions.cluster.shortcuts.redis.from_url", return_value=redis)
     cc = create_cluster_control("tests/clusters_test.yaml", "redis_url", "local")
     with pytest.raises(ClusterSpecNotFound):
         cc = create_cluster_control("tests/clusters_test.yaml", "sara", "non-exist")

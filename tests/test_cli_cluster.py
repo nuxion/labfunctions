@@ -2,10 +2,10 @@ import pytest
 from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
-from nb_workflows.cluster.context import create_machine_ctx, machine_from_settings
-from nb_workflows.cmd import cluster
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.errors.cluster import ClusterSpecNotFound
+from labfunctions.cluster.context import create_machine_ctx, machine_from_settings
+from labfunctions.cmd import cluster
+from labfunctions.conf.server_settings import settings
+from labfunctions.errors.cluster import ClusterSpecNotFound
 
 from .factories import MachineInstanceFactory
 
@@ -43,7 +43,7 @@ def test_cli_cluster_machine_create_error(mocker: MockerFixture, redis):
 def test_cli_cluster_machine_destroy(mocker: MockerFixture, redis):
     runner = CliRunner()
     spy = mocker.patch(
-        "nb_workflows.cluster.control.ClusterControl.destroy_instance",
+        "labfunctions.cluster.control.ClusterControl.destroy_instance",
         return_value=None,
     )
 

@@ -1,16 +1,16 @@
 from pytest_mock import MockerFixture
 
-from nb_workflows.cluster import deploy
-from nb_workflows.cluster.context import create_machine_ctx, machine_from_settings
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.types.agent import AgentNode, AgentRequest
-from nb_workflows.types.machine import (
+from labfunctions.cluster import deploy
+from labfunctions.cluster.context import create_machine_ctx, machine_from_settings
+from labfunctions.conf.server_settings import settings
+from labfunctions.types.agent import AgentNode, AgentRequest
+from labfunctions.types.machine import (
     ExecutionMachine,
     MachineGPU,
     MachineRequest,
     SSHKey,
 )
-from nb_workflows.utils import get_version
+from labfunctions.utils import get_version
 
 from .factories import MachineOrmFactory
 
@@ -113,7 +113,7 @@ def test_cluster_deploy_agent(mocker: MockerFixture):
     )
 
     run_sync = mocker.patch(
-        "nb_workflows.cluster.deploy.run_sync", side_effect=["test", "ok"]
+        "labfunctions.cluster.deploy.run_sync", side_effect=["test", "ok"]
     )
     result = deploy.agent(req, settings.dict())
     assert result == "ok"
@@ -132,9 +132,9 @@ def test_cluster_deploy_agent_local(mocker: MockerFixture):
     cmd_rsp = mocker.MagicMock()
     cmd_rsp.pid = "ok"
 
-    mocker.patch("nb_workflows.cluster.deploy.render_to_file", return_value=None)
+    mocker.patch("labfunctions.cluster.deploy.render_to_file", return_value=None)
     spy = mocker.patch(
-        "nb_workflows.cluster.deploy.execute_cmd_no_block", return_value=cmd_rsp
+        "labfunctions.cluster.deploy.execute_cmd_no_block", return_value=cmd_rsp
     )
     result_with_docker = deploy.agent_local(req, settings.dict(), use_docker=True)
 

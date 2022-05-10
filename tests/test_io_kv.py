@@ -3,8 +3,8 @@ from io import BytesIO
 
 import pytest
 
-from nb_workflows.io.kv_local import AsyncKVLocal, KVLocal
-from nb_workflows.io.kvspec import AsyncKVSpec, GenericKVSpec
+from labfunctions.io.kv_local import AsyncKVLocal, KVLocal
+from labfunctions.io.kvspec import AsyncKVSpec, GenericKVSpec
 
 
 def write_stream():
@@ -13,8 +13,8 @@ def write_stream():
 
 
 def test_io_kv_factory():
-    kv = GenericKVSpec.create("nb_workflows.io.kv_local.KVLocal", "test")
-    kv_async = AsyncKVLocal.create("nb_workflows.io.kv_local.AsyncKVLocal", "test")
+    kv = GenericKVSpec.create("labfunctions.io.kv_local.KVLocal", "test")
+    kv_async = AsyncKVLocal.create("labfunctions.io.kv_local.AsyncKVLocal", "test")
 
     assert isinstance(kv, KVLocal)
     assert isinstance(kv_async, AsyncKVLocal)

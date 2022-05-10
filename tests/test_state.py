@@ -1,4 +1,4 @@
-from nb_workflows.client.state import WorkflowsState
+from labfunctions.client.state import WorkflowsState
 
 from .factories import (
     DockerfileImageFactory,

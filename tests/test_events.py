@@ -4,9 +4,9 @@ import aioredis
 import pytest
 from pytest_mock import MockerFixture
 
-from nb_workflows.defaults import API_VERSION
-from nb_workflows.events import EventManager
-from nb_workflows.types.events import EventSSE
+from labfunctions.defaults import API_VERSION
+from labfunctions.events import EventManager
+from labfunctions.types.events import EventSSE
 
 from .factories import EventSSEFactory
 
@@ -95,7 +95,7 @@ async def test_events_bp_listen(
     event_mg.generate_channel.return_value = "test.test"
 
     mocker.patch(
-        "nb_workflows.web.events_bp.EventManager.read", side_effect=[[evt], [evt_exit]]
+        "labfunctions.web.events_bp.EventManager.read", side_effect=[[evt], [evt_exit]]
     )
 
     req, res = await sanic_app.asgi_client.get(
@@ -119,7 +119,7 @@ async def test_events_bp_listen_none(
     event_mg = mocker.MagicMock()
     event_mg.generate_channel.return_value = "test.test"
 
-    mocker.patch("nb_workflows.web.events_bp.EventManager.read", return_value=None)
+    mocker.patch("labfunctions.web.events_bp.EventManager.read", return_value=None)
 
     req, res = await sanic_app.asgi_client.get(
         f"{version}/events/test/test/_listen?last=0",

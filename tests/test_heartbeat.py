@@ -1,6 +1,6 @@
 import time
 
-from nb_workflows.control_plane import heartbeat
+from labfunctions.control_plane import heartbeat
 
 
 def test_heartbeat_run(redis):

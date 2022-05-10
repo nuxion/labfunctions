@@ -5,17 +5,17 @@ import aioredis
 import jwt
 import pytest
 
-from nb_workflows import defaults
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.security import scopes
-from nb_workflows.security.authentication import Auth
-from nb_workflows.security.password import PasswordScript
-from nb_workflows.security.redis_tokens import RedisTokenStore
-from nb_workflows.security.scopes import scope2dict
-from nb_workflows.security.scopes import validate as validate_scopes
-from nb_workflows.security.utils import open_keys
-from nb_workflows.types.config import SecuritySettings
-from nb_workflows.types.security import JWTConfig, KeyPairs
+from labfunctions import defaults
+from labfunctions.conf.server_settings import settings
+from labfunctions.security import scopes
+from labfunctions.security.authentication import Auth
+from labfunctions.security.password import PasswordScript
+from labfunctions.security.redis_tokens import RedisTokenStore
+from labfunctions.security.scopes import scope2dict
+from labfunctions.security.scopes import validate as validate_scopes
+from labfunctions.security.utils import open_keys
+from labfunctions.types.config import SecuritySettings
+from labfunctions.types.security import JWTConfig, KeyPairs
 
 
 def test_security_password_script():
@@ -145,7 +145,7 @@ async def test_security_redis_put(mocker):
     mock.set.return_value = "ok"
 
     mocker.patch(
-        "nb_workflows.security.redis_tokens.aioredis.from_url", return_value=mock
+        "labfunctions.security.redis_tokens.aioredis.from_url", return_value=mock
     )
     store = RedisTokenStore("test", "test")
     rsp = await store.put("test", "hey", ttl=5)
@@ -166,7 +166,7 @@ async def test_security_redis_get(mocker):
 def test_security_redis_generate(mocker):
     mock = mocker.AsyncMock()
     mocker.patch(
-        "nb_workflows.security.redis_tokens.aioredis.from_url", return_value=mock
+        "labfunctions.security.redis_tokens.aioredis.from_url", return_value=mock
     )
     # store = RedisTokenStore("test", "test")
     tkn = RedisTokenStore.generate()

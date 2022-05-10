@@ -2,10 +2,10 @@ import httpx
 import pytest
 from pytest_mock import MockerFixture
 
-from nb_workflows.client.base import AuthFlow, BaseClient
-from nb_workflows.errors import LoginError
-from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
-from nb_workflows.types import TokenCreds
+from labfunctions.client.base import AuthFlow, BaseClient
+from labfunctions.errors import LoginError
+from labfunctions.errors.client import LoginError, WorkflowStateNotSetError
+from labfunctions.types import TokenCreds
 
 from .factories import WorkflowsStateFactory
 
@@ -126,7 +126,7 @@ def test_client_base_events_listen(mocker: MockerFixture):
 
     response.iter_lines.return_value = ["id: a\n", "data: hello\n\n"]
     stream_mock.__enter__.return_value = response
-    mocker.patch("nb_workflows.client.base.httpx.stream", return_value=stream_mock)
+    mocker.patch("labfunctions.client.base.httpx.stream", return_value=stream_mock)
 
     creds = TokenCreds(access_token="test", refresh_token="test")
     bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory(), creds=creds)
@@ -150,7 +150,7 @@ def test_client_base_events_listen_exit(mocker: MockerFixture):
         "data: exit\n\n",
     ]
     stream_mock.__enter__.return_value = response
-    mocker.patch("nb_workflows.client.base.httpx.stream", return_value=stream_mock)
+    mocker.patch("labfunctions.client.base.httpx.stream", return_value=stream_mock)
 
     creds = TokenCreds(access_token="test", refresh_token="test")
     bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory(), creds=creds)

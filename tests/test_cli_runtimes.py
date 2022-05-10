@@ -2,8 +2,8 @@ import pytest
 from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
-from nb_workflows.cmd import runtimes
-from nb_workflows.conf.server_settings import settings
+from labfunctions.cmd import runtimes
+from labfunctions.conf.server_settings import settings
 
 
 def test_cli_runtimes_main(mocker: MockerFixture):
@@ -16,7 +16,7 @@ def test_cli_runtimes_main(mocker: MockerFixture):
 def test_cli_runtimes_generate(mocker: MockerFixture, redis):
     runner = CliRunner()
     spy = mocker.patch(
-        "nb_workflows.cmd.runtimes.runtimes.generate_dockerfile", return_value=None
+        "labfunctions.cmd.runtimes.runtimes.generate_dockerfile", return_value=None
     )
     result = runner.invoke(
         runtimes.generate,

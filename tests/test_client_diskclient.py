@@ -2,11 +2,11 @@ import json
 
 from pytest_mock import MockerFixture
 
-from nb_workflows.client import diskclient as dc
-from nb_workflows.client import shortcuts, utils
-from nb_workflows.client.base import AuthFlow
-from nb_workflows.client.diskclient import DiskClient
-from nb_workflows.types.config import SecuritySettings
+from labfunctions.client import diskclient as dc
+from labfunctions.client import shortcuts, utils
+from labfunctions.client.base import AuthFlow
+from labfunctions.client.diskclient import DiskClient
+from labfunctions.types.config import SecuritySettings
 
 from .factories import credentials_generator
 
@@ -64,10 +64,10 @@ def test_client_diskclient_from_file(monkeypatch, mocker: MockerFixture, auth_he
         return creds
 
     monkeypatch.setattr(
-        "nb_workflows.client.diskclient.get_credentials_disk", mock_creds
+        "labfunctions.client.diskclient.get_credentials_disk", mock_creds
     )
     mock = mocker.patch(
-        "nb_workflows.client.shortcuts.DiskClient.logincli", return_value=None
+        "labfunctions.client.shortcuts.DiskClient.logincli", return_value=None
     )
     client = shortcuts.from_file(
         "tests/workflows_test.yaml", "http://localhost:8000", ".test"
@@ -86,12 +86,12 @@ def test_client_diskclient_from_file_none(monkeypatch, auth_helper):
         return None
 
     monkeypatch.setattr(
-        "nb_workflows.client.diskclient.get_credentials_disk", mock_creds
+        "labfunctions.client.diskclient.get_credentials_disk", mock_creds
     )
     monkeypatch.setattr(DiskClient, "logincli", mock_login)
 
     # mocker.patch(
-    #     "nb_workflows.client.utils.get_credentials_disk", return_value=5)
+    #     "labfunctions.client.utils.get_credentials_disk", return_value=5)
     client = shortcuts.from_file(
         "tests/workflows_test.yaml", "http://localhost:8000", ".test"
     )
@@ -124,16 +124,16 @@ def test_client_diskclient_logincli(mocker: MockerFixture):
     import httpx
 
     mocker.patch(
-        "nb_workflows.client.diskclient.get_credentials_disk", return_value=None
+        "labfunctions.client.diskclient.get_credentials_disk", return_value=None
     )
 
-    mocker.patch("nb_workflows.client.diskclient.input", return_value="nuxion")
+    mocker.patch("labfunctions.client.diskclient.input", return_value="nuxion")
 
     mocker.patch(
-        "nb_workflows.client.diskclient.getpass.getpass", return_value="nuxion"
+        "labfunctions.client.diskclient.getpass.getpass", return_value="nuxion"
     )
 
-    mocker.patch("nb_workflows.client.diskclient.DiskClient.login", return_value=None)
+    mocker.patch("labfunctions.client.diskclient.DiskClient.login", return_value=None)
 
     c = DiskClient(url_service="http://localhost:8000")
     c.logincli()
@@ -145,10 +145,10 @@ def test_client_diskclient_priv_key(mocker, monkeypatch, tempdir):
     def mock_get(*args, **kwargs):
         return MockPrivKeyRsp()
 
-    mocker.patch("nb_workflows.client.diskclient.store_private_key", return_value=None)
+    mocker.patch("labfunctions.client.diskclient.store_private_key", return_value=None)
 
     mocker.patch(
-        "nb_workflows.client.diskclient.DiskClient.projectid", return_value="test"
+        "labfunctions.client.diskclient.DiskClient.projectid", return_value="test"
     )
 
     monkeypatch.setattr(httpx.Client, "get", mock_get)

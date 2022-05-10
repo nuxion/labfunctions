@@ -2,11 +2,11 @@ import logging
 
 import pytest
 
-from nb_workflows import defaults
-from nb_workflows import defaults as df
-from nb_workflows.managers import projects_mg
-from nb_workflows.models import ProjectModel, UserModel
-from nb_workflows.types import ProjectData
+from labfunctions import defaults
+from labfunctions import defaults as df
+from labfunctions.managers import projects_mg
+from labfunctions.models import ProjectModel, UserModel
+from labfunctions.types import ProjectData
 
 from .factories import (
     ProjectDataFactory,

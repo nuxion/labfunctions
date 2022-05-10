@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
-from nb_workflows.client.nbclient import NBClient
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.io.kvspec import GenericKVSpec
-from nb_workflows.runtimes import builder
+from labfunctions.client.nbclient import NBClient
+from labfunctions.conf.server_settings import settings
+from labfunctions.io.kvspec import GenericKVSpec
+from labfunctions.runtimes import builder
 
 from .factories import BuildCtxFactory, DockerBuildLogFactory, ProjectDataFactory
 
@@ -16,14 +16,14 @@ from .factories import BuildCtxFactory, DockerBuildLogFactory, ProjectDataFactor
 
 @pytest.fixture
 def kvstore() -> GenericKVSpec:
-    kv = GenericKVSpec.create("nb_workflows.io.kv_local.KVLocal", "nbworkflows")
+    kv = GenericKVSpec.create("labfunctions.io.kv_local.KVLocal", "nbworkflows")
     return kv
 
 
 def test_builder_unzip_runtime(mocker: MockerFixture, tempdir):
     settings.BASE_PATH = tempdir
     shutil.make_archive(
-        f"{tempdir}/testzip", format="zip", root_dir="nb_workflows/runtimes"
+        f"{tempdir}/testzip", format="zip", root_dir="labfunctions/runtimes"
     )
     builder.unzip_runtime(f"{tempdir}/testzip.zip", tempdir)
 
@@ -35,7 +35,7 @@ def test_builder_unzip_runtime(mocker: MockerFixture, tempdir):
 def test_builder_BuildTask(mocker: MockerFixture, kvstore):
     client = NBClient(url_service="http://localhost:8000")
     mock = mocker.patch(
-        "nb_workflows.runtimes.builder.client.agent", return_value=client
+        "labfunctions.runtimes.builder.client.agent", return_value=client
     )
 
     task = builder.BuildTask("test", kvstore=kvstore, nbclient=client)
@@ -70,13 +70,13 @@ def test_builder_BuildTask_run(mocker: MockerFixture, kvstore, tempdir):
 
     log = DockerBuildLogFactory(error=True)
     unzip = mocker.patch(
-        "nb_workflows.runtimes.builder.unzip_runtime", return_value=None
+        "labfunctions.runtimes.builder.unzip_runtime", return_value=None
     )
     get_runtime = mocker.patch(
-        "nb_workflows.runtimes.builder.BuildTask.get_runtime_file", return_value=None
+        "labfunctions.runtimes.builder.BuildTask.get_runtime_file", return_value=None
     )
     cmd = mocker.patch(
-        "nb_workflows.runtimes.builder.DockerCommand.build", return_value=log
+        "labfunctions.runtimes.builder.DockerCommand.build", return_value=log
     )
 
     task = builder.BuildTask("test", kvstore=kvstore, nbclient=client)
@@ -95,13 +95,13 @@ def test_builder_BuildTask_run_repo(mocker: MockerFixture, kvstore, tempdir):
 
     log = DockerBuildLogFactory(error=True)
     unzip = mocker.patch(
-        "nb_workflows.runtimes.builder.unzip_runtime", return_value=None
+        "labfunctions.runtimes.builder.unzip_runtime", return_value=None
     )
     get_runtime = mocker.patch(
-        "nb_workflows.runtimes.builder.BuildTask.get_runtime_file", return_value=None
+        "labfunctions.runtimes.builder.BuildTask.get_runtime_file", return_value=None
     )
     cmd = mocker.patch(
-        "nb_workflows.runtimes.builder.DockerCommand.build", return_value=log
+        "labfunctions.runtimes.builder.DockerCommand.build", return_value=log
     )
 
     task = builder.BuildTask("test", kvstore=kvstore, nbclient=client)
@@ -121,13 +121,13 @@ def test_builder_exec(mocker: MockerFixture, kvstore):
     log = DockerBuildLogFactory()
     # spy = mocker.spy(builder, "BuildTask")
     # task_mock = mocker.patch(
-    #    "nb_workflows.runtimes.builder.BuildTask", return_value=build_mock
+    #    "labfunctions.runtimes.builder.BuildTask", return_value=build_mock
     # )
     task_mock = mocker.patch(
-        "nb_workflows.runtimes.builder.BuildTask.run", return_value=log
+        "labfunctions.runtimes.builder.BuildTask.run", return_value=log
     )
     agent = mocker.patch(
-        "nb_workflows.runtimes.builder.client.agent", return_value=agent_mock
+        "labfunctions.runtimes.builder.client.agent", return_value=agent_mock
     )
     task_mock.run.return_value = mocker.Mock(return_value=log)
 

@@ -2,9 +2,9 @@ from redislite import Redis
 from rq import Queue
 from sqlalchemy import select
 
-from nb_workflows import scheduler
-from nb_workflows.models import HistoryModel, WorkflowModel
-from nb_workflows.types import NBTask, ScheduleData
+from labfunctions import scheduler
+from labfunctions.models import HistoryModel, WorkflowModel
+from labfunctions.types import NBTask, ScheduleData
 
 from .factories import WorkflowDataWebFactory
 

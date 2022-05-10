@@ -68,20 +68,20 @@ prerelease: prepare
 	./scripts/update_versions.sh ${API_VERSION}
 
 black:
-	black --config ./.black.toml nb_workflows tests
+	black --config ./.black.toml labfunctions tests
 
 isort:
-	isort nb_workflows tests --profile=black
+	isort labfunctions tests --profile=black
 
 lint: black isort
 
 .PHONY: test
 test:
-	PYTHONPATH=$(PWD) pytest --cov-report xml --cov=nb_workflows tests/
+	PYTHONPATH=$(PWD) pytest --cov-report xml --cov=labfunctions tests/
 
 .PHONY: test-html
 test-html:
-	PYTHONPATH=$(PWD) pytest --cov-report=html --cov=nb_workflows tests/
+	PYTHONPATH=$(PWD) pytest --cov-report=html --cov=labfunctions tests/
 
 
 .PHONY: e2e

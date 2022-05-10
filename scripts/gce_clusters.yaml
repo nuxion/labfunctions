@@ -37,6 +37,24 @@ clusters:
         - name: items
           qname: "small.default"
           items_gt: 1
+  medium:
+    name: medium
+    machine: gce-medim-cpu
+    provider: gce
+    location: "us-central1-c"
+    qnames:
+      - "default"
+      - "control"
+    policy:
+      min_nodes: 1
+      max_nodes: 1
+      strategies:
+        - name: idle
+          idle_time_gt: 1
+        - name: items
+          qname: "small.default"
+          items_gt: 1
+
   small-gpu:
     name: small-gpu
     machine: gce-small-gpu
