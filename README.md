@@ -1,20 +1,19 @@
-# :rocket: NB Workflows
+# LabFunctions
 
-
-[![nb-workflows](https://github.com/nuxion/nb_workflows/actions/workflows/main.yaml/badge.svg)](https://github.com/nuxion/nb_workflows/actions/workflows/main.yaml)
-[![readthedocs](https://readthedocs.org/projects/nb_workflows/badge/?version=latest)](https://nb-workflows.readthedocs.io/en/latest/)
-[![PyPI - Version](https://img.shields.io/pypi/v/nb-workflows)](https://pypi.org/project/nb-workflows/)
-[![PyPI - Format](https://img.shields.io/pypi/format/nb_workflows)](https://pypi.org/project/nb-workflows/)
-[![PyPI - Status](https://img.shields.io/pypi/status/nb_workflows)](https://pypi.org/project/nb-workflows/)
-[![Docker last](https://img.shields.io/docker/v/nuxion/nb_workflows/0.7.0)](https://hub.docker.com/r/nuxion/nb_workflows/tags)
-[![codecov](https://codecov.io/gh/nuxion/nb_workflows/branch/main/graph/badge.svg?token=F025Y1BF9U)](https://codecov.io/gh/nuxion/nb_workflows)
+[![labfunctions](https://github.com/nuxion/labfunctions/actions/workflows/main.yaml/badge.svg)](https://github.com/nuxion/labfunctions/actions/workflows/main.yaml)
+[![readthedocs](https://readthedocs.org/projects/labfunctions/badge/?version=latest)](https://labfunctions.readthedocs.io/en/latest/)
+[![PyPI - Version](https://img.shields.io/pypi/v/labfunctions)](https://pypi.org/project/labfuncions/)
+[![PyPI - Format](https://img.shields.io/pypi/format/labfunctions)](https://pypi.org/project/labfunctions/)
+[![PyPI - Status](https://img.shields.io/pypi/status/labfunctions)](https://pypi.org/project/labfunctions/)
+[![Docker last](https://img.shields.io/docker/v/nuxion/labfunctions/0.7.0)](https://hub.docker.com/r/nuxion/labfunctions/tags)
+[![codecov](https://codecov.io/gh/nuxion/labfunctions/branch/main/graph/badge.svg?token=F025Y1BF9U)](https://codecov.io/gh/nuxion/labfunctions)
 
 
 ## :books: Description 
 
-NB Workflows empowers different data roles to put notebooks into production, simplifying the time required to do so. It enables people to go from a data exploration instance to an entirely project deployed in production, using the same notebooks files made by a data scientist, analyst or whatever role working with data in an iterative way.
+LabFunctions empowers different data roles to put notebooks into production, simplifying the time required to do so. It enables people to go from a data exploration instance to an entirely project deployed in production, using the same notebooks files made by a data scientist, analyst or whatever role working with data in an iterative way.
 
-NB Workflows is a library and a service that allows you to run parametrized notebooks in a distributed way.  
+LabFunctions is a library and a service that allows you to run parametrized notebooks in a distributed way.  
 
 A Notebook could be launched remotly on demand, or could be scheduled by intervals or using cron syntax.
 
@@ -29,10 +28,11 @@ https://github.com/nuxion/nbwf-demo2)
 
 ## :telescope: Philosophy
 
-NB Workflows it insn't a complete MLOps solution and it will never be. 
+LabFunctions it insn't a complete MLOps solution.
+
 We try hard to simply and expose the right APIs to the user for the part of scheduling notebooks with reproducibility in mind.
 
-We also try to give the user the same freedom that lego tiles can give, but we are opinated in some aspects: we understand the process of writing code for data science or/and data analytics, as a engineer problem to be solved 
+We also try to give the user the same freedom that lego tiles can gives, but we are opinated in the sense that all code, artifact, dependency and environment should be declareted
 
 With this point of view, then: 
 
@@ -49,7 +49,7 @@ The last point to clarify and it could challange the common sense or the way tha
 
 ## :nut_and_bolt: Features
 
-- Define a notebook like a function, and execute it on demand or scheduled it
+- Define a notebook like a function, and execute it on demand or scheduling it
 - Automatic Dockerfile generation. A project should share a unique environment but could use different versions of the same environment
 - Execution History, Notifications to Slack or Discord.
 - Cluster creation applying scaling policies by idle time or/and enqueued items
@@ -84,8 +84,8 @@ A [Dockerfile](./Dockerfile) is provided for customization of uid and guid witch
 
 
 ```
-git clone https://github.com/nuxion/nb_workflows
-cd nb_workflows
+git clone https://github.com/nuxion/labfunctions
+cd labfunctions
 ```
 
 The next step is intializing the database and creating a user (*please review the script first*):
@@ -138,7 +138,7 @@ See [Roadmap](/ROADMAP.md) *draft*
 
 ## :post_office: Architecture
 
-![nb_workflows architecture](/docs/platform-workflows.jpg)
+![labfunctions architecture](/docs/platform-workflows.jpg)
 
 
 ## :bookmark_tabs: References & inspirations
