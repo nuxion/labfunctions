@@ -2,6 +2,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+from .security import JWTResponse
+
 
 class UserOrm(BaseModel):
     username: str
@@ -11,6 +13,7 @@ class UserOrm(BaseModel):
     scopes: str = "user:r:w"
     is_superuser: bool = False
     is_active: bool = False
+    is_agent: bool = False
     projects: List[str] = []
 
     class Config:
@@ -19,3 +22,8 @@ class UserOrm(BaseModel):
 
 class AgentReq(BaseModel):
     agent_name: str
+
+
+class AgentJWTResponse(BaseModel):
+    agent_name: str
+    creds: JWTResponse

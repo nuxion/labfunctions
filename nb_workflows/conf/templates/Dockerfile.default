@@ -1,0 +1,53 @@
+## This image comes from the last build of nb_workflows client
+## Then, some steps are ommited in the second step
+## In the future a script should be added to handle edges cases
+FROM {{ data.image }} as builder
+ENV DEBIAN_FRONTEND=noninteractive
+USER root
+SHELL ["/bin/bash", "-c"]
+ADD {{ data.requirements }} /tmp
+# add root/local/bin to path to suppress pip warning
+ENV PATH=$PATH:/root/.local/bin 
+ENV DEBIAN_FRONTEND=noninteractive
+{% if data.gpu -%}
+## For the GPU version, part of the code is based on the official image for tensorflow:
+## https://hub.docker.com/layers/tensorflow/tensorflow/tensorflow/latest-gpu-jupyter/images/sha256-56677a6a426e87cba3dc5ae8eb82cffb6c76af7dd3683fe9caaba28dcd2a8958?context=explore
+ENV CUDA={{ data.gpu.cuda }}
+ENV CUDNN={{ data.gpu.cudnn }}
+ENV CUDNN_MAJOR_VERSION={{ data.gpu.cudnn_major_version }}
+# Nvidia performs unplanned gpg keys udpates see
+# https://forums.developer.nvidia.com/t/gpg-error-http-developer-download-nvidia-com-compute-cuda-repos-ubuntu1804-x86-64/212904/6
+RUN apt-key adv --fetch-keys  http://developer.download.nvidia.com/compute/cuda/repos/{{ data.gpu.nvidia_gpg_version }}/x86_64/{{ data.gpu.nvidia_gpg_key  }}.pub \
+    && apt-get -y update
+{% endif %}
+
+{% if data.build_packages -%}
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+   {{ data.build_packages }} \
+   && pip install --user -r /tmp/requirements.txt
+{% else -%}
+RUN  pip install --user -r /tmp/requirements.txt
+{% endif -%}
+# Final image
+FROM {{ data.image }} as app
+USER root
+SHELL ["/bin/bash", "-c"]
+ENV DEBIAN_FRONTEND=noninteractive
+{% if data.gpu %}
+ENV CUDA={{ data.gpu.cuda }}
+ENV CUDNN={{ data.gpu.cudnn }}
+ENV CUDNN_MAJOR_VERSION={{ data.gpu.cudnn_major_version }}
+RUN apt-key adv --fetch-keys {{ data.gpu.nvidia_gpg_url }}\
+    && apt-get -y update
+{% endif %}
+{% if data.install_packages -%}
+RUN apt-get update && apt-get install -y --no-install-recommends \
+   {{ data.install_packages }}
+{% endif %}
+COPY --from=builder --chown=app:app /root/.local /home/app/.local/
+COPY --chown=app:app . /app
+USER app
+WORKDIR /app
+ENV PATH=$PATH:/home/app/.local/bin
+ENV PYTHONPATH=/app
+CMD ["nb"]

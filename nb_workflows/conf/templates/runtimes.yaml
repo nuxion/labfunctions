@@ -1,0 +1,34 @@
+---
+runtimes:
+  default:
+    container:
+      maintainer: maintener-0
+      image: {{ data.docker_cpu }}
+      user:
+          uid: 1089
+          gid: 1090
+      build_packages: build-essential libopenblas-dev git
+  gpu:
+    container:
+      maintainer: maintener-0
+      image: {{ data.docker_gpu }}
+      user:
+          uid: 1089
+          gid: 1090
+      final_packages: python3-pip python3-setuptools
+      gpu:
+        cuda: 11.6
+  tensor-gpu:
+    container:
+      maintainer: maintener-0
+      image: tensorflow/tensorflow:latest-gpu 
+      user:
+          uid: 1089
+          gid: 1090
+      build_packages: build-essential libopenblas-dev git python3-pip 
+      final_packages: python3-pip 
+      base_template: Dockerfile.generic.gpu
+      gpu:
+        cuda: 11.6
+    gpu_support: true
+

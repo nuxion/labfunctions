@@ -5,7 +5,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from nb_workflows import defaults, errors, secrets
+from nb_workflows.context import create_notebook_ctx
 from nb_workflows.errors.generics import WorkflowRegisterClientError
+from nb_workflows.runtimes import local_runtime_data
 from nb_workflows.types import (
     ExecutionNBTask,
     ExecutionResult,
@@ -23,8 +25,6 @@ from nb_workflows.types.workflows import WFCreateRsp, WFPushRsp
 from nb_workflows.utils import parse_var_line
 
 from .base import BaseClient
-from .types import Credentials, ProjectZipFile
-from .uploads import generate_dockerfile
 from .utils import get_private_key, store_credentials_disk, store_private_key
 
 
@@ -84,6 +84,14 @@ class WorkflowsClient(BaseClient):
                             if refresh_workflows:
                                 wd.wfid = wr.wfid
                                 self.state.add_workflow(wd)
+                        else:
+                            errors.append(
+                                WFCreateRsp(
+                                    wfid=wd.wfid,
+                                    alias=wd.alias,
+                                    status_code=wr.status_code,
+                                )
+                            )
             except WorkflowRegisterClientError as e:
                 self.logger.error(e)
                 errors.append(
@@ -126,15 +134,19 @@ class WorkflowsClient(BaseClient):
         self,
         nb_name: str,
         params: Optional[Dict[str, Any]] = None,
+        cluster=None,
         machine=None,
-        docker_version=None,
+        runtime=None,
+        version=None,
     ) -> ExecutionNBTask:
 
         task = NBTask(
             nb_name=nb_name,
             params=params,
+            cluster=cluster,
             machine=machine,
-            docker_version=docker_version,
+            runtime=runtime,
+            version=version,
         )
         rsp = self._http.post(
             f"/workflows/{self.projectid}/notebooks/_run", json=task.dict()
@@ -143,3 +155,17 @@ class WorkflowsClient(BaseClient):
             raise AttributeError(rsp.text)
 
         return ExecutionNBTask(**rsp.json())
+
+    def build_context(
+        self,
+        wfid: str,
+        runtime_name="default",
+        runtimes_file="runtimes.yaml",
+        version="latest",
+    ) -> ExecutionNBTask:
+        wf = self.state.find_by_id(wfid)
+        rd = local_runtime_data(
+            self.projectid, runtime_name, runtimes_file=runtimes_file, version=version
+        )
+        ctx = create_notebook_ctx(self.projectid, wf.nbtask, runtime=rd)
+        return ctx

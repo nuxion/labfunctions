@@ -15,7 +15,6 @@ from importlib import import_module
 from pathlib import Path
 from time import time
 
-import redis
 import toml
 import yaml
 
@@ -62,6 +61,12 @@ def check_port(ip: str, port: int) -> bool:
     if result != 0:
         return False
     return True
+
+
+def get_free_port(bind="127.0.0.1"):
+    sock = socket.socket()
+    sock.bind((bind, 0))
+    return sock.getsockname()[1]
 
 
 async def run_async(func, *args, **kwargs):
@@ -168,16 +173,6 @@ def Memit(f):
         return result
 
     return wrap
-
-
-def create_redis_client(fullurl, decode_responses=True) -> redis.Redis:
-    """Returns a redis client. The format of the url
-    is like: redis://localhost:6379/0
-    """
-    url = fullurl.split("redis://")[1]
-    h, port_db = url.split(":")
-    p, db = port_db.split("/")
-    return redis.StrictRedis(host=h, port=p, db=db, decode_responses=decode_responses)
 
 
 def secure_filename(filename: str) -> str:
@@ -429,3 +424,11 @@ def get_class(fullclass_path):
     mod = import_module(module)
     cls = getattr(mod, class_)
     return cls
+
+
+def normalize_name(name: str) -> str:
+    """evaluates and verify if a string is secure to be stored"""
+    evaluate = name.lower()
+    evaluate = evaluate.replace(" ", "_")
+    evaluate = secure_filename(name)
+    return evaluate

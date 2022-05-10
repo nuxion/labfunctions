@@ -5,6 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import httpx
 from rich.console import Console
 from rich.panel import Panel
 
@@ -27,8 +28,6 @@ from nb_workflows.utils import parse_var_line
 from .base import BaseClient
 from .history_client import HistoryClient
 from .projects_client import ProjectsClient
-from .types import Credentials, ProjectZipFile, WFCreateRsp
-from .uploads import generate_dockerfile
 from .utils import (
     get_credentials_disk,
     get_private_key,
@@ -59,26 +58,29 @@ def open_notebook(fp) -> Dict[str, Any]:
     return data
 
 
-class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
+console = Console()
+
+
+class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, BaseClient):
     """Is to be used as cli client because it has side effects on local disk"""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(DiskClient, self).__init__(*args, **kwargs)
         self.console = Console()
 
-    def login(self, u: str, p: str, home_dir=defaults.CLIENT_HOME_DIR):
+    def login(self, u: str, p: str):
         super().login(u, p)
-        store_credentials_disk(self.creds, home_dir)
+        store_credentials_disk(self.creds, self.homedir)
 
-    def logincli(self, home_dir=defaults.CLIENT_HOME_DIR):
-        creds = get_credentials_disk(home_dir)
+    def logincli(self):
+        creds = get_credentials_disk(self.homedir)
         if creds:
             self.creds = creds
             rsp = self.verify()
             if rsp:
                 return True
         self.creds = None
-        self.console.print(f"You are connecting to [magenta]{self._addr}[/magenta]")
+        console.print(f"You are connecting to [magenta]{self._addr}[/magenta]")
         u = input("User: ")
         p = getpass.getpass("Password: ")
         self.login(u, p)
@@ -87,7 +89,10 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
         """Gets private key to be shared to the docker container of a
         workflow task
         """
-        r = self._http.get(f"/projects/{self.projectid}/_private_key")
+        try:
+            r = self._http.get(f"/projects/{self.projectid}/_private_key")
+        except httpx.ConnectError:
+            raise errors.PrivateKeyNotFound(self.projectid)
 
         key = None
         if r.status_code == 200:
@@ -95,43 +100,14 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
         if not key:
             raise errors.PrivateKeyNotFound(self.projectid)
 
-        store_private_key(key, self.projectid)
+        store_private_key(key, self.working_area)
         return key
-
-    # def projects_create(self) -> Union[ProjectData, None]:
-    #     _key = secrets.generate_private_key()
-    #     _name = self.project_name
-    #     pq = ProjectReq(
-    #         name=self.state.project.name,
-    #         private_key=_key,
-    #         projectid=self.state.project.projectid,
-    #         description=self.state.project.description,
-    #         repository=self.state.project.repository,
-    #     )
-    #     r = self._http.post(
-    #         f"/projects",
-    #         json=asdict(pq),
-    #     )
-    #     if r.status_code == 200:
-    #         self.console.print(f"[bold red]Project with name {_name} already exist [/]")
-    #     elif r.status_code == 201:
-    #         # self.console.print(p)
-    #         pd = ProjectData(**r.json())
-    #         store_private_key(_key, pd.projectid)
-    #         return pd
-    #     else:
-    #         raise errors.ProjectCreateError(pd.projectid)
-    #     return None
-
-    def projects_generate_dockerfile(self, docker_opts):
-        root = Path.cwd()
-        generate_dockerfile(root, docker_opts)
 
     def get_private_key(self) -> str:
         """shortcut for getting a private key locally
         TODO: separate command line cli from a general client and an agent client
         a command line cli has filesystem side effects and a agent client not"""
-        key = get_private_key(self.projectid)
+        key = get_private_key(self.working_area)
         if not key:
             return self.projects_private_key()
         return key
@@ -163,7 +139,7 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient):
         self.state.add_workflow(wd)
         self.write()
 
-    def info(self):
-        self.console.print(f"[bold]Project ID: [magenta]{self.projectid}[/][/]")
-        self.console.print(f"[bold]Project Name: [blue]{self.project_name}[/][/]")
-        # self.console.print(table)
+    # def info(self):
+    #    self.console.print(f"[bold]Project ID: [magenta]{self.projectid}[/][/]")
+    #    self.console.print(f"[bold]Project Name: [blue]{self.project_name}[/][/]")
+    # self.console.print(table)

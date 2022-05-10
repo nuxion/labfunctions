@@ -1,6 +1,6 @@
 import pytest
 
-from nb_workflows.executors import context
+from nb_workflows import context
 from nb_workflows.managers import users_mg
 from nb_workflows.models import UserModel
 from nb_workflows.types.security import JWTResponse

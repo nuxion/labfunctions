@@ -1,6 +1,5 @@
 import pytest
 
-from nb_workflows.executors import context
 from nb_workflows.managers import machine_mg
 from nb_workflows.models import MachineModel
 from nb_workflows.types.machine import (

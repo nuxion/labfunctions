@@ -1,46 +1,14 @@
-import getpass
-import json
 import os
-from pathlib import Path
 from typing import Optional, Union
 
-import httpx
-
-from nb_workflows import defaults, secrets
+from nb_workflows import defaults, secrets, types
 from nb_workflows.conf import load_client
-from nb_workflows.executors import context
-from nb_workflows.io import MemoryStore
-from nb_workflows.types import (
-    ClientSettings,
-    ExecutionNBTask,
-    NBTask,
-    ProjectData,
-    ScheduleData,
-)
-from nb_workflows.utils import get_parent_folder, secure_filename
+from nb_workflows.utils import secure_filename
 
 from .diskclient import DiskClient
 from .nbclient import NBClient
 from .state import WorkflowsState
 from .state import from_file as ws_from_file
-from .types import Credentials
-from .utils import _example_task, get_credentials_disk, validate_credentials_local
-
-
-def _load_creds(settings: ClientSettings, nbvars) -> Union[Credentials, None]:
-    creds = None
-    at = nbvars.get("AGENT_TOKEN", settings.AGENT_TOKEN)
-    rt = nbvars.get("AGENT_REFRESH_TOKEN", settings.AGENT_REFRESH_TOKEN)
-    if at and rt:
-        creds = Credentials(access_token=at, refresh_token=rt)
-    return creds
-
-
-def normalize_name(name: str) -> str:
-    evaluate = name.lower()
-    evaluate = evaluate.replace(" ", "_")
-    evaluate = secure_filename(name)
-    return evaluate
 
 
 def from_file(
@@ -52,35 +20,45 @@ def from_file(
 
     settings = load_client()
     wf_state = ws_from_file(filepath)
+    wf_state._file = filepath
     wf_service = url_service or settings.WORKFLOW_SERVICE
-    # creds = get_credentials_disk(home_dir)
     # if not creds:
     #    creds = login_cli(url_service, home_dir)
     dc = DiskClient(
         url_service=wf_service,
         wf_state=wf_state,
+        base_path=settings.BASE_PATH,
     )
-    dc.logincli()
+    dc.load_creds()
+    # if not os.environ.get("DEBUG"):
+    #    try:
+    #        dc.logincli()
+    #    except httpx.ConnectError:
+    #        print("No connection with server")
     return dc
 
 
-def from_env(settings: Optional[ClientSettings] = None) -> NBClient:
+def from_env(settings: Optional[types.ClientSettings] = None) -> NBClient:
     """Creates a client using the settings module and environment variables"""
     if not settings:
         settings = load_client()
     nbvars = secrets.load(settings.BASE_PATH)
+    at = nbvars.get("NB_ACCESS_TOKEN")
+    rt = nbvars.get("NB_REFRESH_TOKEN")
+    if at and rt:
+        os.environ["NB_ACCESS_TOKEN"] = at
+        os.environ["NB_REFRESH_TOKEN"] = rt
 
-    tasks = None
-    creds = _load_creds(settings, nbvars)
-
-    pd = ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
+    # creds = _load_creds(settings, nbvars)
+    pd = types.ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
 
     wf_state = WorkflowsState(pd)
-    return NBClient(
+    c = NBClient(
         url_service=settings.WORKFLOW_SERVICE,
-        creds=creds,
         wf_state=wf_state,
     )
+    c.load_creds()
+    return c
 
 
 def agent(url_service, token, refresh, projectid) -> NBClient:
@@ -105,28 +83,6 @@ def agent(url_service, token, refresh, projectid) -> NBClient:
     :param refresh: refresh_token
     :param projectid: projectid
     """
-    wf = WorkflowsState(ProjectData(name="", projectid=projectid))
-    creds = Credentials(access_token=token, refresh_token=refresh)
+    wf = WorkflowsState(types.ProjectData(name="", projectid=projectid))
+    creds = types.TokenCreds(access_token=token, refresh_token=refresh)
     return NBClient(url_service=url_service, creds=creds, wf_state=wf)
-
-
-# def create_ctx(wfid=None) -> ExecutionNBTask:
-#     ctx_str = os.getenv(defaults.EXECUTIONTASK_VAR)
-#     if ctx_str:
-#         exec_ctx = ExecutionNBTask(**json.loads(ctx_str))
-#     else:
-#         execid = context.ExecID()
-#         wf = NBClient.read("workflows.yaml")
-#         pd = wf.project
-#         pd.username = "dummy"
-#         wf_data = None
-#         if wfid:
-#             for w in wf.workflows:
-#                 if w.wfid == wfid:
-#                     wf_data = w
-#         else:
-#             # TODO: dumy nb_name
-#             wf_data = NBTask(nb_name="test", params={})
-#
-#         exec_ctx = context.create_notebook_ctx(pd, wf_data, execid.pure())
-#     return exec_ctx

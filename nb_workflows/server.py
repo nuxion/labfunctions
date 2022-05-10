@@ -11,6 +11,7 @@ from sanic_ext import Extend
 from nb_workflows import defaults
 from nb_workflows.db.nosync import AsyncSQL
 from nb_workflows.events import EventManager
+from nb_workflows.io.kvspec import AsyncKVSpec
 from nb_workflows.security import auth_from_settings, sanic_init_auth
 from nb_workflows.security.redis_tokens import RedisTokenStore
 from nb_workflows.types import ServerSettings
@@ -51,6 +52,11 @@ def create_rq_redis(url):
     return redis.from_url(url)
 
 
+def create_projects_store(store_class, store_bucket) -> AsyncKVSpec:
+    Class = get_class(store_class)
+    return Class(store_bucket)
+
+
 def create_app(
     settings: ServerSettings,
     list_bp: List[str],
@@ -58,6 +64,7 @@ def create_app(
     db_func=create_db_instance,
     web_redis_func=create_web_redis,
     rq_func=create_rq_redis,
+    projects_store_func=create_projects_store,
     with_auth=True,
     with_auth_bp=True,
 ) -> Sanic:
@@ -95,6 +102,9 @@ def create_app(
         _db = db_func(settings.ASQL)
         _base_model_session_ctx = ContextVar("session")
 
+        current_app.ctx.kv_store = projects_store_func(
+            settings.PROJECTS_STORE_CLASS_ASYNC, settings.PROJECTS_STORE_BUCKET
+        )
         current_app.ctx.web_redis = web_redis.client()
         current_app.ctx.rq_redis = rq_func(settings.RQ_REDIS)
         current_app.ctx.db = _db

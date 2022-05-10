@@ -11,6 +11,7 @@ API_VERSION = "v1"
 
 AGENT_USER_PREFIX = "agt"
 AGENT_SCOPES = "agent:rw"
+AGENT_ADMIN_SCOPES = "agent:r:w,admin:r"
 AGENT_LEN = 8
 
 NOTEBOOKS_DIR = "notebooks/"
@@ -28,10 +29,13 @@ PRIVKEY_VAR_NAME = "PRIVATE_KEY"
 CLIENT_TMP_FOLDER = ".nb_tmp"
 CLIENT_HOME_DIR = ".nb_workflows/"
 CLIENT_TIMEOUT = 60
+CLIENT_CREDS_FILE = "credentials.json"
+CLIENT_AGENT_CREDS_FILE = "agent.creds.json"
 
 DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
 DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
-DOCKERFILE_IMAGE = "nuxion/nb_workflows"
+DOCKERFILE_IMAGE = "nuxion/nb_workflows-client"
+DOCKERFILE_IMAGE_GPU = "nuxion/nb_workflows-client-gpu"
 DOCKER_AUTHOR = "nbworkflows"
 DOCKER_UID = "1000"
 DOCKER_GID = "997"
@@ -45,14 +49,26 @@ EXECUTIONTASK_VAR = "NB_EXECUTION_TASK"
 
 BASE_PATH_ENV = "NB_BASE_PATH"
 
+PROJECT_UPLOADS = "uploads"
+PROJECT_HISTORY = "history"
+
 # see https://zelark.github.io/nano-id-cc/
-PROJECTID_LEN = 8  # 3 years 1% collision at 100 projects creations per hour
+PROJECT_ID_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
+PROJECTID_MIN_LEN = 10  # 13 years 1% collision at 100 projects creations per hour
+PROJECTID_MAX_LEN = 16
 WFID_LEN = 11  # ~139 thousand years 1% collision at 1000 jobs creation per hour
 EXECID_LEN = 14  # ~20 years %1 collision at 1000 execs per second
 PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
+NANO_URLSAFE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz-_"
 NANO_MACHINE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+MACHINE_TYPE = "cpu"
+CLUSTER_NAME = "default"
 
 AGENT_HOMEDIR = "/home/op"
 AGENT_DOCKER_IMG = "nuxion/nb_workflows"
 AGENT_ENV_TPL = "agent.docker.envfile"
+
+NVIDIA_GPG_VERSION = "2004"
+NVIDIA_GPG_KEY = "3bf863cc"

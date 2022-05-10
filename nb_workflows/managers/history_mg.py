@@ -56,6 +56,22 @@ async def get_last(
     return HistoryLastResponse(rows=rsp)
 
 
+async def get_one(session, execid: str) -> Union[HistoryResult, None]:
+    stmt = select(HistoryModel).where(HistoryModel.execid == execid).limit(1)
+    r = await session.execute(stmt)
+    model: Union[HistoryModel, None] = r.scalar_one_or_none()
+    hr = None
+    if model:
+        hr = HistoryResult(
+            wfid=model.wfid,
+            execid=model.execid,
+            status=model.status,
+            result=model.result,
+            created_at=model.created_at.isoformat(),
+        )
+    return hr
+
+
 async def create(session, execution_result: ExecutionResult) -> HistoryModel:
     result_data = execution_result.dict()
 

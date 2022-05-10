@@ -1,17 +1,20 @@
 FROM python:3.8.10-slim as builder
 # supress pip warning
 SHELL ["/bin/bash", "-c"]
-ADD requirements/requirements.txt /tmp
+ADD requirements/requirements_client.txt /tmp/requirements.txt
+COPY . /tmp/package/
+
 # suppress warning
 ENV PATH=$PATH:/root/.local/bin 
+WORKDIR /tmp/package
 
 RUN apt-get -y update \
     && apt-get install -y --no-install-recommends \
     build-essential \
     libopenblas-dev \
     git  \
-    && pip install --user -r /tmp/requirements.txt
-    # && python setup.py install 
+    && python -m pip install --upgrade pip \
+    && python setup.py install 
 
 # COPY --chown=root:root . /app/
 # WORKDIR /app

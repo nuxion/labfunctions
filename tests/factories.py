@@ -7,12 +7,11 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from nb_workflows import utils
 from nb_workflows.client.state import WorkflowsState
-from nb_workflows.client.types import Credentials
 from nb_workflows.hashes import generate_random
 from nb_workflows.models import (
     HistoryModel,
     ProjectModel,
-    RuntimeVersionModel,
+    RuntimeModel,
     UserModel,
     WorkflowModel,
 )
@@ -27,18 +26,12 @@ from nb_workflows.types import (
     ProjectData,
     ProjectReq,
     ScheduleData,
-    WorkflowData,
-    WorkflowDataWeb,
-    agent,
-    cluster,
-    machine,
 )
+from nb_workflows.types import TokenCreds as Credentials
+from nb_workflows.types import WorkflowData, WorkflowDataWeb, agent, cluster
+from nb_workflows.types import docker as docker_types
+from nb_workflows.types import machine, runtimes
 from nb_workflows.types.config import SecuritySettings
-from nb_workflows.types.docker import (
-    DockerBuildCtx,
-    DockerfileImage,
-    RuntimeVersionData,
-)
 from nb_workflows.types.events import EventSSE
 from nb_workflows.types.user import UserOrm
 from nb_workflows.utils import run_sync
@@ -84,8 +77,6 @@ class NBTaskFactory(factory.Factory):
     class Meta:
         model = NBTask
 
-    wfid = factory.LazyAttribute(lambda n: generate_random(24))
-    alias = factory.Sequence(lambda n: "nb-alias%d" % n)
     nb_name = factory.Sequence(lambda n: "nb-name%d" % n)
     params = {"TEST": True, "TIMEOUT": 5}
 
@@ -195,10 +186,35 @@ class HistoryResultFactory(factory.Factory):
 
 class DockerfileImageFactory(factory.Factory):
     class Meta:
-        model = DockerfileImage
+        model = docker_types.DockerfileImage
 
     maintener = factory.Sequence(lambda n: "maintener-%d" % n)
     image = "python-3.7"
+
+
+class DockerBuildLowLogFactory(factory.Factory):
+    class Meta:
+        model = docker_types.DockerBuildLowLog
+
+    logs = factory.Sequence(lambda n: "msg-%d" % n)
+    error = False
+
+
+class DockerPushLogFactory(factory.Factory):
+    class Meta:
+        model = docker_types.DockerPushLog
+
+    logs = factory.Sequence(lambda n: "msg-%d" % n)
+    error = False
+
+
+class DockerBuildLogFactory(factory.Factory):
+    class Meta:
+        model = docker_types.DockerBuildLog
+
+    build_log = factory.LazyAttribute(lambda n: DockerBuildLowLogFactory())
+    push_log = factory.LazyAttribute(lambda n: DockerPushLogFactory())
+    error = False
 
 
 class MachineRequestFactory(factory.Factory):
@@ -291,31 +307,78 @@ class ClusterStateFactory(factory.Factory):
     idle_by_agent = {"agent-0": 5, "agent-1": 0}
 
 
-class DockerBuildCtxFactory(factory.Factory):
+class DockerSpecFactory(factory.Factory):
     class Meta:
-        model = DockerBuildCtx
+        model = runtimes.DockerSpec
+
+    image = factory.Sequence(lambda n: "img-%d" % n)
+    maintainer = factory.Sequence(lambda n: "maintener-%d" % n)
+    build_packages = factory.Sequence(lambda n: "pkg-%d" % n)
+    final_packages = factory.Sequence(lambda n: "pkg-%d" % n)
+
+
+class RuntimeSpecFactory(factory.Factory):
+    class Meta:
+        model = runtimes.RuntimeSpec
+
+    name = factory.Sequence(lambda n: "img-%d" % n)
+    container = factory.LazyAttribute(lambda n: DockerSpecFactory())
+    machine = factory.Sequence(lambda n: "mch-%d" % n)
+    version = factory.Sequence(lambda n: "%d" % n)
+    gpu_support = False
+
+
+class RuntimeDataFactory(factory.Factory):
+    class Meta:
+        model = runtimes.RuntimeData
+
+    runtimeid = factory.LazyAttribute(lambda n: generate_random(10))
+    runtime_name = factory.Sequence(lambda n: "rn-%d" % n)
+    docker_name = factory.Sequence(lambda n: "nbworkflows/docker-%d" % n)
+    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    project_id = factory.LazyAttribute(lambda n: generate_random(10))
+    version = factory.Sequence(lambda n: "%d" % n)
+    created_at = factory.LazyAttribute(lambda n: datetime.utcnow().isoformat())
+
+
+class RuntimeReqFactory(factory.Factory):
+    class Meta:
+        model = runtimes.RuntimeReq
+
+    runtime_name = factory.Sequence(lambda n: "rn-%d" % n)
+    docker_name = factory.Sequence(lambda n: "nbworkflows/docker-%d" % n)
+    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    project_id = factory.LazyAttribute(lambda n: generate_random(10))
+    version = factory.Sequence(lambda n: "%d" % n)
+
+
+class BuildCtxFactory(factory.Factory):
+    class Meta:
+        model = runtimes.BuildCtx
 
     projectid = factory.LazyAttribute(lambda n: generate_random(10))
-    project_zip_route = "/tmp/test.current.zip"
+    spec = factory.LazyAttribute(lambda n: RuntimeSpecFactory())
+    docker_name = "nbworkflows/test"
+    version = "current"
+    dockerfile = "Dockerfile.default"
     zip_name = "test.current.zip"
-    version = "current"
-    docker_name = "nbworkflows/test"
+    download_zip = "/tmp/test.current.zip"
     execid = factory.LazyAttribute(lambda n: generate_random(10))
+    project_store_class = "nb_workflows.io.kv_local.KVLocal"
+    project_store_bucket = "nbworkflows"
+    registry = None
 
 
-class RuntimeVersionFactory(factory.Factory):
-    class Meta:
-        model = RuntimeVersionData
-
-    projectid = factory.LazyAttribute(lambda n: generate_random(10))
-    docker_name = "nbworkflows/test"
-    version = "current"
-
-
-def create_runtime_model(project: ProjectModel, *args, **kwargs) -> RuntimeVersionModel:
-    rv = RuntimeVersionFactory(*args, **kwargs)
-    rm = RuntimeVersionModel(
-        docker_name=rv.docker_name, project=project, version=rv.version
+def create_runtime_model(project_id, *args, **kwargs) -> RuntimeModel:
+    rd = RuntimeDataFactory(project_id=project_id, *args, **kwargs)
+    rd.runtimeid = f"{rd.project_id}/{rd.runtime_name}/{rd.version}"
+    rm = RuntimeModel(
+        runtimeid=rd.runtimeid,
+        runtime_name=rd.runtime_name,
+        docker_name=rd.docker_name,
+        spec=rd.spec.dict(),
+        project_id=project_id,
+        version=rd.version,
     )
     return rm
 

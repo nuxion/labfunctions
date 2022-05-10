@@ -6,7 +6,6 @@ from nb_workflows.client import diskclient as dc
 from nb_workflows.client import shortcuts, utils
 from nb_workflows.client.base import AuthFlow
 from nb_workflows.client.diskclient import DiskClient
-from nb_workflows.client.types import Credentials
 from nb_workflows.types.config import SecuritySettings
 
 from .factories import credentials_generator
@@ -110,8 +109,7 @@ def test_client_diskclient_login(monkeypatch, tempdir):
     monkeypatch.setattr(httpx, "post", mock_post)
 
     c = DiskClient(url_service="http://localhost:8000")
-    # c.creds = Credentials(access_token="test_token", refresh_token="refresh")
-    c.login("test", "test_pass", home_dir=tempdir)
+    c.login("test", "test_pass")
 
     with open(f"{tempdir}/credentials.json", "r") as f:
         data = json.loads(f.read())

@@ -1,4 +1,5 @@
 import os
+import sys
 # WARNING:
 # We do our best effort to keep sensible information private
 # but in the scenario of an intrusion into the network or machines
@@ -15,5 +16,29 @@ WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
 # Don't modify at least you know what you are doing.
 # Log
 LOGLEVEL = "INFO"
-detailed_format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
-LOGFORMAT = detailed_format
+LOGCONFIG = dict(  # no cov
+    version=1,
+    disable_existing_loggers=False,
+    loggers={
+        "nbwork.client": {"level": LOGLEVEL, "handlers": ["console", "error_console"]},
+    },
+    handlers={
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "generic",
+            "stream": sys.stdout,
+        },
+        "error_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "generic",
+            "stream": sys.stderr,
+        },
+    },
+    formatters={
+        "generic": {
+            "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+            "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+            "class": "logging.Formatter",
+        },
+    },
+)

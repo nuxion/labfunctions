@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseSettings, RedisDsn
 
-from nb_workflows.defaults import EXECID_LEN, PROJECTID_LEN, WFID_LEN
+from nb_workflows.defaults import EXECID_LEN, PROJECTID_MIN_LEN, WFID_LEN
 
 
 class SecuritySettings(BaseSettings):
@@ -31,17 +31,15 @@ class ServerSettings(BaseSettings):
     # Security
     AGENT_TOKEN: str
     AGENT_REFRESH_TOKEN: str
-    AGENT_TOKEN_EXP: int
 
     # Services
+    WORKFLOW_SERVICE: str
     SQL: str
     ASQL: str
-    WORKFLOW_SERVICE: str
+    AGENT_TOKEN_EXP: int = (60 * 60) * 12
 
     # Folders:
     BASE_PATH: str
-    NB_WORKFLOWS: str
-    NB_OUTPUT: str
     DOCKER_REGISTRY: Optional[str] = None
 
     SECURITY: Optional[SecuritySettings] = None
@@ -49,12 +47,12 @@ class ServerSettings(BaseSettings):
     DEV_MODE: bool = False
     WEB_REDIS: Optional[RedisDsn] = None
     RQ_REDIS: Optional[RedisDsn] = None
-    RQ_CONTROL_QUEUE: str = "default.control"
-    RQ_BUILD_QUEUE: str = "default.build"
+    CONTROL_QUEUE: str = "default.control"
+    BUILD_QUEUE: str = "default.build"
 
     # ids generations
     EXECID_LEN: int = EXECID_LEN
-    PROJECTID_LEN: int = PROJECTID_LEN
+    PROJECTID_LEN: int = PROJECTID_MIN_LEN
     WFID_LEN: int = WFID_LEN
 
     # eventes
@@ -77,11 +75,15 @@ class ServerSettings(BaseSettings):
 
     # Logs:
     LOGLEVEL: str = "INFO"
-    LOGFORMAT: str = "%(asctime)s %(message)s"
+    LOGCONFIG: Dict[str, Any] = {}
     DEBUG: bool = False
 
-    FILESERVER: Optional[str] = None
-    FILESERVER_BUCKET: Optional[str] = None
+    PROJECTS_STORE_CLASS_ASYNC = "nb_workflows.io.kv_local.AsyncKVLocal"
+    PROJECTS_STORE_CLASS_SYNC = "nb_workflows.io.kv_local.KVLocal"
+    PROJECTS_STORE_BUCKET = "nbworkflows"
+    EXT_KV_LOCAL_ROOT: Optional[str] = None
+    EXT_KV_FILE_URL: Optional[str] = None
+
     SETTINGS_MODULE: Optional[str] = None
     DNS_IP_ADDRESS: str = "8.8.8.8"
 
@@ -94,11 +96,10 @@ class ClientSettings(BaseSettings):
     PROJECTID: str
 
     BASE_PATH: str
-    # NB_WORKFLOWS: str
-    # NB_OUTPUT: str
     LOGLEVEL: str = "INFO"
-    LOGFORMAT: str = "%(asctime)s %(message)s"
+    LOGCONFIG: Dict[str, Any] = {}
     DEBUG: bool = False
+    LOCAL: bool = False
     NBVARS: Optional[str] = None
     AGENT_TOKEN: Optional[str] = None
     AGENT_REFRESH_TOKEN: Optional[str] = None
@@ -111,7 +112,11 @@ class ClientSettings(BaseSettings):
     DISCORD_OK: Optional[str] = None
     DISCORD_FAIL: Optional[str] = None
 
-    FILESERVER: Optional[str] = None
+    PROJECTS_STORE_CLASS = "nb_workflows.io.kv_local.KVLocal"
+    PROJECTS_STORE_BUCKET = "nbworkflows"
+    EXT_KV_LOCAL_ROOT: Optional[str] = None
+    EXT_KV_FILE_URL: Optional[str] = None
+
     SETTINGS_MODULE: Optional[str] = None
     # DOCKER_COMPOSE: Dict[str, Any] = None
 

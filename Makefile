@@ -16,7 +16,7 @@ endef
 export USAGE
 .EXPORT_ALL_VARIABLES:
 VERSION := $(shell git describe --tags)
-VERSION_POETRY := $(shell poetry version | awk '{print $2}')
+VERSION_POETRY := $(shell python scripts/get_version.py)
 FULLPY_PKG := $(shell python scripts/get_package_name.py)
 API_VERSION := "v1"
 BUILD := $(shell git rev-parse --short HEAD)
@@ -44,6 +44,7 @@ clean:
 	rm -rf dist/* > /dev/null 2>&1
 	rm -rf .ipynb_checkpoints/* > /dev/null 2>&1
 	rm -rf docker/client/dist
+	rm -rf docker/all/dist
 
 lock-dev:
 	poetry export -f requirements.txt --output requirements/requirements_dev.txt --extras server --without-hashes --dev
@@ -63,9 +64,8 @@ prepare: lock
 	cp dist/${FULLPY_PKG}/setup.py .
 
 prerelease: prepare
-	poetry version prerelease
+	# poetry version prerelease
 	./scripts/update_versions.sh ${API_VERSION}
-	# poetry publish -r test
 
 black:
 	black --config ./.black.toml nb_workflows tests
@@ -102,39 +102,36 @@ docker-client:
 	cp dist/*.whl docker/client/dist
 	cp requirements/requirements_client.txt  docker/client/requirements.txt
 	docker build -t ${DOCKERID}/${PROJECTNAME}-client -f docker/client/Dockerfile docker/client
-	docker tag ${DOCKERID}/${PROJECTNAME}-client:latest ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
+	docker tag ${DOCKERID}/${PROJECTNAME}-client:latest ${DOCKERID}/${PROJECTNAME}-client:$(VERSION_POETRY)
 
-.PHONY: docker-env
-docker-env:
-	# $(eval(RANDOM := $(shell echo $RANDOM | md5sum | head -c 20; echo;))
-	docker run -it --rm -v ${PWD}:/app  --env-file=docker/.env.docker --network=host ${DOCKERID}/${PROJECTNAME} bash
+.PHONY: docker-client-gpu
+docker-client-gpu:
+	mkdir -p docker/client/dist
+	cp dist/*.whl docker/client/dist
+	cp requirements/requirements_client.txt  docker/client/requirements.txt
+	docker build -t ${DOCKERID}/${PROJECTNAME}-client-gpu -f docker/client/Dockerfile.gpu docker/client
+	docker tag ${DOCKERID}/${PROJECTNAME}-client-gpu:latest ${DOCKERID}/${PROJECTNAME}-client-gpu:$(VERSION_POETRY)
 
-.PHONY: docker-env-client
-docker-env-client:
-	$(eval $@_TMP := $(shell mktemp -d))	
-	# mkdir /tmp/${RANDOM}
-	@echo $($@_TMP)
-	sudo chown 1089:1090 $($@_TMP)
-	docker run -it --rm -v $($@_TMP):/app --env-file=docker/.env.client.docker --network=host ${DOCKERID}/${PROJECTNAME}-client bash
 
-client-env:
-	$(eval $@_TMP := $(shell mktemp -d))	
-	# mkdir /tmp/${RANDOM}
-	@echo $($@_TMP)
-	cd $($@_TMP)
-
+.PHONY: docker-all
+docker-all:
+	mkdir -p docker/all/dist
+	cp dist/*.whl docker/all/dist
+	cp requirements/requirements.txt  docker/all/requirements.txt
+	docker build -t ${DOCKERID}/${PROJECTNAME} -f docker/all/Dockerfile docker/all
+	docker tag ${DOCKERID}/${PROJECTNAME}:latest ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
 
 .PHONY: docker
-docker:
-	docker build -t ${DOCKERID}/${PROJECTNAME} .
-	docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION)
+docker: docker-client docker-client-gpu docker-all
 
 .PHONY: docker-release
 docker-release: docker
 	# docker tag ${DOCKERID}/${PROJECTNAME} ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:$(VERSION)
-	docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION)
-	docker push ${DOCKERID}/${PROJECTNAME}:$(VERSION)
-	docker push ${DOCKERID}/${PROJECTNAME}:latest
+	# docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
+	# docker push ${DOCKERID}/${PROJECTNAME}:latest
+	docker push ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
+	docker push ${DOCKERID}/${PROJECTNAME}-client:$(VERSION_POETRY)
+	docker push ${DOCKERID}/${PROJECTNAME}-client-gpu:$(VERSION_POETRY)
 
 .PHONY: publish
 publish:

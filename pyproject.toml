@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nb_workflows"
-version = "0.8.0-alpha.4"
+version = "0.8.0-alpha.5"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [
@@ -40,6 +40,7 @@ asyncpg = { version="^0.24.0", optional=true}
 alembic = { version="^1.6.5", optional=true}
 rq-scheduler = { version="^0.11.0", optional=true }
 rq = {version="^1.10.0", optional=true}
+smart-open = {extras = ["gcs"], version = "^6.0.0"}
 # cluster
 apache-libcloud = {version="^3.5.1", optional=true}
 # both
@@ -48,7 +49,6 @@ click = "^8.0.1"
 cloudpickle = "^2.0.0"
 dateparser = "^1.1.0"
 nbconvert = "^6.2.0"
-papermill = "^2.3.3"
 jupytext = "^1.13.0"
 loky = "^3.0.0"
 aioredis = {extras = ["hiredis"], version = "^2.0.1"}
@@ -61,7 +61,6 @@ aiofiles = "^0.8.0"
 nanoid = "^2.0.0"
 PyYAML = "^6.0"
 pydantic = "^1.9.0"
-fsspec = {version="^2022.2.0", optional=true }
 PyJWT = ">=2.1.0,<2.2.0"
 ipython = "^8.1.1"
 ipykernel = "^6.9.1"
@@ -69,9 +68,10 @@ rich = "^12.0.0"
 aiosqlite = "^0.17.0"
 asyncssh = "^2.10.0"
 tenacity = "^8.0.1"
+papermill = "^2.3.4"
 
 [tool.poetry.extras]
-fsspec = ["fsspec"]
+# fsspec = ["fsspec", "gcsfs"]
 server = [
 	"uvloop",
 	"sanic",
@@ -87,6 +87,7 @@ server = [
 	"rq",
 	"apache-libcloud",
 	"asyncssh",
+	"smart-open",
 ]
 
 [tool.poetry.dev-dependencies]
@@ -119,6 +120,7 @@ sphinx-rtd-theme = "^1.0.0"
 invoke = "^1.6.0"
 jupyterlab = "^3.3.2"
 sanic-testing = "^0.8.2"
+pydeps = "^1.10.18"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

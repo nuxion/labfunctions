@@ -6,15 +6,20 @@ from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
 
-from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.events import EventManager
 from nb_workflows.hashes import generate_random
 from nb_workflows.managers import users_mg
 from nb_workflows.security import TokenStoreSpec, auth_from_settings, sanic_init_auth
 from nb_workflows.security.redis_tokens import RedisTokenStore
-from nb_workflows.server import init_blueprints
-from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
+from nb_workflows.server import create_projects_store, init_blueprints
+from nb_workflows.types import (
+    NBTask,
+    ProjectData,
+    ScheduleData,
+    TokenCreds,
+    WorkflowData,
+)
 
 
 class TestTokenStore(TokenStoreSpec):
@@ -66,6 +71,10 @@ def create_app(bluprints, db, web_redis, rq_redis=None, app_name="test"):
     auth = auth_from_settings(settings.SECURITY, _store)
     sanic_init_auth(_app, auth, settings.SECURITY)
     init_blueprints(_app, ["auth"], "nb_workflows.security")
+
+    _app.ctx.kv_store = create_projects_store(
+        "nb_workflows.io.kv_local.AsyncKVLocal", "nbworkflows"
+    )
 
     @_app.middleware("request")
     async def inject_session(request):

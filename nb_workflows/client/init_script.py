@@ -7,12 +7,11 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 
-from nb_workflows import client, defaults
+from nb_workflows import client, defaults, runtimes
 from nb_workflows.client import from_file
 from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.client.nbclient import NBClient
 from nb_workflows.client.state import WorkflowsState
-from nb_workflows.client.uploads import generate_dockerfile
 from nb_workflows.conf import load_client
 from nb_workflows.conf.jtemplates import get_package_dir, render_to_file
 from nb_workflows.hashes import generate_random
@@ -25,9 +24,8 @@ from nb_workflows.types import (
 )
 from nb_workflows.types.docker import DockerfileImage
 from nb_workflows.types.projects import ProjectCreated
-from nb_workflows.utils import get_parent_folder, get_version, mkdir_p
-
-from .utils import normalize_name
+from nb_workflows.types.runtimes import RuntimeSpec
+from nb_workflows.utils import get_parent_folder, get_version, mkdir_p, normalize_name
 
 console = Console()
 
@@ -62,21 +60,12 @@ def _example_workflow() -> WorkflowDataWeb:
         alias="a_workflow_example",
         nbtask=_example_task(),
         enabled=False,
-        schedule=ScheduleData(
-            repeat=1,
-            interval=10,
-        ),
+        # schedule=ScheduleData(
+        #    repeat=1,
+        #    interval=10,
+        # ),
     )
     return wd
-
-
-def default_runtime() -> DockerfileImage:
-    version = get_version()
-    return DockerfileImage(
-        maintener=defaults.DOCKERFILE_MAINTENER,
-        image=f"{defaults.DOCKERFILE_IMAGE}:{version}",
-        final_packages="vim-tiny",
-    )
 
 
 def _empty_file(filename):
@@ -119,14 +108,26 @@ def init_nb_app(root, projectid, project_name, url_service=None):
     )
 
 
+def _default_runtime(root):
+    version = get_version()
+    default_cpu = f"{defaults.DOCKERFILE_IMAGE}:{version}"
+    default_gpu = f"{defaults.DOCKERFILE_IMAGE_GPU}:{version}"
+    render_to_file(
+        "runtimes.yaml",
+        str((root / f"runtimes.yaml").resolve()),
+        data={"docker_cpu": default_cpu, "docker_gpu": default_gpu},
+    )
+
+
 def init_project_files(root, files):
-    runtime = default_runtime()
-    generate_dockerfile(root, runtime.dict())
+    _default_runtime(root)
     for f in files:
         render_to_file(
             f["tpl"],
             str((root / f["dst"]).resolve()),
         )
+    runtime = runtimes.get_spec_from_file("default")
+    runtimes.generate_dockerfile(root, runtime)
 
 
 def create_folders(root, folders: List[str]):
@@ -138,13 +139,15 @@ def workflow_state_init(root, name, projectid=None) -> WorkflowsState:
 
     wd = _example_workflow()
     wd_dict = {wd.alias: wd}
-    runtime = default_runtime()
+    # runtime = default_runtime()
 
     if not projectid:
-        projectid = generate_random(defaults.PROJECTID_LEN)
+        projectid = generate_random(
+            defaults.PROJECTID_MIN_LEN, alphabet=defaults.PROJECT_ID_ALPHABET
+        )
 
     pd = ProjectData(name=name, projectid=projectid)
-    wf_state = WorkflowsState(pd, workflows=wd_dict, runtime=runtime, version="0.2.0")
+    wf_state = WorkflowsState(pd, workflows=wd_dict, version="0.2.0")
     wf_state.write(root / "workflows.yaml")
     return wf_state
 
@@ -161,10 +164,12 @@ def create_on_the_server(
     if rsp:
         dc.state.projectid = rsp.pd.projectid
         # valid_agent = dc.projects_create_agent()
-        agent_creds = dc.projects_agent_token()
-        with open(f"{root}/local.nbvars", "a") as f:
-            f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
-            f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}")
+        # agent_creds = dc.projects_agent_token(rsp.pd.agent)
+        # with open(f"{dc.working_area}/{defaults.CLIENT_AGENT_CREDS_FILE}", "w") as f:
+        #    f.write(agent_creds.json())
+        # with open(f"{root}/local.nbvars", "a") as f:
+        #    f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
+        #    f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}\n")
         return rsp
     return None
 

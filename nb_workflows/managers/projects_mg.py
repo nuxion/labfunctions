@@ -9,20 +9,19 @@ from sqlalchemy import select
 # from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
-from nb_workflows import secrets
+from nb_workflows import defaults, secrets
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.hashes import generate_random
 from nb_workflows.managers import users_mg
 from nb_workflows.models import ProjectModel, UserModel, assoc_projects_users
 from nb_workflows.types import ProjectData, ProjectReq
-from nb_workflows.utils import get_parent_folder, secure_filename
+from nb_workflows.utils import get_parent_folder, normalize_name
 
 
 def select_project():
     stmt = (
-        select(ProjectModel)
-        .options(selectinload(ProjectModel.owner))
-        .options(selectinload(ProjectModel.agent))
+        select(ProjectModel).options(selectinload(ProjectModel.owner))
+        # .options(selectinload(ProjectModel.agent))
         .options(selectinload(ProjectModel.users))
     )
 
@@ -30,16 +29,16 @@ def select_project():
 
 
 def _model2projectdata(obj: ProjectModel) -> ProjectData:
-    agent_name = None
-    if obj.agent:
-        agent_name = obj.agent.username
+    # agent_name = None
+    # if obj.agent:
+    #     agent_name = obj.agent.username
 
     pd = ProjectData(
         name=obj.name,
         projectid=obj.projectid,
         owner=obj.owner.username,
         users=[u.username for u in obj.users],
-        agent=agent_name,
+        # agent=agent_name,
         description=obj.description,
         respository=obj.repository,
     )
@@ -68,39 +67,10 @@ def _insert_relation_project(user_id, project_id):
     return stmt
 
 
-# def _create_or_update_stmt(name, user_id: int, projectid: str, pq: ProjectReq):
-#     # _key = secrets.generate_private_key()
-#
-#     stmt = insert(ProjectModel.__table__).values(
-#         name=name,
-#         private_key=pq.private_key.encode("utf-8"),
-#         projectid=projectid,
-#         description=pq.description,
-#         repository=pq.repository,
-#         owner_id=user_id,
-#     )
-#     stmt = stmt.on_conflict_do_update(
-#         # constraint="crawlers_page_bucket_id_fkey",
-#         index_elements=[projectid],
-#         set_=dict(
-#             description=pq.description,
-#             repository=pq.repository,
-#             updated_at=datetime.utcnow(),
-#         ),
-#     )
-#
-#     return stmt
-
-
-def normalize_name(name: str) -> str:
-    evaluate = name.lower()
-    evaluate = evaluate.replace(" ", "_")
-    evaluate = secure_filename(name)
-    return evaluate
-
-
 def generate_projectid(name=None) -> str:
-    return generate_random(settings.PROJECTID_LEN)
+    return generate_random(
+        settings.PROJECTID_LEN, alphabet=defaults.PROJECT_ID_ALPHABET
+    )
 
 
 async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, None]:
@@ -112,7 +82,7 @@ async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, No
     try:
         await session.execute(stmt)
         await session.execute(project)
-        agent_user = await create_agent_for_project(session, projectid)
+        agent_user = await create_agent(session, projectid)
         # await session.commit()
         await session.commit()
     except exc.IntegrityError as e:
@@ -124,49 +94,22 @@ async def create(session, user_id: int, pq: ProjectReq) -> Union[ProjectData, No
         projectid=projectid,
         description=pq.description,
         repository=pq.repository,
-        agent=agent_user,
+        agent=agent_user.username,
     )
 
 
-async def assign_project(session, user_id: int, projectid):
+async def assign_project(session, username: str, projectid: str) -> bool:
     """
     Assign a user to a project.
     """
-    um = await users_mg.get_userid_async(session, user_id)
+    um = await users_mg.get_user_async(session, username)
     if um:
         # projects = [p.projectid for p in um.projects]
         # if projectid in projects:
-        stmt = _insert_relation_project(user_id, projectid)
+        stmt = _insert_relation_project(um.id, projectid)
         await session.execute(stmt)
         return True
     return False
-
-
-async def create_agent_for_project(session, projectid: str) -> Union[str, None]:
-    prj = await get_by_projectid_model(session, projectid)
-    if prj and not prj.agent_id:
-        um = await users_mg.create_agent(session, projectid)
-        um.projects.append(prj)
-        prj.agent = um
-        prj.updated_at = datetime.utcnow()
-        session.add(prj)
-        return um.username
-    return None
-
-
-async def delete_agent_for_project(session, projectid: str):
-    prj = await get_by_projectid_model(session, projectid)
-    prj.agent = None
-    prj.updated_at = datetime.utcnow()
-    session.add(prj)
-
-
-async def get_agent_for_project(session, projectid: str) -> Union[UserModel, None]:
-    prj = await get_by_projectid_model(session, projectid)
-    if prj and prj.agent_id:
-        user = await users_mg.get_userid_async(session, prj.agent_id)
-        return user
-    return None
 
 
 async def create_or_update(session, user_id: int, pq: ProjectReq):
@@ -193,12 +136,6 @@ async def get_by_projectid_model(session, projectid) -> Union[ProjectModel, None
     return r.scalar_one_or_none()
 
 
-def get_by_projectid_model_sync(session, projectid) -> Union[ProjectModel, None]:
-    stmt = select_project().where(ProjectModel.projectid == projectid).limit(1)
-    r = session.execute(stmt)
-    return r.scalar_one_or_none()
-
-
 async def get_by_projectid(
     session, projectid, user_id=None
 ) -> Union[ProjectData, None]:
@@ -214,24 +151,6 @@ async def get_by_projectid(
     return _model2projectdata(obj)
 
 
-async def get_by_name_model(session, name) -> Union[ProjectModel, None]:
-    _name = normalize_name(name)
-    stmt = select_project()
-    stmt = stmt.where(ProjectModel.name == _name).limit(1)
-    r = await session.execute(stmt)
-    obj: Optional[ProjectModel] = r.scalar_one_or_none()
-    if not obj:
-        return None
-    return obj
-
-
-async def get_by_name(session, name) -> Union[ProjectData, None]:
-    obj = await get_by_name_model(session, name)
-    if obj:
-        return ProjectData(**obj.to_dict(rules=("-id", "-created_at", "-updated_at")))
-    return None
-
-
 async def list_all(session, user_id=None) -> Union[List[ProjectData], None]:
     stmt = select_project()
     if user_id:
@@ -244,13 +163,13 @@ async def list_all(session, user_id=None) -> Union[List[ProjectData], None]:
     return None
 
 
-async def list_by_user(session, user_id) -> Union[List[ProjectData], None]:
-    stmt = select_project().where(ProjectModel.owner_id == user_id)
-    rows = await session.execute(stmt)
-    if rows:
-        results = [_model2projectdata(r[0]) for r in rows]
-        return results
-    return None
+# async def list_by_user(session, user_id) -> Union[List[ProjectData], None]:
+#     stmt = select_project().where(ProjectModel.owner_id == user_id)
+#     rows = await session.execute(stmt)
+#     if rows:
+#         results = [_model2projectdata(r[0]) for r in rows]
+#         return results
+#     return None
 
 
 async def delete_by_projectid(session, projectid):
@@ -260,6 +179,76 @@ async def delete_by_projectid(session, projectid):
     """
     stmt = delete(ProjectModel).where(ProjectModel.projectid == projectid)
     await session.execute(stmt)
+
+
+async def create_agent(
+    session,
+    projectid=None,
+    scopes=defaults.AGENT_SCOPES,
+    admin_scopes=None,
+    is_admin=False,
+):
+    prefix = generate_random(size=5)
+    if projectid:
+        prefix = projectid[:5]
+    name = f"{prefix}-{generate_random(defaults.AGENT_LEN)}"
+    fullname = f"{defaults.AGENT_USER_PREFIX}{name}"
+    if is_admin:
+        scopes = defaults.AGENT_ADMIN_SCOPES
+
+    u = UserModel(
+        username=fullname,
+        scopes=scopes,
+        is_agent=True,
+    )
+    if projectid:
+        prj = await get_by_projectid_model(session, projectid)
+        u.projects.append(prj)
+        prj.updated_at = datetime.utcnow()
+        session.add(prj)
+
+    session.add(u)
+
+    return u
+
+
+async def get_agent(
+    session, agentname: str, projectid: Optional[str] = None
+) -> Union[UserModel, None]:
+    # prj = await get_by_projectid_model(session, projectid)
+    stmt = users_mg.join_with_project(agentname)
+    res = await session.execute(stmt)
+    return res.scalar_one_or_none()
+
+
+async def get_agent_project(session, projectid) -> Union[UserModel, None]:
+    stmt = (
+        users_mg.join_by_project()
+        .where(UserModel.is_agent.is_(True))
+        .where(ProjectModel.projectid == projectid)
+        .limit(1)
+    )
+    res = await session.execute(stmt)
+    return res.scalar_one_or_none()
+
+
+async def get_agent_list(session, projectid) -> List[str]:
+    stmt = (
+        users_mg.join_by_project()
+        .where(UserModel.is_agent.is_(True))
+        .where(ProjectModel.projectid == projectid)
+    )
+    res = await session.execute(stmt)
+    return [r[0].username for r in res]
+
+
+async def delete_agent(session, agentname, projectid: Optional[str] = None) -> bool:
+    user = await users_mg.get_user_async(session, agentname, projectid)
+    if user:
+        await session.delete(user)
+        return True
+    return False
+    # session.add(prj)
 
 
 def get_private_key_sync(session, project_id) -> Union[str, None]:

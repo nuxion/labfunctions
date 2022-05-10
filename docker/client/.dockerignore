@@ -35,6 +35,7 @@ tramp
 
 # cask packages
 .cask/
+# dist/
 
 # Flycheck
 flycheck_*.el
@@ -346,3 +347,7 @@ experiments/
 scripts/
 outputs/
 .env.docker
+db.sqlite
+.uploads/
+tests/
+e2e/

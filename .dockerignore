@@ -348,3 +348,6 @@ scripts/
 outputs/
 .env.docker
 db.sqlite
+.uploads/
+tests/
+e2e/

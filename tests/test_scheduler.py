@@ -4,27 +4,28 @@ from pytest_mock import MockerFixture
 from rq.job import Job
 
 from nb_workflows import scheduler
-from nb_workflows.executors.context import ExecID
-from nb_workflows.scheduler import control_q, firm_or_new, machine_q
+from nb_workflows.executors import ExecID
 
 from .factories import ExecutionNBTaskFactory, WorkflowDataFactory
 
-
-def test_scheduler_control_q():
-    qname = control_q()
-    assert qname == "ctrl.default.control"
+# from nb_workflows.scheduler import control_q, firm_or_new, machine_q
 
 
-def test_scheduler_machine_q():
-    qname = machine_q(name="default")
-    assert qname == "mch.default"
-
-
-def test_scheduler_firm_or_new():
-    signed = firm_or_new("test", "dispatcher")
-    non_id = firm_or_new(None, "web")
-    assert signed == f"{ExecID.firms.dispatcher}.test"
-    assert non_id.startswith(f"{ExecID.firms.web}.")
+# def test_scheduler_control_q():
+#    qname = control_q()
+#    assert qname == "ctrl.default.control"
+#
+#
+# def test_scheduler_machine_q():
+#    qname = machine_q(name="default")
+#    assert qname == "mch.default"
+#
+#
+# def test_scheduler_firm_or_new():
+#    signed = firm_or_new("test", "dispatcher")
+#    non_id = firm_or_new(None, "web")
+#    assert signed == f"{ExecID.firms.dispatcher}.test"
+#    assert non_id.startswith(f"{ExecID.firms.web}.")
 
 
 def test_scheduler_instance(redis):
@@ -70,7 +71,7 @@ def test_scheduler_SEdispatcher(mocker: MockerFixture, redis):
     job_execid: Job = se.dispatcher("test", wfid="test", execid="testid")
 
     assert isinstance(job, Job)
-    assert job_execid.id == f"{ExecID.firms.dispatcher}.testid"
+    assert job_execid.id == f"{ExecID.types.dispatcher}.testid"
 
 
 def test_scheduler_SE_notebook(mocker: MockerFixture, redis):

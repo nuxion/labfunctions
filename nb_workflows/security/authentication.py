@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, List, Optional, Set
 
 import jwt
 from pydantic.error_wrappers import ValidationError
-from sanic import Request
 
 from nb_workflows import defaults
 from nb_workflows.security import scopes
@@ -147,8 +146,9 @@ class Auth(AuthSpec):
         return is_valid
 
     async def refresh_token(self, access_token, refresh_token) -> JWTResponse:
-        decoded = self.decode(access_token, verify_exp=False)
-        if await self.validate_refresh_token(access_token, refresh_token):
+        is_valid = await self.validate_refresh_token(access_token, refresh_token)
+        if is_valid:
+            decoded = self.decode(access_token, verify_exp=False)
             await self.store.delete(f"{decoded['usr']}.{refresh_token}")
 
             _new_refresh = await self.store_refresh_token(decoded["usr"])

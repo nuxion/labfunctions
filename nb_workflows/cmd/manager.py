@@ -11,7 +11,7 @@ from rich.prompt import Confirm, Prompt
 
 from nb_workflows.conf import load_server
 from nb_workflows.db.sync import SQL
-from nb_workflows.managers import users_mg
+from nb_workflows.managers import projects_mg, users_mg
 from nb_workflows.security import auth_from_settings
 from nb_workflows.security.redis_tokens import RedisTokenStore
 from nb_workflows.server import create_web_redis
@@ -137,7 +137,7 @@ def users(sql, superuser, scopes, username, action):
 @click.option("--sql", "-s", default=settings.SQL, help="SQL Database")
 @click.option("--scopes", default="agent:r:w", help="agent scopes")
 @click.option("--username", "-u", default=None, help="Agent username")
-@click.option("--admin", "-A", default=None, help="Agent as admin")
+@click.option("--admin", "-A", default=False, is_flag=True, help="Agent as admin")
 @click.option("--exp", "-e", default=30, help="Expire time")
 @click.argument("action", type=click.Choice(["create", "get-token", "delete"]))
 def agent(sql, scopes, username, action, admin, exp):
@@ -148,9 +148,9 @@ def agent(sql, scopes, username, action, admin, exp):
     if action == "create":
         S = db.sessionmaker()
         with S() as session:
-            if admin:
-                scopes = "agent:r:w,admin:r"
-            um = run_sync(users_mg.create_agent, session, username, scopes)
+            um = run_sync(
+                projects_mg.create_agent, session, scopes=scopes, is_admin=admin
+            )
             jwt = run_sync(users_mg.get_jwt_token, auth, um, exp)
             session.commit()
             print_json(
@@ -188,6 +188,24 @@ def agent(sql, scopes, username, action, admin, exp):
             users_mg.delete_user(session, username)
             session.commit()
         console.print("[bold green]Agent deleted[/]")
+
+
+@managercli.command()
+def shell():
+    """starts a IPython REPL console with db objects and models"""
+    from IPython import start_ipython
+
+    db = SQL(settings.SQL)
+    Session = db.sessionmaker()
+    start_ipython(
+        argv=[],
+        user_ns={
+            "settings": settings,
+            "Session": Session,
+            "db": db,
+            "session": Session(),
+        },
+    )
 
 
 # managercli.add_command(db)

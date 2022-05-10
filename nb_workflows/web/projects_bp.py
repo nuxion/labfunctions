@@ -8,76 +8,40 @@ from sanic import Blueprint, Request, Sanic, exceptions
 from sanic.response import empty, json
 from sanic_ext import openapi
 
-from nb_workflows import defaults
-from nb_workflows.client.types import Credentials
+from nb_workflows import defaults, types
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.defaults import API_VERSION
-from nb_workflows.executors.context import build_upload_uri, create_build_ctx
-from nb_workflows.io import AsyncFileserver
 from nb_workflows.managers import projects_mg, users_mg
-from nb_workflows.scheduler import SchedulerExecutor
+from nb_workflows.runtimes.context import build_upload_uri, create_build_ctx
 from nb_workflows.security import get_auth
 from nb_workflows.security.web import protected
-from nb_workflows.types import ExecutionResult, ProjectData, ProjectReq
-from nb_workflows.types.projects import ProjectBuildReq
-from nb_workflows.types.user import AgentReq, UserOrm
 from nb_workflows.utils import run_async, secure_filename
-from nb_workflows.web.utils import get_query_param2, stream_reader
+from nb_workflows.web.utils import (
+    get_kvstore,
+    get_query_param2,
+    get_scheduler,
+    stream_reader,
+)
 
 projects_bp = Blueprint("projects", url_prefix="projects", version=API_VERSION)
-
-
-async def generate_id(session, retries=3) -> Union[str, None]:
-    ix = 0
-    while ix <= retries:
-        id_ = projects_mg.generate_projectid()
-        r = await projects_mg.get_by_projectid(session, id_)
-        if not r:
-            return id_
-        ix += 1
-
-    return None
-
-
-def _get_scheduler(qname=settings.RQ_CONTROL_QUEUE) -> SchedulerExecutor:
-
-    current_app = Sanic.get_app(defaults.SANIC_APP_NAME)
-    r = current_app.ctx.rq_redis
-    return SchedulerExecutor(r, qname=qname)
 
 
 def get_token_data(request: Request):
     return request.ctx.token_data
 
 
-@projects_bp.get("/_generateid")
-@openapi.response(200, "project")
-@openapi.response(500, "not found")
-async def project_generateid(request: Request):
-    """Generates a random projectid"""
-    # pylint: disable=unused-argument
-
-    session = request.ctx.session
-    id_ = projects_mg.generate_projectid()
-    async with session.begin():
-        id_ = await generate_id(session, retries=3)
-        if id_:
-            return json(dict(projectid=id_), 200)
-    return json(dict(msg="Error with generation of a id"), 500)
-
-
 @projects_bp.post("/")
-@openapi.body({"application/json": ProjectReq})
-@openapi.response(201, ProjectData, "Created")
+@openapi.body({"application/json": types.ProjectReq})
+@openapi.response(201, types.ProjectData, "Created")
 @protected()
 @users_mg.inject_user
-async def project_create(request, user: UserOrm):
+async def project_create(request, user: types.user.UserOrm):
     """Create a new project"""
     # pylint: disable=unused-argument
 
     dict_ = request.json
     token_data = get_token_data(request)
-    pr = ProjectReq(**dict_)
+    pr = types.ProjectReq(**dict_)
     session = request.ctx.session
     r = await projects_mg.create(session, user.id, pr)
     if r:
@@ -86,16 +50,16 @@ async def project_create(request, user: UserOrm):
 
 
 @projects_bp.put("/")
-@openapi.body({"application/json": ProjectReq})
+@openapi.body({"application/json": types.ProjectReq})
 @openapi.response(202, "created")
 @protected()
 @users_mg.inject_user
-async def project_create_or_update(request, user: UserOrm):
+async def project_create_or_update(request, user: types.user.UserOrm):
     """Create or update a project"""
     # pylint: disable=unused-argument
 
     dict_ = request.json
-    pd = ProjectReq(**dict_)
+    pd = types.ProjectReq(**dict_)
     session = request.ctx.session
     async with session() as new_session:
         r = await projects_mg.create_or_update(new_session, user.id, pd)
@@ -103,10 +67,10 @@ async def project_create_or_update(request, user: UserOrm):
 
 
 @projects_bp.get("/")
-@openapi.response(200, List[ProjectData], "project-list")
+@openapi.response(200, List[types.ProjectData], "project-list")
 @protected()
 @users_mg.inject_user
-async def project_list(request, user: UserOrm):
+async def project_list(request, user: types.user.UserOrm):
     """Get a list of projects belonging to a user"""
     # pylint: disable=unused-argument
 
@@ -121,7 +85,7 @@ async def project_list(request, user: UserOrm):
 @openapi.response(404, "not found")
 @protected()
 @users_mg.inject_user
-async def project_get_one(request, projectid, user: UserOrm):
+async def project_get_one(request, projectid, user: types.user.UserOrm):
     """Get one project"""
     # pylint: disable=unused-argument
 
@@ -156,45 +120,87 @@ async def project_create_user_agent(request, projectid):
     """
     session = request.ctx.session
     async with session.begin():
-        res = await projects_mg.create_agent_for_project(session, projectid)
+        res = await projects_mg.create_agent(session, projectid)
         if res:
-            return json(dict(msg=res), 201)
+            return json(dict(msg=res.username), 201)
 
     return json(dict(msg="not created"), 200)
 
 
-@projects_bp.delete("/<projectid:str>/agent")
+@projects_bp.delete("/<projectid:str>/agent/<agentname:str>")
 @openapi.parameter("projectid", str, "path")
+@openapi.parameter("agentname", str, "path")
 @protected()
-async def project_delete_user_agent(request, projectid):
+async def project_delete_user_agent(request, projectid, agentname):
     """
     Delete a User Agent
     """
     session = request.ctx.session
-    await projects_mg.delete_agent_for_project(session, projectid)
+    await projects_mg.delete_agent(session, agentname, projectid)
+    await session.commit()
     return json(dict(msg="deleted"), 200)
 
 
 @projects_bp.post("/<projectid:str>/agent/_token")
 @openapi.parameter("projectid", str, "path")
-@openapi.response(200, Credentials, "agent credentials")
+@openapi.response(200, types.user.AgentJWTResponse, "agent credentials")
 @protected()
-async def project_get_agent_token(request, projectid):
+async def project_get_last_agent_token(request, projectid: str):
     """
-    Create an agent token
+    Get the agent token by a project
+    """
+    # pylint: disable=unused-argument
+    _auth = get_auth(request)
+    session = request.ctx.session
+    # redis = request.ctx.web_redis
+
+    agt = await projects_mg.get_agent_project(session, projectid)
+    if agt:
+        jwt = await users_mg.get_jwt_token(_auth, agt, exp=settings.AGENT_TOKEN_EXP)
+        agt_jwt = types.user.AgentJWTResponse(agent_name=agt.username, creds=jwt)
+        return json(agt_jwt.dict(), 200)
+    return json({"msg": "agent not found"}, 404)
+
+
+@projects_bp.post("/<projectid:str>/agent/<agent:str>/_token")
+@openapi.parameter("projectid", str, "path")
+@openapi.parameter("agent", str, "path")
+@openapi.response(200, types.user.AgentJWTResponse, "agent credentials")
+@protected()
+async def project_get_agent_token(request, projectid: str, agent: str):
+    """
+    Get the agent token by a project
     """
     # pylint: disable=unused-argument
     _auth = get_auth(request)
     session = request.ctx.session
     redis = request.ctx.web_redis
 
-    agt = await projects_mg.get_agent_for_project(session, projectid)
+    agt = await projects_mg.get_agent(session, agent, projectid)
     jwt = await users_mg.get_jwt_token(_auth, agt, exp=settings.AGENT_TOKEN_EXP)
+    agt_jwt = types.user.AgentJWTResponse(agent_name=agt.username, creds=jwt)
 
-    return json(jwt.dict(), 200)
+    return json(agt_jwt.dict(), 200)
+
+
+@projects_bp.get("/<projectid:str>/agent")
+@openapi.parameter("projectid", str, "path")
+@openapi.response(200, List[str], "agent credentials")
+@protected()
+async def project_agents_list(request, projectid: str):
+    """
+    Get the agent token by a project
+    """
+    # pylint: disable=unused-argument
+    session = request.ctx.session
+
+    agents = await projects_mg.get_agent_list(session, projectid)
+
+    return json(agents, 200)
 
 
 @projects_bp.post("/<projectid:str>/_build")
+@openapi.body({"application/json": types.RuntimeSpec})
 @openapi.parameter("version", str, "query")
 @protected()
 async def project_build(request, projectid):
@@ -202,27 +208,35 @@ async def project_build(request, projectid):
     Enqueue docker build image
     """
     # pylint: disable=unused-argument
+    spec = types.RuntimeSpec(**request.json)
 
     root = pathlib.Path(projectid)
 
     version = get_query_param2(request, "version", None)
 
-    session = request.ctx.session
-    async with session.begin():
-        pd = await projects_mg.get_by_projectid(session, projectid)
-    if pd:
+    # session = request.ctx.session
+    # async with session.begin():
+    #    pd = await projects_mg.get_by_projectid(session, projectid)
+    # if pd:
+    ctx = create_build_ctx(
+        projectid,
+        spec,
+        version,
+        project_store_class=settings.PROJECTS_STORE_CLASS_SYNC,
+        project_store_bucket=settings.PROJECTS_STORE_BUCKET,
+        registry=settings.DOCKER_REGISTRY,
+    )
 
-        ctx = create_build_ctx(pd, version)
+    sche = get_scheduler(request, settings.BUILD_QUEUE)
+    job = await run_async(sche.enqueue_build, ctx)
 
-        sche = _get_scheduler()
-        job = await run_async(sche.enqueue_build, ctx)
-
-        return json(dict(msg="ok", execid=job.id), 202)
-    return json(dict(msg="not found"), 404)
+    return json(dict(msg="ok", execid=job.id), 202)
+    # return json(dict(msg="not found"), 404)
 
 
 @projects_bp.post("/<projectid:str>/_upload", stream=True)
 @openapi.parameter("version", str, "query")
+@openapi.parameter("runtime", str, "query")
 @protected()
 async def project_upload(request, projectid):
     """
@@ -232,18 +246,26 @@ async def project_upload(request, projectid):
 
     root = pathlib.Path(projectid)
     version = get_query_param2(request, "version", None)
+    runtime_name = get_query_param2(request, "runtime", None)
     session = request.ctx.session
     async with session.begin():
         pd = await projects_mg.get_by_projectid(session, projectid)
 
-    uri = build_upload_uri(pd, version)
-    fileserver = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}"
-    dst_url = f"{fileserver}/{uri}"
-    async with httpx.AsyncClient() as client:
-        r = await client.put(dst_url, content=stream_reader(request))
-    if r.status_code == 204:
+    uri = build_upload_uri(pd.projectid, runtime_name, version)
+
+    kv = get_kvstore(request)
+    rsp = await kv.put_stream(uri, stream_reader(request))
+    if rsp:
+        return json(dict(msg="ok"), 201)
+    else:
         return empty()
-    return json(dict(msg="ok"), r.status_code)
+
+    # fileserver = f"{settings.FILESERVER}/{settings.FILESERVER_BUCKET}"
+    # dst_url = f"{fileserver}/{uri}"
+    # async with httpx.AsyncClient() as client:
+    #    r = await client.put(dst_url, content=stream_reader(request))
+    # if r.status_code == 204:
+    #    return empty()
 
 
 @projects_bp.get("/<projectid:str>/_private_key")

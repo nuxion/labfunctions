@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
@@ -20,14 +20,20 @@ class DockerBuildLog(BaseModel):
     error: bool
 
 
-class DockerBuildCtx(BaseModel):
-    projectid: str
-    project_zip_route: str
-    zip_name: str
-    version: str
-    docker_name: str
-    execid: str
-    registry: Optional[str] = None
+class DockerResources(BaseModel):
+    mem_limit: Optional[int] = None
+    mem_reservation: Optional[int] = None
+
+
+class DockerVolume(BaseModel):
+    orig_mount: str
+    dst_mount: str
+    extra: Dict[str, Any] = {}
+
+
+class DockerRunResult(BaseModel):
+    msg: str
+    status: int
 
 
 class DockerfileImage(BaseModel):

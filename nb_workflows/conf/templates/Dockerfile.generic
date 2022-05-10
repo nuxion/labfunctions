@@ -1,0 +1,83 @@
+## Generic Dockerfile to build image with CPU or GPU support
+FROM {{ data.image }} as builder
+ENV DEBIAN_FRONTEND=noninteractive
+USER root
+SHELL ["/bin/bash", "-c"]
+ADD {{ data.requirements }} /tmp
+# add root/local/bin to path to suppress pip warning
+ENV PATH=$PATH:/root/.local/bin 
+ENV DEBIAN_FRONTEND=noninteractive
+{% if data.gpu %}
+## For the GPU version, part of the code is based on the official image for tensorflow:
+## https://hub.docker.com/layers/tensorflow/tensorflow/tensorflow/latest-gpu-jupyter/images/sha256-56677a6a426e87cba3dc5ae8eb82cffb6c76af7dd3683fe9caaba28dcd2a8958?context=explore
+
+ENV CUDA={{ data.gpu.cuda }}
+ENV CUDNN={{ data.gpu.cudnn }}
+ENV CUDNN_MAJOR_VERSION={{ data.gpu.cudnn_major_version }}
+# Nvidia performs unplanned gpg keys udpates see
+# https://forums.developer.nvidia.com/t/gpg-error-http-developer-download-nvidia-com-compute-cuda-repos-ubuntu1804-x86-64/212904/6
+RUN apt-key adv --fetch-keys  http://developer.download.nvidia.com/compute/cuda/repos/{{ data.gpu.nvidia_gpg_version }}/x86_64/{{ data.gpu.nvidia_gpg_key  }}.pub \
+    && apt-get -y update \
+    && apt-get update && apt-get install -y --no-install-recommends --allow-change-held-packages\
+    build-essential cuda-command-line-tools-${CUDA/./-}\
+    libcublas-${CUDA/./-} \
+    cuda-nvrtc-${CUDA/./-} \
+    libcufft-${CUDA/./-}  \
+    libcurand-${CUDA/./-}  \
+    libcusolver-${CUDA/./-} \
+    libcusparse-${CUDA/./-} \
+    curl \
+    libcudnn${CUDNN_MAJOR_VERSION}=${CUDNN} \
+    libfreetype6-dev libhdf5-serial-dev libzmq3-dev pkg-config software-properties-common unzip
+RUN apt-get update && apt-get install -y python3 python3-pip python3-setuptools
+{% endif %}
+
+{% if data.build_packages -%}
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+   {{ data.build_packages }} \
+   && pip install --user -r /tmp/requirements.txt
+{% else -%}
+RUN  pip install --user -r /tmp/requirements.txt
+{% endif %}
+
+FROM {{ data.image }} as app
+USER root
+SHELL ["/bin/bash", "-c"]
+ENV DEBIAN_FRONTEND=noninteractive
+
+{% if data.gpu %}
+ENV CUDA={{ data.gpu.cuda }}
+ENV CUDNN={{ data.gpu.cudnn }}
+ENV CUDNN_MAJOR_VERSION={{ data.gpu.cudnn_major_version }}
+RUN apt-key adv --fetch-keys  http://developer.download.nvidia.com/compute/cuda/repos/{{ data.gpu.nvidia_gpg_version }}/x86_64/{{ data.gpu.nvidia_gpg_key  }}.pub \
+    && apt-get -y update \
+    && apt-get update && apt-get install -y --no-install-recommends --allow-change-held-packages\
+    build-essential cuda-command-line-tools-${CUDA/./-}\
+    libcublas-${CUDA/./-} \
+    cuda-nvrtc-${CUDA/./-} \
+    libcufft-${CUDA/./-}  \
+    libcurand-${CUDA/./-}  \
+    libcusolver-${CUDA/./-} \
+    libcusparse-${CUDA/./-} \
+    curl \
+    libcudnn${CUDNN_MAJOR_VERSION}=${CUDNN} \
+    libfreetype6-dev libhdf5-serial-dev libzmq3-dev pkg-config software-properties-common unzip
+RUN apt-get update && apt-get install -y python3 python3-pip python3-setuptools
+{% endif -%}
+
+RUN groupadd app -g {{ data.user.gid }} \
+    && useradd -m -d /home/app app -u {{ data.user.uid }} -g {{ data.user.gid }} \
+    {% if data.final_packages -%}
+    && apt-get update -y \
+    && apt-get install -y --no-install-recommends \
+    {{ data.final_packages }} \
+    {%- endif %}
+    && apt-get clean &&  rm -rf /var/lib/apt/lists/*
+COPY --from=builder --chown=app:app /root/.local /home/app/.local/
+COPY --chown=app:app . /app
+
+USER app
+WORKDIR /app
+ENV PATH=$PATH:/home/app/.local/bin
+ENV PYTHONPATH=/app
+# CMD ["python3", "run.py"]
