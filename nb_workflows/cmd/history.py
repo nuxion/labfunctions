@@ -1,9 +1,11 @@
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
 import click
 import httpx
+from rich import print_json
 
 # from nb_workflows.io.fileserver import FileFileserver
 from rich.console import Console
@@ -17,7 +19,7 @@ from nb_workflows.utils import format_seconds, mkdir_p
 console = Console()
 
 
-def get_notebook(url_service, pid, row):
+def get_notebook(nbclient, row):
     output_result = False
     if row.status == 0:
         uri = f"{row.result.output_dir}/{row.result.output_name}"
@@ -30,19 +32,24 @@ def get_notebook(url_service, pid, row):
             mkdir_p(row.result.error_dir)
             output_result = True
     if not Path(uri).exists() and output_result:
-        fullurl = (
-            f"{url_service}/{defaults.API_VERSION}/history/{pid}/_get_output?file={uri}"
-        )
-        nb = httpx.get(fullurl)
-        if nb.status_code == 200:
+        try:
             with open(uri, "wb") as f:
-                f.write(nb.content)
-        else:
-            console.print(f"[bold red]Error getting result from {fullurl}[/]")
+                for chunk in nbclient.history_get_output(uri):
+                    f.write(chunk)
+        except Exception as e:
+            console.print(f"[bold red]Error getting result from {uri}[/]")
+            console.print(f"[bold red]{e}[/]")
     return output_result, uri
 
 
-@click.command(name="history")
+@click.group(name="status")
+def statuscli():
+    """
+    History of tasks executed
+    """
+
+
+@statuscli.command(name="history")
 @click.option(
     "--from-file",
     "-f",
@@ -58,7 +65,7 @@ def get_notebook(url_service, pid, row):
 @click.option("--wfid", "-w", default=None, help="Execution history of workflow id")
 @click.option("--last", "-l", default=1, help="The last executions")
 def historycli(from_file, url_service, last, wfid):
-    """Examine the history and state of your workflows"""
+    """History of tasks executions"""
     c = client.from_file(from_file, url_service=url_service)
 
     rsp = c.history_get_last(wfid, last)
@@ -78,7 +85,8 @@ def historycli(from_file, url_service, last, wfid):
         now = datetime.utcnow()
         diff = (now - dt).total_seconds()
         run = f"[blue]{format_seconds(diff)}[/]"
-        out, uri = get_notebook(url_service, pid, r)
+        c.history_nb_output
+        out, uri = get_notebook(c, r)
         if not out:
             uri = "[red bold]Output not generated[/]"
 
@@ -86,3 +94,30 @@ def historycli(from_file, url_service, last, wfid):
         table.add_row(r.wfid, r.execid, status, uri, run)
 
     console.print(table)
+
+
+@statuscli.command(name="log")
+@click.option(
+    "--from-file",
+    "-f",
+    default="workflows.yaml",
+    help="yaml file with the configuration",
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=load_client().WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
+@click.option("--execid", "-e", default=None, help="Execution log of a task")
+@click.option("--nice", "-n", is_flag=True, default=True, help="Print nice output")
+def logcli(url_service, from_file, execid, nice):
+    """log detail of a execution"""
+    c = client.from_file(from_file, url_service=url_service)
+    rsp = c.history_detail(execid)
+    if not rsp:
+        console.print(f"[red bold](x) Execution id {execid} not found[/]")
+        sys.exit(-1)
+    print_json(data=rsp.dict())
+    if nice:
+        console.print(f"[red]{rsp.result.error_msg}[/]")

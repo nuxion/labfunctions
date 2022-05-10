@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import shutil
 import time
 import warnings
@@ -78,16 +79,24 @@ class NBTaskDocker(NBTaskExecBase):
         if not priv_key:
             raise IndexError("No priv key found")
 
-        return {
+        env = {
             defaults.PRIVKEY_VAR_NAME: priv_key,
             defaults.EXECUTIONTASK_VAR: json.dumps(data),
             "NB_WORKFLOW_SERVICE": self.client._addr,
             defaults.BASE_PATH_ENV: "/app",
         }
+        return env
 
     def run(self, ctx: ExecutionNBTask) -> ExecutionResult:
         _started = time.time()
         env = self.build_env(ctx.dict())
+        agent_token = self.client.projects_agent_token(projectid=ctx.projectid)
+        env.update(
+            {
+                "NB_AGENT_TOKEN": agent_token.creds.access_token,
+                "NB_AGENT_REFRESH_TOKEN": agent_token.creds.refresh_token,
+            }
+        )
         cmd = DockerCommand()
         result = cmd.run(self.cmd, ctx.runtime, ctx.timeout, env_data=env)
         error = False

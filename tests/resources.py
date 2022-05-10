@@ -6,7 +6,6 @@ from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
 
-from nb_workflows.client.types import Credentials
 from nb_workflows.conf.server_settings import settings
 from nb_workflows.events import EventManager
 from nb_workflows.hashes import generate_random
@@ -14,7 +13,13 @@ from nb_workflows.managers import users_mg
 from nb_workflows.security import TokenStoreSpec, auth_from_settings, sanic_init_auth
 from nb_workflows.security.redis_tokens import RedisTokenStore
 from nb_workflows.server import create_projects_store, init_blueprints
-from nb_workflows.types import NBTask, ProjectData, ScheduleData, WorkflowData
+from nb_workflows.types import (
+    NBTask,
+    ProjectData,
+    ScheduleData,
+    TokenCreds,
+    WorkflowData,
+)
 
 
 class TestTokenStore(TokenStoreSpec):

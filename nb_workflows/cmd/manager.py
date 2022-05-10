@@ -11,7 +11,7 @@ from rich.prompt import Confirm, Prompt
 
 from nb_workflows.conf import load_server
 from nb_workflows.db.sync import SQL
-from nb_workflows.managers import users_mg
+from nb_workflows.managers import projects_mg, users_mg
 from nb_workflows.security import auth_from_settings
 from nb_workflows.security.redis_tokens import RedisTokenStore
 from nb_workflows.server import create_web_redis
@@ -148,9 +148,9 @@ def agent(sql, scopes, username, action, admin, exp):
     if action == "create":
         S = db.sessionmaker()
         with S() as session:
-            if admin:
-                scopes = "agent:r:w,admin:r"
-            um = run_sync(users_mg.create_agent, session, username, scopes)
+            um = run_sync(
+                projects_mg.create_agent, session, scopes=scopes, is_admin=admin
+            )
             jwt = run_sync(users_mg.get_jwt_token, auth, um, exp)
             session.commit()
             print_json(

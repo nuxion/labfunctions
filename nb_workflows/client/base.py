@@ -7,11 +7,9 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Union
 import httpx
 import jwt
 
-from nb_workflows import defaults, types
-from nb_workflows.errors.client import LoginError, WorkflowStateNotSetError
+from nb_workflows import defaults, errors, types
 from nb_workflows.events import EventManager
 from nb_workflows.hashes import generate_random
-from nb_workflows.security.errors import AuthValidationFailed
 from nb_workflows.utils import mkdir_p, open_yaml, write_yaml
 
 from .state import WorkflowsState
@@ -59,7 +57,7 @@ class AuthFlow(httpx.Auth):
         data = response.json()
         tkn = data.get("access_token")
         if not tkn:
-            raise AuthValidationFailed()
+            raise errors.AuthValidationFailed()
         self.access_token = tkn
 
 
@@ -157,14 +155,14 @@ class BaseClient:
         if self.state:
             return self.state.projectid
         else:
-            raise WorkflowStateNotSetError(__name__)
+            raise errors.client.WorkflowStateNotSetError(__name__)
 
     @property
     def project_name(self) -> str:
         if self.state:
             return self.state.project_name
         else:
-            raise WorkflowStateNotSetError(__name__)
+            raise errors.client.WorkflowStateNotSetError(__name__)
 
     # def get_context(self, execid=None) -> ExecutionNBTask:
     #    _env = os.getenv(defaults.EXECUTIONTASK_VAR)
@@ -236,14 +234,14 @@ class BaseClient:
             self.creds = types.TokenCreds(**rsp.json())
             # self._http = self.http_init()
         else:
-            raise LoginError(self._addr, u)
+            raise errors.client.LoginError(self._addr, u)
 
     def verify(self):
         try:
             rsp = self._http.get(f"/auth/verify")
             if rsp.status_code == 200:
                 return True
-        except AuthValidationFailed:
+        except errors.AuthValidationFailed:
             self._creds = None
             self._auth = None
             return False

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.progress import Progress, SpinnerColumn
 from rich.table import Table
 
 from nb_workflows import client, defaults, errors, runtimes, secrets
@@ -20,6 +21,10 @@ from .utils import watcher
 settings = load_client()
 
 console = Console()
+progress = Progress(
+    SpinnerColumn(),
+    "[progress.description]{task.description}",
+)
 
 
 @click.group(name="runtimes")
@@ -145,8 +150,9 @@ def build(
     elif local:
         PROJECTS_STORE_CLASS = "nb_workflows.io.kv_local.KVLocal"
         PROJECTS_STORE_BUCKET = "nbworkflows"
-        os.environ["NB_AGENT_TOKEN"] = "asara"
-        os.environ["NB_AGENT_REFRESH_TOKEN"] = "asara"
+        os.environ["NB_AGENT_TOKEN"] = c.creds.access_token
+        os.environ["NB_AGENT_REFRESH_TOKEN"] = c.creds.refresh_token
+        os.environ["NB_RUN_LOCAL"] = "yes"
         kv = GenericKVSpec.create(PROJECTS_STORE_CLASS, PROJECTS_STORE_BUCKET)
         ctx = create_build_ctx(
             c.projectid,
@@ -156,14 +162,26 @@ def build(
             PROJECTS_STORE_BUCKET,
         )
         kv.put_stream(ctx.download_zip, kv.from_file_gen(zfile.filepath))
-
-        rs = builder_exec(ctx)
+        with progress:
+            task = progress.add_task(
+                f" Building docker image for {name}", start=False, total=1
+            )
+            rs = builder_exec(ctx)
+            progress.advance(task)
+        # rs = builder_exec(ctx)
         # console.print(rs)
         console.print(f"=> Image: [magenta]{ctx.docker_name}:{ctx.version}[/]")
         console.print(f"=> Version: [magenta]{ctx.version}[/]")
         if ctx.registry:
             console.print(f"=> Registry: [magenta]{ctx.registry}[/]")
-        console.print("[green bold]=> Succesfully[/]")
+        if rs.error:
+            console.print(
+                f"[red bold](x) Error building "
+                f"[magenta]{ctx.docker_name}:{ctx.version}[/][/]"
+            )
+            console.print(f"[red]{rs.build_log.logs}")
+        else:
+            console.print("[green bold]=> Succesfully[/]")
 
     # elif action == "agent-token":
     #    creds = c.projects_agent_token()
@@ -213,7 +231,7 @@ def generate(from_file, name):
     root = Path(os.getcwd())
     spec = runtimes.get_spec_from_file(name, from_file)
     runtimes.generate_dockerfile(root, spec)
-    console.print(f"[green]Dockerfile generated as Dockerfiles.{name}[/]")
+    console.print(f"[green]Dockerfile generated as Dockerfile.{name}[/]")
 
 
 # @projectcli.command(name="runtimes")

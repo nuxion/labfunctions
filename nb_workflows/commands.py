@@ -1,5 +1,10 @@
 import json
 import logging
+import os
+import shlex
+import subprocess
+import sys
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
@@ -14,6 +19,44 @@ from nb_workflows.types.docker import (
     DockerVolume,
 )
 from nb_workflows.utils import mkdir_p
+
+
+def shell(
+    command: str, check=True, input=None, cwd=None, silent=False, env=None
+) -> subprocess.CompletedProcess:
+    """
+    Runs a provided command, streaming its output to the log files.
+    :param command: A command to be executed, as a single string.
+    :param check: If true, will throw exception on failure (exit code != 0)
+    :param input: Input for the executed command.
+    :param cwd: Directory in which to execute the command.
+    :param silent: If set to True, the output of command won't be logged or printed.
+    :param env: A set of environment variable for the process to use. If None, the current env is inherited.
+    :return: CompletedProcess instance - the result of the command execution.
+    """
+    if not silent:
+        log_msg = (
+            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+            f"Executing: {command}" + os.linesep
+        )
+        print(log_msg)
+        print(log_msg)
+
+    proc = subprocess.run(
+        shlex.split(command),
+        check=check,
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        input=input,
+        cwd=cwd,
+        env=env,
+    )
+
+    if not silent:
+        print(proc.stderr.decode())
+        print(proc.stdout.decode())
+
+    return proc
 
 
 def docker_low_build(path, dockerfile, tag, rm=False) -> DockerBuildLowLog:
@@ -57,6 +100,8 @@ def docker_low_build(path, dockerfile, tag, rm=False) -> DockerBuildLowLog:
 
 
 class DockerCommand:
+    __slots__ = "docker"
+
     def __init__(self, docker_client=None):
         self.docker = docker_client or docker.from_env()
 

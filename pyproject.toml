@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nb_workflows"
-version = "0.8.0-alpha.4"
+version = "0.8.0-alpha.5"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [
@@ -120,6 +120,7 @@ sphinx-rtd-theme = "^1.0.0"
 invoke = "^1.6.0"
 jupyterlab = "^3.3.2"
 sanic-testing = "^0.8.2"
+pydeps = "^1.10.18"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

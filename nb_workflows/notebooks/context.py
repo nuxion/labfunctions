@@ -30,10 +30,12 @@ def create_dummy_ctx(projectid, execid=None) -> ExecutionNBTask:
     return ctx
 
 
-def prepare_runtime(runtime: Optional[RuntimeData] = None) -> str:
+def prepare_runtime(runtime: Optional[RuntimeData] = None, gpu_support=False) -> str:
     if not runtime:
         version = get_version()
         _runtime = f"{defaults.DOCKERFILE_IMAGE}:{version}"
+        if gpu_support:
+            _runtime = f"{defaults.DOCKERFILE_IMAGE_GPU}:{version}"
     else:
         _runtime = f"{runtime.docker_name}:{runtime.version}"
         if runtime.registry:
@@ -70,7 +72,7 @@ def create_notebook_ctx(
     error_dir = f"{defaults.NB_OUTPUTS}/errors/{today}"
 
     output_name = f"{wfid}.{task.nb_name}.{execid}.ipynb"
-    _runtime = prepare_runtime(runtime)
+    _runtime = prepare_runtime(runtime, task.gpu_support)
     machine = task.machine or defaults.MACHINE_TYPE
     cluster = task.cluster or defaults.CLUSTER_NAME
 
@@ -90,6 +92,7 @@ def create_notebook_ctx(
         error_dir=error_dir,
         today=today,
         timeout=task.timeout,
+        gpu_support=task.gpu_support,
         created_at=_now,
         notifications_ok=task.notifications_ok,
         notifications_fail=task.notifications_fail,

@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, List, Optional, Set
 
 import jwt
 from pydantic.error_wrappers import ValidationError
-from sanic import Request
 
 from nb_workflows import defaults
 from nb_workflows.security import scopes

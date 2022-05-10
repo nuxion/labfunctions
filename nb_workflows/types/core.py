@@ -79,6 +79,7 @@ class ExecutionNBTask(BaseModel):
     today: str
     timeout: int
     created_at: str
+    gpu_support: bool = False
     remote_input: Optional[str]
     remote_output: Optional[str]
     notifications_ok: Optional[List[str]] = None

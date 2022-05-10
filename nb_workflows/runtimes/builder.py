@@ -46,7 +46,6 @@ class BuildTask:
 
     def get_runtime_file(self, full_zip_file_path, download_key_zip):
         with open(full_zip_file_path, "wb") as f:
-            print("KV: ", type(self.kv))
             for chunk in self.kv.get_stream(download_key_zip):
                 f.write(chunk)
 
@@ -104,7 +103,8 @@ def builder_exec(ctx: BuildCtx):
         refresh_token=refresh_token,
     )
     rsp = task.run(ctx)
-    task.register(ctx)
+    if not os.getenv("NB_RUN_LOCAL"):
+        task.register(ctx)
     return rsp
 
 

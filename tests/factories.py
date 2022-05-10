@@ -7,7 +7,6 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from nb_workflows import utils
 from nb_workflows.client.state import WorkflowsState
-from nb_workflows.client.types import Credentials
 from nb_workflows.hashes import generate_random
 from nb_workflows.models import (
     HistoryModel,
@@ -27,11 +26,9 @@ from nb_workflows.types import (
     ProjectData,
     ProjectReq,
     ScheduleData,
-    WorkflowData,
-    WorkflowDataWeb,
-    agent,
-    cluster,
 )
+from nb_workflows.types import TokenCreds as Credentials
+from nb_workflows.types import WorkflowData, WorkflowDataWeb, agent, cluster
 from nb_workflows.types import docker as docker_types
 from nb_workflows.types import machine, runtimes
 from nb_workflows.types.config import SecuritySettings
@@ -315,7 +312,7 @@ class DockerSpecFactory(factory.Factory):
         model = runtimes.DockerSpec
 
     image = factory.Sequence(lambda n: "img-%d" % n)
-    maintener = factory.Sequence(lambda n: "maintener-%d" % n)
+    maintainer = factory.Sequence(lambda n: "maintener-%d" % n)
     build_packages = factory.Sequence(lambda n: "pkg-%d" % n)
     final_packages = factory.Sequence(lambda n: "pkg-%d" % n)
 

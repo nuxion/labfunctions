@@ -10,8 +10,10 @@ from nb_workflows import client, defaults
 from nb_workflows.client.diskclient import DiskClient
 from nb_workflows.conf import load_client
 from nb_workflows.context import create_dummy_ctx
+from nb_workflows.executors import jupyter_exec
 from nb_workflows.executors.docker_exec import docker_exec
 from nb_workflows.executors.local_exec import local_exec_env
+from nb_workflows.hashes import generate_random
 from nb_workflows.types import NBTask
 
 from .utils import watcher
@@ -206,3 +208,46 @@ def notebook(
         result = local_exec_env()
         # rsp = local_nb_dev_exec(task)
         print_json(data=result.dict())
+
+
+@executorscli.command()
+@click.option(
+    "--from-file",
+    "-f",
+    default="workflows.yaml",
+    help="yaml file with the configuration",
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=load_client().WORKFLOW_SERVICE,
+    help="URL of the NB Workflow Service",
+)
+@click.option(
+    "--param", "-p", multiple=True, help="Params to be passed to the notebook file"
+)
+@click.option(
+    "--machine", "-m", default="cpu", help="Machine where the notebook should run"
+)
+@click.option("--runtime", "-r", default=None, help="Runtime to use")
+@click.option("--cluster", "-c", default="default", help="Cluster where it should run")
+@click.option("--version", "-v", default=None, help="Runtime version to run")
+@click.option("--local", "-L", default=False, is_flag=True, help="Execute locally")
+def jupyter(
+    url_service,
+    from_file,
+    param,
+    cluster,
+    runtime,
+    machine,
+    version,
+    local,
+):
+    """Jupyter instance on demand"""
+
+    c = client.from_file(from_file, url_service=url_service)
+    if local:
+        os.environ["NB_LOCAL"] = "yes"
+        random_url = generate_random(alphabet=defaults.NANO_URLSAFE_ALPHABET)
+        opts = jupyter_exec.JupyterOpts(base_url=f"/{random_url}")
+        jupyter_exec.jupyter_exec(opts)

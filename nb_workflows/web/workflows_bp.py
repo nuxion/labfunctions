@@ -78,7 +78,6 @@ async def notebooks_run(request, projectid):
     execid = ExecID()
     id_ = execid.firm_with(ExecID.types.web)
     runtime = None
-    breakpoint()
     if task.runtime:
         runtime = await runtimes_mg.get_runtime(
             session, projectid, task.runtime, task.version

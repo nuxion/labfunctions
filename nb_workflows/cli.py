@@ -8,14 +8,14 @@ from nb_workflows.cmd.common import info, login, startproject
 
 def load_client_cli(cli):
     from nb_workflows.cmd.executors import executorscli
-    from nb_workflows.cmd.history import historycli
+    from nb_workflows.cmd.history import statuscli
     from nb_workflows.cmd.project import projectcli
     from nb_workflows.cmd.runtimes import runtimescli
     from nb_workflows.cmd.workflows import workflowscli
 
     cli.add_command(workflowscli)
     cli.add_command(projectcli)
-    cli.add_command(historycli)
+    cli.add_command(statuscli)
     cli.add_command(executorscli)
     cli.add_command(runtimescli)
 

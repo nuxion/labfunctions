@@ -94,16 +94,19 @@ class ProjectsClient(BaseClient):
         return None
 
     def projects_agent_token(
-        self, agentname: Optional[str] = None
+        self, agentname: Optional[str] = None, projectid: Optional[str] = None
     ) -> Union[types.user.AgentJWTResponse, None]:
         """
         If an agentname is given then it will ask for that agent, if not, then it will
         get the token for the last agent created for this project.
         """
+        prj = self.projectid
+        if projectid:
+            prj = projectid
 
-        url = f"/projects/{self.projectid}/agent/_token"
+        url = f"/projects/{prj}/agent/_token"
         if agentname:
-            url = f"/projects/{self.projectid}/agent/{agentname}/_token"
+            url = f"/projects/{prj}/agent/{agentname}/_token"
 
         r = self._http.post(url)
 

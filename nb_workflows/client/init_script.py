@@ -108,13 +108,14 @@ def init_nb_app(root, projectid, project_name, url_service=None):
     )
 
 
-def _default_runtime(root) -> RuntimeSpec:
+def _default_runtime(root):
     version = get_version()
-    default_image = f"{defaults.DOCKERFILE_IMAGE}:{version}"
+    default_cpu = f"{defaults.DOCKERFILE_IMAGE}:{version}"
+    default_gpu = f"{defaults.DOCKERFILE_IMAGE_GPU}:{version}"
     render_to_file(
         "runtimes.yaml",
         str((root / f"runtimes.yaml").resolve()),
-        data={"version": default_image},
+        data={"docker_cpu": default_cpu, "docker_gpu": default_gpu},
     )
 
 

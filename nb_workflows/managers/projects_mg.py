@@ -205,9 +205,9 @@ async def create_agent(
         prj = await get_by_projectid_model(session, projectid)
         u.projects.append(prj)
         prj.updated_at = datetime.utcnow()
+        session.add(prj)
 
     session.add(u)
-    session.add(prj)
 
     return u
 

@@ -93,7 +93,7 @@ class AsyncKVLocal(AsyncKVSpec):
         self, key: str, generator: Generator[bytes, None, None]
     ) -> bool:
         uri = self.uri(key)
-        mkdir_p(Path(uri).parent)
+        mkdir_p((Path(uri).parent).resolve())
         try:
             async with aiofiles.open(uri, mode="wb") as f:
                 async for data in generator:

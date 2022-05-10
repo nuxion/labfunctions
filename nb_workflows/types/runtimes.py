@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
@@ -10,7 +10,8 @@ class DockerGPUSpec(BaseModel):
     cuda: str = "11.6"
     cudnn: str = "8.4.0.27-1+cuda11.6"
     cudnn_major_version = "8"
-    nvdia_gpg_url = defaults.NVIDIA_GPG_URL
+    nvidia_gpg_key = defaults.NVIDIA_GPG_KEY
+    nvidia_gpg_version = defaults.NVIDIA_GPG_VERSION
 
 
 class DockerSpec(BaseModel):
@@ -22,11 +23,13 @@ class DockerSpec(BaseModel):
     base_template: str = "Dockerfile.default"
     requirements: str = "requirements.txt"
     gpu: Optional[DockerGPUSpec] = None
+    extra: Optional[Dict[str, Any]] = None
 
 
 class RuntimeSpec(BaseModel):
     name: str
     container: DockerSpec
+    description: Optional[str] = None
     gpu_support: bool = False
     version: Optional[str] = None
     registry: Optional[str] = None

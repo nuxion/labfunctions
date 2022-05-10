@@ -2,7 +2,7 @@ import json
 import logging
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Generator, List, Optional, Union
 
 from nb_workflows import defaults, errors, secrets, types
 from nb_workflows.utils import parse_var_line
@@ -39,6 +39,24 @@ class HistoryClient(BaseClient):
             rows.append(h)
 
         return rows
+
+    def history_detail(self, execid: str) -> Union[types.HistoryResult, None]:
+        query = f"/history/{self.projectid}/detail/{execid}"
+        rsp = self._http.get(query)
+        if rsp.status_code == 200:
+            return types.HistoryResult(**rsp.json())
+        return None
+
+    def history_get_output(self, uri) -> Generator[bytes, None, None]:
+        """uri if ok:
+        uri = f"{row.result.output_dir}/{row.result.output_name}"
+        else:
+        uri = f"{row.result.error_dir}/{row.result.output_name}"
+        """
+        url = f"/history/{self.projectid}/_get_output?file={uri}"
+        with self._http.stream("GET", url) as r:
+            for data in r.iter_bytes():
+                yield data
 
     def history_nb_output(self, exec_result: types.ExecutionResult) -> bool:
         """Upload the notebook from the execution result

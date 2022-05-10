@@ -38,3 +38,7 @@ class ProjectNotFound(Exception):
 class PrivateKeyNotFound(Exception):
     def __init__(self, projectid):
         super().__init__(f"Private Key not found for project {projectid}")
+
+
+class AuthValidationFailed(Exception):
+    pass

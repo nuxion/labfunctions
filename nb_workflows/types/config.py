@@ -99,6 +99,7 @@ class ClientSettings(BaseSettings):
     LOGLEVEL: str = "INFO"
     LOGCONFIG: Dict[str, Any] = {}
     DEBUG: bool = False
+    LOCAL: bool = False
     NBVARS: Optional[str] = None
     AGENT_TOKEN: Optional[str] = None
     AGENT_REFRESH_TOKEN: Optional[str] = None

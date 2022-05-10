@@ -15,8 +15,8 @@ from nb_workflows.managers import history_mg
 from nb_workflows.managers.users_mg import inject_user
 from nb_workflows.security.web import protected
 from nb_workflows.types import ExecutionResult, HistoryRequest, NBTask
-from nb_workflows.utils import get_query_param, today_string
-from nb_workflows.web.utils import get_kvstore
+from nb_workflows.utils import today_string
+from nb_workflows.web.utils import get_kvstore, get_query_param2
 
 history_bp = Blueprint("history", url_prefix="history", version=API_VERSION)
 
@@ -50,7 +50,7 @@ async def history_create(request):
 async def history_get_all(request, projectid):
     """Get the status of the last job executed"""
     # pylint: disable=unused-argument
-    lt = get_query_param(request, "lt", 1)
+    lt = get_query_param2(request, "lt", 1)
     session = request.ctx.session
     async with session.begin():
         h = await history_mg.get_last(session, projectid, limit=lt)
@@ -58,6 +58,24 @@ async def history_get_all(request, projectid):
             return json(h.dict(), 200)
 
     return json(dict(msg="not found"), 404)
+
+
+@history_bp.get("/<projectid>/detail/<execid>")
+@openapi.parameter("projectid", str, "path")
+@openapi.parameter("execid", str, "path")
+@openapi.response(200, "Found")
+@openapi.response(404, dict(msg=str), "Not Found")
+@protected()
+async def history_detail_job(request, projectid: str, execid: str):
+    """Get the status of the last job executed"""
+    # pylint: disable=unused-argument
+    session = request.ctx.session
+    async with session.begin():
+        h = await history_mg.get_one(session, execid)
+        if h:
+            return json(h.dict(), 200)
+
+        return json(dict(msg="not found"), 404)
 
 
 @history_bp.get("/<projectid>/<wfid>")
@@ -70,7 +88,7 @@ async def history_get_all(request, projectid):
 async def history_last_job(request, wfid, projectid):
     """Get the status of the last job executed"""
     # pylint: disable=unused-argument
-    lt = get_query_param(request, "lt", 1)
+    lt = get_query_param2(request, "lt", 1)
     session = request.ctx.session
     async with session.begin():
         h = await history_mg.get_last(session, projectid, wfid, limit=lt)
@@ -138,9 +156,9 @@ async def history_get_output(request, projectid):
     """
     # pylint: disable=unused-argument
     uri = request.args.get("file")
-    # fullurl = f"{settings.FILESERVER}/{projectid}/{uri}"
+    key = f"{projectid}/{uri}"
     response = await request.respond(content_type="application/octet-stream")
     kv_store = get_kvstore(request)
-    async for chunk in kv_store.get_stream(uri):
+    async for chunk in kv_store.get_stream(key):
         await response.send(chunk)
     await response.eof()

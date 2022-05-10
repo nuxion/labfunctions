@@ -34,7 +34,8 @@ CLIENT_AGENT_CREDS_FILE = "agent.creds.json"
 
 DOCKERFILE_RUNTIME_NAME = "Dockerfile.nbruntime"
 DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
-DOCKERFILE_IMAGE = "nuxion/nb_workflows"
+DOCKERFILE_IMAGE = "nuxion/nb_workflows-client"
+DOCKERFILE_IMAGE_GPU = "nuxion/nb_workflows-client-gpu"
 DOCKER_AUTHOR = "nbworkflows"
 DOCKER_UID = "1000"
 DOCKER_GID = "997"
@@ -59,6 +60,7 @@ WFID_LEN = 11  # ~139 thousand years 1% collision at 1000 jobs creation per hour
 EXECID_LEN = 14  # ~20 years %1 collision at 1000 execs per second
 PIPEID_LEN = 11
 NANO_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
+NANO_URLSAFE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz-_"
 NANO_MACHINE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 MACHINE_TYPE = "cpu"
@@ -68,4 +70,5 @@ AGENT_HOMEDIR = "/home/op"
 AGENT_DOCKER_IMG = "nuxion/nb_workflows"
 AGENT_ENV_TPL = "agent.docker.envfile"
 
-NVIDIA_GPG_URL = "http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/3bf863cc.pub"
+NVIDIA_GPG_VERSION = "2004"
+NVIDIA_GPG_KEY = "3bf863cc"
