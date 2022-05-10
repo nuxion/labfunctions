@@ -8,11 +8,11 @@ import pytest_asyncio
 from redislite import Redis
 from sqlalchemy.orm import sessionmaker
 
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.db.nosync import AsyncSQL
-from nb_workflows.db.sync import SQL
-from nb_workflows.models import HistoryModel, UserModel, WorkflowModel
-from nb_workflows.security import AuthSpec, auth_from_settings, sanic_init_auth
+from labfunctions.conf.server_settings import settings
+from labfunctions.db.nosync import AsyncSQL
+from labfunctions.db.sync import SQL
+from labfunctions.models import HistoryModel, UserModel, WorkflowModel
+from labfunctions.security import AuthSpec, auth_from_settings, sanic_init_auth
 
 from .factories import (
     create_history_model,
@@ -141,9 +141,9 @@ def tempdir():
 
 @pytest.fixture
 async def sanic_app(async_conn):
-    # from nb_workflows.conf.server_settings import settings
-    # from nb_workflows.server import app
-    # from nb_workflows.utils import init_blueprints
+    # from labfunctions.conf.server_settings import settings
+    # from labfunctions.server import app
+    # from labfunctions.utils import init_blueprints
 
     settings.EVENTS_BLOCK_MS = 5
     settings.EVENTS_STREAM_TTL_SECS = 5

@@ -6,7 +6,7 @@ from libcloud.compute.providers import get_driver
 from libcloud.compute.types import Provider
 from pydantic import BaseModel, BaseSettings
 
-from nb_workflows.types.cluster import DigitalOceanConf, NodeInstance
+from labfunctions.types.cluster import DigitalOceanConf, NodeInstance
 
 
 class DigitalOceanConf(BaseSettings):

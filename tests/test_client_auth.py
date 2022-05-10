@@ -1,7 +1,7 @@
 import httpx
 
-from nb_workflows.client.base import AuthFlow
-from nb_workflows.types.config import SecuritySettings
+from labfunctions.client.base import AuthFlow
+from labfunctions.types.config import SecuritySettings
 
 from .factories import token_generator
 

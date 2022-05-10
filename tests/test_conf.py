@@ -1,14 +1,14 @@
 import os
 from unittest import mock
 
-from nb_workflows import defaults
-from nb_workflows.types import ClientSettings
+from labfunctions import defaults
+from labfunctions.types import ClientSettings
 
 
 @mock.patch.dict(os.environ, {defaults.BASE_PATH_ENV: "/tmp"})
 def test_conf_define_base_env(monkeypatch):
     # os.environ[defaults.BASE_PATH_ENV] = "/tmp"
-    from nb_workflows.conf import utils
+    from labfunctions.conf import utils
 
     def mock_execute(*args, **kwargs):
         raise AttributeError()
@@ -21,7 +21,7 @@ def test_conf_define_base_env(monkeypatch):
 @mock.patch.dict(os.environ, {defaults.BASE_PATH_ENV: ""})
 def test_conf_define_base_git(monkeypatch):
     # os.environ[defaults.BASE_PATH_ENV] = None
-    from nb_workflows.conf import utils
+    from labfunctions.conf import utils
 
     def mock_execute(*args, **kwargs):
         return "/from_git"
@@ -34,7 +34,7 @@ def test_conf_define_base_git(monkeypatch):
 @mock.patch.dict(os.environ, {defaults.BASE_PATH_ENV: ""})
 def test_conf_define_base_parent(monkeypatch, tempdir):
     # os.environ[defaults.BASE_PATH_ENV] = None
-    from nb_workflows.conf import utils
+    from labfunctions.conf import utils
 
     def mock_execute(*args, **kwargs):
         raise AttributeError()
@@ -51,7 +51,7 @@ def test_conf_define_base_parent(monkeypatch, tempdir):
 @mock.patch.dict(os.environ, {defaults.BASE_PATH_ENV: os.getcwd()})
 def test_conf_load_client(monkeypatch):
     # os.environ[defaults.BASE_PATH_ENV] = None
-    from nb_workflows.conf import utils
+    from labfunctions.conf import utils
 
     # def mock_execute(*args, **kwargs):
     #   return ""
@@ -66,7 +66,7 @@ def test_conf_load_client(monkeypatch):
 @mock.patch.dict(os.environ, {defaults.BASE_PATH_ENV: os.getcwd()})
 def test_conf_load_client_default(monkeypatch):
     # os.environ[defaults.BASE_PATH_ENV] = None
-    from nb_workflows.conf import utils
+    from labfunctions.conf import utils
 
     # def mock_execute(*args, **kwargs):
     #   return ""

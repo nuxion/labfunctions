@@ -1,7 +1,7 @@
 import toml
 
-# package_name = "nb_workflows-0.7.0a0-py3-none-any"
-NBPKG = "nb_workflows-{}"
+# package_name = "labfunctions-0.7.0a0-py3-none-any"
+NBPKG = "labfunctions-{}"
 # -py3-none-any
 
 
@@ -15,7 +15,7 @@ def get_version_poetry(poetry="pyproject.toml") -> str:
 
 def package_name():
     """Normalize the name of the package for setup.py and pypi"""
-    # "nb_workflows-0.7.0a0-py3-none-any"
+    # "labfunctions-0.7.0a0-py3-none-any"
     version = get_version_poetry()
     pkg_norm = NBPKG.format(version)
     if "alpha" in version:

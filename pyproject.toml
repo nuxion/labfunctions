@@ -1,15 +1,15 @@
 [tool.poetry]
-name = "nb_workflows"
-version = "0.8.0-alpha.5"
+name = "labfunctions"
+version = "0.8.0-alpha.7"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [
-   { include = "nb_workflows"},
+   { include = "labfunctions"},
 ]
 license = "Apache-2.0"
 readme = "README.md"
-homepage = "https://github.com/nuxion/nb_workflows"
-repository = "https://github.com/nuxion/nb_workflows"
+homepage = "https://github.com/nuxion/labfunctions"
+repository = "https://github.com/nuxion/labfunctions"
 documentation = "https://nb-workflows.readthedocs.io/"
 keywords = ["papermill", "jupyter", "workflows", "data"]
 include = ["LICENSE"]
@@ -24,7 +24,7 @@ classifiers = [
 
 
 [tool.poetry.scripts]
-nb = "nb_workflows.cli:cli"
+lab = "labfunctions.cli:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
@@ -40,8 +40,8 @@ asyncpg = { version="^0.24.0", optional=true}
 alembic = { version="^1.6.5", optional=true}
 rq-scheduler = { version="^0.11.0", optional=true }
 rq = {version="^1.10.0", optional=true}
-smart-open = {extras = ["gcs"], version = "^6.0.0"}
-# cluster
+# cloud
+smart-open = {extras = ["gcs", "s3"], version = "^6.0.0", optional=true}
 apache-libcloud = {version="^3.5.1", optional=true}
 # both
 pytz = "^2021.1"
@@ -71,7 +71,6 @@ tenacity = "^8.0.1"
 papermill = "^2.3.4"
 
 [tool.poetry.extras]
-# fsspec = ["fsspec", "gcsfs"]
 server = [
 	"uvloop",
 	"sanic",
@@ -85,8 +84,9 @@ server = [
 	"alembic",
 	"rq-scheduler",
 	"rq",
-	"apache-libcloud",
-	"asyncssh",
+]
+cloud = [
+        "apache-libcloud",
 	"smart-open",
 ]
 
@@ -130,7 +130,7 @@ build-backend = "poetry.core.masonry.api"
 formats = "ipynb,py"
 
 [tool.black]
-line-length = 88
+line-length = 80
 target-version = [ 'py37', 'py38']
 include = '\.pyi?$'
 

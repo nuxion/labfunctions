@@ -6,14 +6,14 @@ from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
 
-from nb_workflows.conf.server_settings import settings
-from nb_workflows.events import EventManager
-from nb_workflows.hashes import generate_random
-from nb_workflows.managers import users_mg
-from nb_workflows.security import TokenStoreSpec, auth_from_settings, sanic_init_auth
-from nb_workflows.security.redis_tokens import RedisTokenStore
-from nb_workflows.server import create_projects_store, init_blueprints
-from nb_workflows.types import (
+from labfunctions.conf.server_settings import settings
+from labfunctions.events import EventManager
+from labfunctions.hashes import generate_random
+from labfunctions.managers import users_mg
+from labfunctions.security import TokenStoreSpec, auth_from_settings, sanic_init_auth
+from labfunctions.security.redis_tokens import RedisTokenStore
+from labfunctions.server import create_projects_store, init_blueprints
+from labfunctions.types import (
     NBTask,
     ProjectData,
     ScheduleData,
@@ -70,10 +70,10 @@ def create_app(bluprints, db, web_redis, rq_redis=None, app_name="test"):
     _store = TestTokenStore()
     auth = auth_from_settings(settings.SECURITY, _store)
     sanic_init_auth(_app, auth, settings.SECURITY)
-    init_blueprints(_app, ["auth"], "nb_workflows.security")
+    init_blueprints(_app, ["auth"], "labfunctions.security")
 
     _app.ctx.kv_store = create_projects_store(
-        "nb_workflows.io.kv_local.AsyncKVLocal", "nbworkflows"
+        "labfunctions.io.kv_local.AsyncKVLocal", "nbworkflows"
     )
 
     @_app.middleware("request")

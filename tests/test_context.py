@@ -1,8 +1,8 @@
-from nb_workflows import context as ctx
-from nb_workflows import defaults
-from nb_workflows import defaults as df
-from nb_workflows.executors.execid import ExecID
-from nb_workflows.types import ProjectData, WorkflowDataWeb
+from labfunctions import context as ctx
+from labfunctions import defaults
+from labfunctions import defaults as df
+from labfunctions.executors.execid import ExecID
+from labfunctions.types import ProjectData, WorkflowDataWeb
 from tests import factories
 
 from .factories import NBTaskFactory, ProjectDataFactory, RuntimeDataFactory

@@ -3,12 +3,12 @@ import pickle
 from pytest_mock import MockerFixture
 from rq.job import Job
 
-from nb_workflows import scheduler
-from nb_workflows.executors import ExecID
+from labfunctions import scheduler
+from labfunctions.executors import ExecID
 
 from .factories import ExecutionNBTaskFactory, WorkflowDataFactory
 
-# from nb_workflows.scheduler import control_q, firm_or_new, machine_q
+# from labfunctions.scheduler import control_q, firm_or_new, machine_q
 
 
 # def test_scheduler_control_q():
@@ -38,16 +38,16 @@ def test_scheduler_dispatcher(mocker: MockerFixture, connection, redis):
 
     exec_ctx = ExecutionNBTaskFactory(projectid="test", wfid="test")
 
-    mocker.patch("nb_workflows.executors.docker.docker_exec", return_value=True)
+    mocker.patch("labfunctions.executors.docker.docker_exec", return_value=True)
     mocker.patch(
-        "nb_workflows.scheduler.workflows_mg.prepare_notebook_job",
+        "labfunctions.scheduler.workflows_mg.prepare_notebook_job",
         return_value=exec_ctx,
     )
 
     scheduler_mock = mocker.MagicMock()
     scheduler_mock.enqueue_notebook.return_value = None
     mocker.patch(
-        "nb_workflows.scheduler.SchedulerExecutor", return_value=scheduler_mock
+        "labfunctions.scheduler.SchedulerExecutor", return_value=scheduler_mock
     )
 
     scheduler.scheduler_dispatcher("test", "test", redis_obj=redis)
@@ -59,9 +59,9 @@ def test_scheduler_SEdispatcher(mocker: MockerFixture, redis):
 
     exec_ctx = ExecutionNBTaskFactory(projectid="test", wfid="test")
 
-    mocker.patch("nb_workflows.executors.docker.docker_exec", return_value=True)
+    mocker.patch("labfunctions.executors.docker.docker_exec", return_value=True)
     mocker.patch(
-        "nb_workflows.scheduler.workflows_mg.prepare_notebook_job",
+        "labfunctions.scheduler.workflows_mg.prepare_notebook_job",
         return_value=exec_ctx,
     )
 
@@ -86,9 +86,9 @@ def test_scheduler_SE_notebook(mocker: MockerFixture, redis):
     nb_client.workflows_get.return_value = wd
     nb_client.projects_private_key.return_value = "private"
     mocker.patch(
-        "nb_workflows.executors.docker.docker.from_env", return_value=docker_client
+        "labfunctions.executors.docker.docker.from_env", return_value=docker_client
     )
-    mocker.patch("nb_workflows.client.agent", return_value=nb_client)
+    mocker.patch("labfunctions.client.agent", return_value=nb_client)
 
     se = scheduler.SchedulerExecutor(redis, qname="test", is_async=False)
     job = se.enqueue_notebook(exec_ctx, qname="test")

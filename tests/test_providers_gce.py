@@ -8,7 +8,7 @@ from libcloud.compute.providers import get_driver
 from libcloud.compute.types import Provider
 from pytest_mock import MockerFixture
 
-from nb_workflows.cluster.gcloud_provider import (
+from labfunctions.cluster.gcloud_provider import (
     GCEProvider,
     generic_zone,
     get_gce_driver,
@@ -29,13 +29,13 @@ def mock_driver(mocker):
 
     Driver = mocker.Mock()
     mocker.patch(
-        "nb_workflows.cluster.gcloud_provider.get_gce_driver", return_value=Driver
+        "labfunctions.cluster.gcloud_provider.get_gce_driver", return_value=Driver
     )
     yield Driver
 
 
 def test_providers_gce_get_driver(mocker: MockerFixture):
-    # mocker.patch("nb_workflows.cluster.gcloud_provider.get_driver",
+    # mocker.patch("labfunctions.cluster.gcloud_provider.get_driver",
     #             return_value=DummyNodeDriver)
 
     D = get_gce_driver()

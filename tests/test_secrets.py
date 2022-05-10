@@ -1,4 +1,4 @@
-from nb_workflows import secrets
+from labfunctions import secrets
 
 s1 = "gAAAAABiJUoYk63Q71KbuLjv7RmjdEuai8xEYGdo-FLRErgrTqfJW1zoM4SV_REJkqSSR22maQTEaqklolB1hbDQhE9mSmNxU8DZ9Le4WQv-wV6AbzJq661Hhg5aMvWA2usZxsXNbzJGJ-RpR9LS95CgNVzk6MzMQULaXS3UY8gsoNIN3rWZXTmc0UwT4retgIeWVNM1mftUqs97f2SO-qZR78pk4UnuX_piOuG7EnhmxHjX0h7PbXg="
 

@@ -9,7 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-   build-essential libopenblas-dev git \
+   build-essential \
    && pip install --user -r /tmp/requirements.txt
 
 
@@ -20,15 +20,14 @@ SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN groupadd app -g 1090 \
-    && useradd -m -d /home/app app -u 1089 -g 1090
-
+    && useradd -m -d /home/app app -u 1089 -g 1090 \
+    && mkdir -p /app && chown app:app /app
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
-COPY --chown=app:app . /app
-RUN  mv /app/nb.bin /home/app/.local/bin/nb \
-     && chmod +x /home/app/.local/bin/nb
-
+COPY --chown=app:app . /opt/labfunctions
+WORKDIR /opt/labfunctions
+RUN  python3 setup.py install
 USER app
-WORKDIR /app
+WORKDIR /opt/labfunctions
 ENV PATH=$PATH:/home/app/.local/bin
 ENV PYTHONPATH=/app
 CMD ["nb"]

@@ -1,4 +1,4 @@
-from nb_workflows.client import state as wf
+from labfunctions.client import state as wf
 from tests.factories import (
     DockerfileImageFactory,
     NBTaskFactory,

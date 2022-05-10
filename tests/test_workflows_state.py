@@ -1,4 +1,4 @@
-from nb_workflows.client import state
+from labfunctions.client import state
 
 from .factories import NBTaskFactory, ProjectDataFactory, WorkflowDataWebFactory
 

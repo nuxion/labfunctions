@@ -1,4 +1,4 @@
-from nb_workflows.io import MemoryStore
+from labfunctions.io import MemoryStore
 
 
 def test_io_memory_store():

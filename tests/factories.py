@@ -5,19 +5,19 @@ import factory
 from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
-from nb_workflows import utils
-from nb_workflows.client.state import WorkflowsState
-from nb_workflows.hashes import generate_random
-from nb_workflows.models import (
+from labfunctions import utils
+from labfunctions.client.state import WorkflowsState
+from labfunctions.hashes import generate_random
+from labfunctions.models import (
     HistoryModel,
     ProjectModel,
     RuntimeModel,
     UserModel,
     WorkflowModel,
 )
-from nb_workflows.security import auth_from_settings
-from nb_workflows.security.password import PasswordScript
-from nb_workflows.types import (
+from labfunctions.security import auth_from_settings
+from labfunctions.security.password import PasswordScript
+from labfunctions.types import (
     ExecutionNBTask,
     ExecutionResult,
     HistoryRequest,
@@ -27,14 +27,14 @@ from nb_workflows.types import (
     ProjectReq,
     ScheduleData,
 )
-from nb_workflows.types import TokenCreds as Credentials
-from nb_workflows.types import WorkflowData, WorkflowDataWeb, agent, cluster
-from nb_workflows.types import docker as docker_types
-from nb_workflows.types import machine, runtimes
-from nb_workflows.types.config import SecuritySettings
-from nb_workflows.types.events import EventSSE
-from nb_workflows.types.user import UserOrm
-from nb_workflows.utils import run_sync
+from labfunctions.types import TokenCreds as Credentials
+from labfunctions.types import WorkflowData, WorkflowDataWeb, agent, cluster
+from labfunctions.types import docker as docker_types
+from labfunctions.types import machine, runtimes
+from labfunctions.types.config import SecuritySettings
+from labfunctions.types.events import EventSSE
+from labfunctions.types.user import UserOrm
+from labfunctions.utils import run_sync
 
 
 class ProjectDataFactory(factory.Factory):
@@ -364,7 +364,7 @@ class BuildCtxFactory(factory.Factory):
     zip_name = "test.current.zip"
     download_zip = "/tmp/test.current.zip"
     execid = factory.LazyAttribute(lambda n: generate_random(10))
-    project_store_class = "nb_workflows.io.kv_local.KVLocal"
+    project_store_class = "labfunctions.io.kv_local.KVLocal"
     project_store_bucket = "nbworkflows"
     registry = None
 

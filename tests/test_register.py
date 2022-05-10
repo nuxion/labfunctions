@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from pytest_mock import MockerFixture
 from rq import command
 
-from nb_workflows.control_plane import register, worker
-from nb_workflows.types.agent import AgentNode
+from labfunctions.control_plane import register, worker
+from labfunctions.types.agent import AgentNode
 
 from .factories import AgentNodeFactory
 
@@ -39,7 +39,7 @@ def test_register_list_by_queue(mocker: MockerFixture, redis):
     workers = [WorkerMocker(name="test")]
     workers_m = mocker.MagicMock()
     workers_m.all.return_value = workers
-    mocker.patch("nb_workflows.control_plane.register.NBWorker", workers_m)
+    mocker.patch("labfunctions.control_plane.register.NBWorker", workers_m)
     ag = register.AgentRegister(redis, "test")
 
     data = ag.list_agents_by_queue("test")
@@ -61,11 +61,11 @@ def test_register_list_agents(mocker: MockerFixture, redis):
 
 
 def test_register_kill_workers_ag(mocker: MockerFixture, redis):
-    spy = mocker.patch("nb_workflows.control_plane.register.send_shutdown_command")
+    spy = mocker.patch("labfunctions.control_plane.register.send_shutdown_command")
 
     node_ag = AgentNodeFactory()
     mocker.patch(
-        "nb_workflows.control_plane.register.AgentRegister.get", return_value=node_ag
+        "labfunctions.control_plane.register.AgentRegister.get", return_value=node_ag
     )
 
     ag = register.AgentRegister(redis, "test")
@@ -80,7 +80,7 @@ def test_register_kill_workers_q(mocker: MockerFixture, redis):
 
     workers = [WorkerMocker(name="test")]
     mocker.patch(
-        "nb_workflows.control_plane.register.NBWorker.all", return_value=workers
+        "labfunctions.control_plane.register.NBWorker.all", return_value=workers
     )
 
     node_ag = AgentNodeFactory()
@@ -103,9 +103,9 @@ def test_worker_ip(redis):
 def test_worker_start(mocker: MockerFixture, redis):
 
     # conn = mocker.MagicMock()
-    mocker.patch("nb_workflows.control_plane.worker.redis.from_url", return_value=redis)
+    mocker.patch("labfunctions.control_plane.worker.redis.from_url", return_value=redis)
     m = mocker.patch(
-        "nb_workflows.control_plane.worker.NBWorker.work", return_value=None
+        "labfunctions.control_plane.worker.NBWorker.work", return_value=None
     )
 
     worker.start_worker("redis://localhost:6379", ["test"], "127.0.0.1", name="test")

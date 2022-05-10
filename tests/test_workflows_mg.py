@@ -1,10 +1,10 @@
 import pytest
 
-from nb_workflows import defaults as df
-from nb_workflows.errors.generics import WorkflowRegisterError
-from nb_workflows.managers import workflows_mg
-from nb_workflows.models import WorkflowModel
-from nb_workflows.types import WorkflowData
+from labfunctions import defaults as df
+from labfunctions.errors.generics import WorkflowRegisterError
+from labfunctions.managers import workflows_mg
+from labfunctions.models import WorkflowModel
+from labfunctions.types import WorkflowData
 
 from .factories import NBTaskFactory, ScheduleDataFactory, WorkflowDataWebFactory
 

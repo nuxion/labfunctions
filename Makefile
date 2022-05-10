@@ -57,31 +57,35 @@ lock-client:
 
 lock: lock-server lock-client lock-dev
 
-prepare: lock
+build: lock
 	poetry build
 	echo ${PWD}
 	tar xvfz dist/${FULLPY_PKG}.tar.gz -C dist/
 	cp dist/${FULLPY_PKG}/setup.py .
 
-prerelease: prepare
-	# poetry version prerelease
+preversion: 
+	poetry version prerelease
+	./scripts/update_versions.sh ${API_VERSION}
+
+minor: 
+	poetry version minor
 	./scripts/update_versions.sh ${API_VERSION}
 
 black:
-	black --config ./.black.toml nb_workflows tests
+	black --config ./.black.toml labfunctions tests
 
 isort:
-	isort nb_workflows tests --profile=black
+	isort labfunctions tests --profile=black
 
 lint: black isort
 
 .PHONY: test
 test:
-	PYTHONPATH=$(PWD) pytest --cov-report xml --cov=nb_workflows tests/
+	PYTHONPATH=$(PWD) pytest --cov-report xml --cov=labfunctions tests/
 
 .PHONY: test-html
 test-html:
-	PYTHONPATH=$(PWD) pytest --cov-report=html --cov=nb_workflows tests/
+	PYTHONPATH=$(PWD) pytest --cov-report=html --cov=labfunctions tests/
 
 
 .PHONY: e2e
@@ -132,7 +136,7 @@ docker-release: docker
 
 .PHONY: publish
 publish:
-	poetry publish --build
+	poetry publish
 
 .PHONY: publish-test
 publish-test:

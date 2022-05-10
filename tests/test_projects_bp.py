@@ -20,10 +20,10 @@ async def test_project_bp_create(
     prf = ProjectReqFactory(name="testing")
     pdf = ProjectDataFactory()
     # project_mock = mocker.patch(
-    #     "nb_workflows.web.projects_bp.projects_mg.create", return_value=pdf)
+    #     "labfunctions.web.projects_bp.projects_mg.create", return_value=pdf)
 
     project_mock = mocker.patch(
-        "nb_workflows.managers.projects_mg.create", return_value=pdf
+        "labfunctions.managers.projects_mg.create", return_value=pdf
     )
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -41,7 +41,7 @@ async def test_project_bp_create_200(
 ):
     prf = ProjectReqFactory(name="testing")
     project_mock = mocker.patch(
-        "nb_workflows.managers.projects_mg.create", return_value=None
+        "labfunctions.managers.projects_mg.create", return_value=None
     )
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -81,7 +81,7 @@ async def test_project_bp_delete(
     headers = {"Authorization": f"Bearer {access_token}"}
 
     project_mock = mocker.patch(
-        "nb_workflows.managers.projects_mg.delete_by_projectid", return_value=None
+        "labfunctions.managers.projects_mg.delete_by_projectid", return_value=None
     )
 
     req, res = await sanic_app.asgi_client.delete("/v1/projects/test", headers=headers)

@@ -5,8 +5,8 @@ from tempfile import TemporaryDirectory
 import pytest
 import yaml
 
-from nb_workflows import utils
-from nb_workflows.errors import CommandExecutionException
+from labfunctions import utils
+from labfunctions.errors import CommandExecutionException
 
 tmp_dir = TemporaryDirectory()
 
@@ -63,7 +63,7 @@ def test_utils_path_relative():
 
 
 def test_utils_fullpath_from_client():
-    from nb_workflows.conf import load_client
+    from labfunctions.conf import load_client
 
     s = load_client()
     fp = utils.fullpath("test")
@@ -71,7 +71,7 @@ def test_utils_fullpath_from_client():
 
 
 def test_utils_fullpath_from_server():
-    from nb_workflows.conf import load_server
+    from labfunctions.conf import load_server
 
     s = load_server()
     fp = utils.fullpath("test//test")
@@ -112,4 +112,4 @@ def test_utils_get_version():
 
 def test_utils_pkg_route():
     here = utils.pkg_route()
-    assert here.endswith("nb_workflows")
+    assert here.endswith("labfunctions")

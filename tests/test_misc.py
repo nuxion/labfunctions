@@ -1,7 +1,7 @@
-from nb_workflows.__version__ import __api_version__, __version__
-from nb_workflows.client.base import BaseClient
-from nb_workflows.shortcuts import client, secrets, settings
-from nb_workflows.types import ClientSettings
+from labfunctions.__version__ import __api_version__, __version__
+from labfunctions.client.base import BaseClient
+from labfunctions.shortcuts import client, secrets, settings
+from labfunctions.types import ClientSettings
 
 
 def test_misc_version():

@@ -1,11 +1,11 @@
 import time
 
-from nb_workflows.cluster import ssh
-from nb_workflows.cluster.base import ProviderSpec
-from nb_workflows.cluster.context import machine_from_settings
-from nb_workflows.types.cluster import DataFolder
-from nb_workflows.types.config import ServerSettings
-from nb_workflows.utils import run_sync
+from labfunctions.cluster import ssh
+from labfunctions.cluster.base import ProviderSpec
+from labfunctions.cluster.context import machine_from_settings
+from labfunctions.types.cluster import DataFolder
+from labfunctions.types.config import ServerSettings
+from labfunctions.utils import run_sync
 
 
 def snapshot_volume(provider: ProviderSpec, settings: ServerSettings):
@@ -59,8 +59,8 @@ def create_snapshot(
 
 
 if __name__ == "__main__":
-    from nb_workflows.cluster.gcloud_provider import GCEProvider
-    from nb_workflows.conf.server_settings import settings
+    from labfunctions.cluster.gcloud_provider import GCEProvider
+    from labfunctions.conf.server_settings import settings
 
     g = GCEProvider()
     create_snapshot(g, settings, public=True)
