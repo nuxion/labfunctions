@@ -57,14 +57,18 @@ lock-client:
 
 lock: lock-server lock-client lock-dev
 
-prepare: lock
+build: lock
 	poetry build
 	echo ${PWD}
 	tar xvfz dist/${FULLPY_PKG}.tar.gz -C dist/
 	cp dist/${FULLPY_PKG}/setup.py .
 
-prerelease: prepare
-	# poetry version prerelease
+preversion: 
+	poetry version prerelease
+	./scripts/update_versions.sh ${API_VERSION}
+
+minor: 
+	poetry version minor
 	./scripts/update_versions.sh ${API_VERSION}
 
 black:
@@ -132,7 +136,7 @@ docker-release: docker
 
 .PHONY: publish
 publish:
-	poetry publish --build
+	poetry publish
 
 .PHONY: publish-test
 publish-test:
