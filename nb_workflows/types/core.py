@@ -45,8 +45,8 @@ class NBTask(BaseModel):
     remote_output: Optional[str] = None
     runtime: Optional[str] = None
     version: Optional[str] = None
-    cluster: str = defaults.CLUSTER_NAME
     machine: str = defaults.MACHINE_TYPE
+    cluster: str = defaults.CLUSTER_NAME
     gpu_support: bool = False
     description: Optional[str] = None
     timeout: int = 10800  # secs 3h default
@@ -65,8 +65,6 @@ class ExecutionNBTask(BaseModel):
     execid: str
     nb_name: str
     params: Dict[str, Any]
-    cluster: str
-    machine: str
     runtime: str
     # folders:
     pm_input: str
@@ -80,6 +78,8 @@ class ExecutionNBTask(BaseModel):
     timeout: int
     created_at: str
     gpu_support: bool = False
+    cluster: str = defaults.CLUSTER_NAME
+    machine: str = defaults.MACHINE_TYPE
     remote_input: Optional[str]
     remote_output: Optional[str]
     notifications_ok: Optional[List[str]] = None
