@@ -58,11 +58,11 @@ def login(url_service):
 def startproject(url_service, create_dirs, base_path):
     """Start a new project"""
 
-    root = Path(base_path)
+    root = Path(base_path).resolve()
     console = Console()
     p = Panel.fit(
         "[bold magenta]:smile_cat: Hello and welcome to "
-        " NB Workflows [/bold magenta]",
+        " LabFunctions [/bold magenta]",
         border_style="red",
     )
     console.print(p)
@@ -70,7 +70,7 @@ def startproject(url_service, create_dirs, base_path):
     should_create = True
     if init_script.i_should_create(root):
         console.print(
-            f"\n Starting project at [bold blue underline]{root.resolve()}[/bold blue underline]\n"
+            f"\n Starting project at [bold blue underline]{root}[/bold blue underline]\n"
         )
 
         created = False
@@ -88,7 +88,8 @@ def startproject(url_service, create_dirs, base_path):
                     init_script.refresh_project(root, created, url_service)
                 else:
                     confirm = Confirm.ask(
-                        "Do you want to try another name for the project?", default=True
+                        "Do you want to try another name for the project?",
+                        default=True,
                     )
             else:
                 created = True
@@ -100,7 +101,7 @@ def startproject(url_service, create_dirs, base_path):
     "--url-service",
     "-u",
     default=None,
-    help="URL of the NB Workflow Service",
+    help="URL of the LabFunctions Service",
 )
 @click.option(
     "--from-file",

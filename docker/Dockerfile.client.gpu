@@ -1,26 +1,28 @@
-## Generic Dockerfile to build image with GPU support
-## part of the code is based on the official image for tensorflow:
-## https://hub.docker.com/layers/tensorflow/tensorflow/tensorflow/latest-gpu-jupyter/images/sha256-56677a6a426e87cba3dc5ae8eb82cffb6c76af7dd3683fe9caaba28dcd2a8958?context=explore
-## at least for now this image was tested using the official images provided by nvidia
 FROM nvidia/cuda:11.6.0-runtime-ubuntu20.04 as builder
 ENV DEBIAN_FRONTEND=noninteractive
 USER root
 SHELL ["/bin/bash", "-c"]
-ADD requirements.txt /tmp
-ADD dist/nb_workflows-0.8.0a5-py3-none-any.whl /tmp
+ENV LF_PKG=labfunctions
+ENV LF_VERSION=0.8.0a7
+# ADD requirements/requirements_client.txt /tmp/requirements.txt
+COPY . /opt/labfunctions
 # add root/local/bin to path to suppress pip warning
 ENV PATH=$PATH:/root/.local/bin
 ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /opt/labfunctions
+
+## For the GPU version, part of the code is based on the official image for tensorflow:
+## https://hub.docker.com/layers/tensorflow/tensorflow/tensorflow/latest-gpu-jupyter/images/sha256-56677a6a426e87cba3dc5ae8eb82cffb6c76af7dd3683fe9caaba28dcd2a8958?context=explore
 
 ENV CUDA=11.6
 ENV CUDNN=8.4.0.27-1+cuda11.6
 ENV CUDNN_MAJOR_VERSION=8
 # Nvidia performs unplanned gpg keys udpates see
 # https://forums.developer.nvidia.com/t/gpg-error-http-developer-download-nvidia-com-compute-cuda-repos-ubuntu1804-x86-64/212904/6
-RUN apt-key adv --fetch-keys \
+RUN apt-key adv --fetch-keys  http://developer.download.nvidia.com/compute/cuda/repos/2004/x86_64/3bf863cc.pub \
     && apt-get -y update \
-    && apt-get update && apt-get install -y --no-install-recommends --allow-change-held-packages\
-    build-essential cuda-command-line-tools-${CUDA/./-}\
+    && apt-get update && apt-get install -y --no-install-recommends --allow-change-held-packages \
+    build-essential cuda-command-line-tools-${CUDA/./-} \
     libcublas-${CUDA/./-} \
     cuda-nvrtc-${CUDA/./-} \
     libcufft-${CUDA/./-}  \
@@ -30,20 +32,32 @@ RUN apt-key adv --fetch-keys \
     curl \
     libcudnn${CUDNN_MAJOR_VERSION}=${CUDNN} \
     libfreetype6-dev libhdf5-serial-dev libzmq3-dev pkg-config software-properties-common unzip
-RUN apt-get update && apt-get install -y python3 python3-pip python3-setuptools \
-    && pip install --user -r /tmp/requirements.txt \
-    && pip install --user /tmp/nb_workflows-0.8.0a5-py3-none-any.whl
+RUN apt-get update && apt-get install -y python3 python3-pip python3-setuptools
+
+
+RUN echo "Starting build stage" \
+    && apt-get update -y && apt-get install -y --no-install-recommends \
+    build-essential \
+    && python3 -m pip install --upgrade pip \
+    && python3 setup.py sdist \
+    && pip install --user dist/${LF_PKG}-${LF_VERSION}.tar.gz \
+    && echo "Finish build stage"
 
 FROM nvidia/cuda:11.6.0-runtime-ubuntu20.04 as app
+MAINTAINER Xavier Petit <nuxion@gmail.com>
 USER root
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 
+## For the GPU version, part of the code is based on the official image for tensorflow:
+## https://hub.docker.com/layers/tensorflow/tensorflow/tensorflow/latest-gpu-jupyter/images/sha256-56677a6a426e87cba3dc5ae8eb82cffb6c76af7dd3683fe9caaba28dcd2a8958?context=explore
 
 ENV CUDA=11.6
 ENV CUDNN=8.4.0.27-1+cuda11.6
 ENV CUDNN_MAJOR_VERSION=8
-RUN apt-key adv --fetch-keys \
+# Nvidia performs unplanned gpg keys udpates see
+# https://forums.developer.nvidia.com/t/gpg-error-http-developer-download-nvidia-com-compute-cuda-repos-ubuntu1804-x86-64/212904/6
+RUN apt-key adv --fetch-keys  http://developer.download.nvidia.com/compute/cuda/repos/2004/x86_64/3bf863cc.pub \
     && apt-get -y update \
     && apt-get update && apt-get install -y --no-install-recommends --allow-change-held-packages\
     build-essential cuda-command-line-tools-${CUDA/./-}\
@@ -57,18 +71,17 @@ RUN apt-key adv --fetch-keys \
     libcudnn${CUDNN_MAJOR_VERSION}=${CUDNN} \
     libfreetype6-dev libhdf5-serial-dev libzmq3-dev pkg-config software-properties-common unzip
 RUN apt-get update && apt-get install -y python3 python3-pip python3-setuptools
-
-
 RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
+    && mkdir -p /app && chown app:app /app \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
     python3-pip python3-setuptools \
     && apt-get clean &&  rm -rf /var/lib/apt/lists/*
-COPY --from=builder --chown=app:app /root/.local /home/app/.local/
-COPY --chown=app:app . /app
 
+COPY --from=builder --chown=app:app /root/.local /home/app/.local/
 USER app
 WORKDIR /app
 ENV PATH=$PATH:/home/app/.local/bin
 ENV PYTHONPATH=/app
+CMD ["lab"]

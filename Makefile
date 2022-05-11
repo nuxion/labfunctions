@@ -15,8 +15,10 @@ endef
 
 export USAGE
 .EXPORT_ALL_VARIABLES:
-VERSION := $(shell git describe --tags)
-VERSION_POETRY := $(shell python scripts/get_version.py)
+GIT_TAG := $(shell git describe --tags)
+CUDA=11.6
+# from poetry pyproject.toml
+LF_VERSION :=$(shell python scripts/get_version.py)
 FULLPY_PKG := $(shell python scripts/get_package_name.py)
 API_VERSION := "v1"
 BUILD := $(shell git rev-parse --short HEAD)
@@ -35,7 +37,6 @@ startenv:
 	docker-compose start 
 	alembic upgrade head
 
-
 clean:
 	find . ! -path "./.eggs/*" -name "*.pyc" -exec rm {} \;
 	find . ! -path "./.eggs/*" -name "*.pyo" -exec rm {} \;
@@ -49,13 +50,14 @@ clean:
 lock-dev:
 	poetry export -f requirements.txt --output requirements/requirements_dev.txt --extras server --without-hashes --dev
 
-lock-server:
-	poetry export -f requirements.txt --output requirements/requirements.txt --without-hashes --extras server
+lock-all:
+	poetry export -f requirements.txt --output requirements/requirements_all.txt --without-hashes --extras server --extras cloud
 
 lock-client:
 	poetry export -f requirements.txt --output requirements/requirements_client.txt --without-hashes
+	cp requirements/requirements_client.txt labfunctions/conf/templates/requirements_client.txt
 
-lock: lock-server lock-client lock-dev
+lock: lock-all lock-client lock-dev
 
 build: lock
 	poetry build
@@ -102,37 +104,27 @@ web:
 
 .PHONY: docker-client
 docker-client:
-	mkdir -p docker/client/dist
-	cp dist/*.whl docker/client/dist
-	cp requirements/requirements_client.txt  docker/client/requirements.txt
-	docker build -t ${DOCKERID}/${PROJECTNAME}-client -f docker/client/Dockerfile docker/client
-	docker tag ${DOCKERID}/${PROJECTNAME}-client:latest ${DOCKERID}/${PROJECTNAME}-client:$(VERSION_POETRY)
+	docker build -t ${DOCKERID}/${PROJECTNAME}:latest-client -f docker/Dockerfile.client .
+	docker tag ${DOCKERID}/${PROJECTNAME}:latest-client ${DOCKERID}/${PROJECTNAME}:${LF_VERSION}-client
 
 .PHONY: docker-client-gpu
 docker-client-gpu:
-	mkdir -p docker/client/dist
-	cp dist/*.whl docker/client/dist
-	cp requirements/requirements_client.txt  docker/client/requirements.txt
-	docker build -t ${DOCKERID}/${PROJECTNAME}-client-gpu -f docker/client/Dockerfile.gpu docker/client
-	docker tag ${DOCKERID}/${PROJECTNAME}-client-gpu:latest ${DOCKERID}/${PROJECTNAME}-client-gpu:$(VERSION_POETRY)
-
+	docker build -t ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} -f docker/Dockerfile.client.gpu .
+	docker tag ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} ${DOCKERID}/${PROJECTNAME}:${LF_VERSION}-client-${CUDA}
 
 .PHONY: docker-all
 docker-all:
-	docker build -t ${DOCKERID}/${PROJECTNAME} -f Dockerfile .
-	docker tag ${DOCKERID}/${PROJECTNAME}:latest ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
+	docker build -t ${DOCKERID}/${PROJECTNAME} -f docker/Dockerfile.all .
+	docker tag ${DOCKERID}/${PROJECTNAME}:latest ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)
 
 .PHONY: docker
 docker: docker-client docker-client-gpu docker-all
 
 .PHONY: docker-release
 docker-release: docker
-	# docker tag ${DOCKERID}/${PROJECTNAME} ${REGISTRY}/${DOCKERID}/${PROJECTNAME}:$(VERSION)
-	# docker tag ${DOCKERID}/${PROJECTNAME} ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
-	# docker push ${DOCKERID}/${PROJECTNAME}:latest
-	docker push ${DOCKERID}/${PROJECTNAME}:$(VERSION_POETRY)
-	docker push ${DOCKERID}/${PROJECTNAME}-client:$(VERSION_POETRY)
-	docker push ${DOCKERID}/${PROJECTNAME}-client-gpu:$(VERSION_POETRY)
+	docker push ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)
+	docker push ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)-client
+	docker push ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)-client-gpu
 
 .PHONY: publish
 publish:

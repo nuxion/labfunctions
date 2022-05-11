@@ -80,7 +80,7 @@ class ServerSettings(BaseSettings):
 
     PROJECTS_STORE_CLASS_ASYNC = "labfunctions.io.kv_local.AsyncKVLocal"
     PROJECTS_STORE_CLASS_SYNC = "labfunctions.io.kv_local.KVLocal"
-    PROJECTS_STORE_BUCKET = "nbworkflows"
+    PROJECTS_STORE_BUCKET = "labfunctions"
     EXT_KV_LOCAL_ROOT: Optional[str] = None
     EXT_KV_FILE_URL: Optional[str] = None
 
@@ -113,7 +113,7 @@ class ClientSettings(BaseSettings):
     DISCORD_FAIL: Optional[str] = None
 
     PROJECTS_STORE_CLASS = "labfunctions.io.kv_local.KVLocal"
-    PROJECTS_STORE_BUCKET = "nbworkflows"
+    PROJECTS_STORE_BUCKET = "labfunctions"
     EXT_KV_LOCAL_ROOT: Optional[str] = None
     EXT_KV_FILE_URL: Optional[str] = None
 

@@ -1,5 +1,5 @@
 ---
-inventory: nb_workflows/conf/machines.yaml
+inventory: labfunctions/conf/machines.yaml
 default_cluster: default
 clusters:
   default:

@@ -30,7 +30,7 @@ from labfunctions.utils import get_parent_folder, get_version, mkdir_p, normaliz
 console = Console()
 
 DIRECTORIES = [
-    "nb_app",
+    "lab_app",
     "data",
     "models",
     "outputs",
@@ -89,14 +89,14 @@ def ask_project_name() -> str:
     return name
 
 
-def init_nb_app(root, projectid, project_name, url_service=None):
+def init_lab_app(root, projectid, project_name, url_service=None):
     # _pkg_dir = get_package_dir("labfunctions")
-    p = root / "nb_app"
+    p = root / "lab_app"
 
     workflow_service = url_service or "http://localhost:8000"
 
-    mkdir_p(root / "nb_app")
-    _empty_file(root / "nb_app" / "__init__.py")
+    mkdir_p(root / "lab_app")
+    _empty_file(root / "lab_app" / "__init__.py")
     render_to_file(
         "client_settings.py.j2",
         str((p / "settings.py").resolve()),
@@ -206,7 +206,7 @@ def final_words(project_name, agent_name=None):
         " [bold magenta]To test if everything is working "
         " you can run the following command:[/]\n"
     )
-    console.print("\t[bold] nb exec notebook welcome --dev -p TIMEOUT=5[/]\n")
+    console.print("\t[bold] lab exec notebook welcome --local -p TIMEOUT=5[/]\n")
 
 
 def i_should_create(root):
@@ -233,10 +233,10 @@ def init_automatic(
     init_project_files(root, PROJECT_FILES)
 
     state = workflow_state_init(root, project_name)
-    init_nb_app(root, state.projectid, project_name, url_service)
+    init_lab_app(root, state.projectid, project_name, url_service)
     return state
 
 
 def refresh_project(root, pc: ProjectCreated, url_service: str):
     state = workflow_state_init(root, pc.pd.name, pc.pd.projectid)
-    init_nb_app(root, state.projectid, pc.pd.name, url_service)
+    init_lab_app(root, state.projectid, pc.pd.name, url_service)

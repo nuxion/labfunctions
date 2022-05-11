@@ -79,8 +79,11 @@ def encrypt_password(password, salt: Union[bytes, str]):
 
 
 def create(
-    session, u: UserOrm, password: Optional[str] = None, salt: Optional[str] = None
-) -> Union[int, None]:
+    session,
+    u: UserOrm,
+    password: Optional[str] = None,
+    salt: Optional[str] = None,
+) -> Union[UserModel, None]:
     """
     it will create a user in  database
     if created will return the id, else None
@@ -91,14 +94,20 @@ def create(
     if password and salt:
         u.password = encrypt_password(password, salt)
 
-    stmt = _insert(u)
+    um = UserModel(**u.dict(exclude={"projects"}))
+    session.add(um)
     try:
-        # um = UserModel(**u.dict())
-        r = session.execute(stmt)
-        id = r.scalar()
-        return id
+        session.flush()
+        return um
     except IntegrityError:
         pass
+    # try:
+    # um = UserModel(**u.dict())
+    #    r = session.execute(stmt)
+    #    id = r.scalar()
+    #    return id
+    # except IntegrityError:
+    #    session.rollback()
 
     return None
 
@@ -220,7 +229,8 @@ async def authenticate(request: Request, *args, **kwargs):
 
 async def get_jwt_token(auth: AuthSpec, user: UserModel, exp=30) -> JWTResponse:
     access_token = auth.encode(
-        {"usr": user.username, "scopes": user.scopes.split(",")}, exp=get_delta(exp)
+        {"usr": user.username, "scopes": user.scopes.split(",")},
+        exp=get_delta(exp),
     )
     username = str(user.username)
     rftkn = await auth.store_refresh_token(username)

@@ -1,7 +1,7 @@
 ---
 providers:
-  local: "nb_workflows.cluster.local_provider.LocalProvider"
-  gce: "nb_workflows.cluster.gcloud_provider.GCEProvider"
+  local: "labfunctions.cluster.local_provider.LocalProvider"
+  gce: "labfunctions.cluster.gcloud_provider.GCEProvider"
 volumes:
   datasets:
     name: gce-datasets

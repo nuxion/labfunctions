@@ -11,10 +11,10 @@ from .factories import UserOrmFactory, create_user_model2
 
 # @pytest.mark.asyncio
 def test_users_mg_create(session):
-    u = UserOrmFactory()
+    u = UserOrmFactory(username="test-unit")
     one = users_mg.create(session, u)
     u2 = UserOrmFactory(is_superuser=True)
-    one = users_mg.create(session, u2)
+    two = users_mg.create(session, u2)
     user_model = users_mg.get_user(session, u2.username)
     repeat = users_mg.create(session, u)
     # superuser = users_mg.create(session, u2)

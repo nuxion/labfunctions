@@ -29,7 +29,7 @@ def local_exec_env() -> ExecutionResult:
     etask = ExecutionNBTask(**json.loads(ctx_str))
     result = runner.run(etask)
 
-    if not os.getenv("DEBUG"):
+    if not os.getenv("LF_LOCAL"):
         runner.register(result)
 
     return result

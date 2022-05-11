@@ -151,15 +151,21 @@ def docker(from_file, url_service, notebook, wfid, action):
     help="URL of the NB Workflow Service",
 )
 @click.option(
-    "--param", "-p", multiple=True, help="Params to be passed to the notebook file"
+    "--param",
+    "-p",
+    multiple=True,
+    help="Params to be passed to the notebook file",
 )
 @click.option(
-    "--machine", "-m", default="cpu", help="Machine where the notebook should run"
+    "--machine",
+    "-m",
+    default="cpu",
+    help="Machine where the notebook should run",
 )
 @click.option("--runtime", "-r", default=None, help="Runtime to use")
 @click.option("--cluster", "-c", default="default", help="Cluster where it should run")
 @click.option("--version", "-v", default=None, help="Runtime version to run")
-@click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
+@click.option("--local", "-L", default=False, is_flag=True, help="Execute locally")
 @click.option(
     "--watch",
     "-w",
@@ -176,7 +182,7 @@ def notebook(
     runtime,
     machine,
     version,
-    dev,
+    local,
     notebook,
     watch,
 ):
@@ -186,7 +192,7 @@ def notebook(
     c = client.from_file(from_file, url_service=url_service)
     params_dict = _parse_params_args(param)
 
-    if not dev:
+    if not local:
         rsp = c.notebook_run(
             notebook,
             params_dict,
@@ -202,6 +208,7 @@ def notebook(
     else:
         ctx = create_dummy_ctx(c.projectid, notebook, params_dict)
         os.environ[defaults.EXECUTIONTASK_VAR] = ctx.json()
+        os.environ["LF_LOCAL"] = "yes"
         result = local_exec_env()
         # rsp = local_nb_dev_exec(task)
         print_json(data=result.dict())
@@ -221,10 +228,16 @@ def notebook(
     help="URL of the NB Workflow Service",
 )
 @click.option(
-    "--param", "-p", multiple=True, help="Params to be passed to the notebook file"
+    "--param",
+    "-p",
+    multiple=True,
+    help="Params to be passed to the notebook file",
 )
 @click.option(
-    "--machine", "-m", default="cpu", help="Machine where the notebook should run"
+    "--machine",
+    "-m",
+    default="cpu",
+    help="Machine where the notebook should run",
 )
 @click.option("--runtime", "-r", default=None, help="Runtime to use")
 @click.option("--cluster", "-c", default="default", help="Cluster where it should run")
@@ -248,3 +261,6 @@ def jupyter(
         random_url = generate_random(alphabet=defaults.NANO_URLSAFE_ALPHABET)
         opts = jupyter_exec.JupyterOpts(base_url=f"/{random_url}")
         jupyter_exec.jupyter_exec(opts)
+    else:
+        console.print("[bold yellow]Not implemented to run remote[/]")
+        console.print("[bold yellow]Use -L instead[/]")

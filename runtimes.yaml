@@ -12,6 +12,46 @@ runtimes:
       build_packages: build-essential libopenblas-dev git
       base_template: Dockerfile.generic
     gpu_support: false
+  official-client:
+    description: Official client to be used as labfunctions
+    container:
+      maintainer: Xavier Petit <nuxion@gmail.com>
+      image: python:3.8.13-buster
+      user:
+          uid: 1089
+          gid: 1090
+      build_packages: build-essential 
+      base_template: Dockerfile.internal
+      extra:
+        pkg_version: 0.8.0a7
+  official-gpu:
+    description: Official client with GPU support
+    container:
+      maintainer: Xavier Petit <nuxion@gmail.com>
+      image: nvidia/cuda:11.6.0-runtime-ubuntu20.04
+      user:
+          uid: 1089
+          gid: 1090
+      build_packages: build-essential 
+      final_packages: python3-pip python3-setuptools
+      base_template: Dockerfile.internal
+      gpu:
+        cuda: 11.6
+      extra:
+        pkg_version: 0.8.0a7
+  official-all:
+    description: Official server for labfunctions
+    container:
+      maintainer: Xavier Petit <nuxion@gmail.com>
+      image: python:3.8.13-buster
+      user:
+          uid: 1089
+          gid: 1090
+      build_packages: build-essential 
+      base_template: Dockerfile.internal
+      extra:
+        pkg_version: 0.8.0a7
+        requirements: requirements/requirements_all.txt
   gpu:
     container:
       maintainer: Xavier Petit <nuxion@gmail.com>
