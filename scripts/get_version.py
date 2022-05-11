@@ -6,7 +6,7 @@ def get_version(poetry="pyproject.toml") -> str:
     with open("pyproject.toml", "r", encoding="utf-8") as f:
         data = toml.loads(f.read())
 
-    return data["tool"]["poetry"]["version"]
+    return data["tool"]["poetry"]["version"].strip()
 
 
 if __name__ == "__main__":

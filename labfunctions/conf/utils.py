@@ -17,13 +17,13 @@ from labfunctions.types import ClientSettings, ServerSettings
 
 # Server defaults
 GLOBAL_MODULE = "labfunctions.conf.global_settings"
-ENVIRONMENT_VARIABLE = "NB_SETTINGS_MODULE"
+ENVIRONMENT_VARIABLE = "LF_SETTINGS_MODULE"
 DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
 
 # Client defaults
 GLOBAL_CLIENT = "labfunctions.conf.global_client"
-CLIENT_VARIABLE = "NB_CLIENT_MODULE"
-DEFAULT_CLIENT_MOD = os.environ.get(CLIENT_VARIABLE, "nb_app.settings")
+CLIENT_VARIABLE = "LF_CLIENT_MODULE"
+DEFAULT_CLIENT_MOD = os.environ.get(CLIENT_VARIABLE, "lab_app.settings")
 
 
 def _get_level(level):
@@ -105,7 +105,7 @@ def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
 
     # logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
     logging.config.dictConfig(cfg.LOGCONFIG)
-    log = logging.getLogger("nbwork.client")
+    log = logging.getLogger("labfunctions.client")
     log.debug("Using {cfg.SETTINGS_MODULE} as config module")
 
     return cfg
@@ -137,7 +137,7 @@ def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
 
     os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
     logging.config.dictConfig(cfg.LOGCONFIG)
-    log = logging.getLogger("nbwork.server")
+    log = logging.getLogger("labfunctions.server")
     log.debug("Using {cfg.SETTINGS_MODULE} as config module")
 
     return cfg

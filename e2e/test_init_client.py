@@ -3,11 +3,10 @@ import time
 import invoke
 import pytest
 from invoke import Responder
-from sqlalchemy import inspect, select
-
 from nb_workflows.auth import users
 from nb_workflows.auth.models import UserModel
 from nb_workflows.db.sync import SQL
+from sqlalchemy import inspect, select
 
 from . import tester
 

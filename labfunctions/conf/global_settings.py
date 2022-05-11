@@ -3,12 +3,12 @@ import sys
 
 AGENT_TOKEN_EXP = (60 * 60) * 12
 # Services
-SQL = os.getenv("NB_SQL", "sqlite:///db.sqlite")
-ASQL = os.getenv("NB_ASQL", "sqlite+aiosqlite:///db.sqlite")
-WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
+SQL = os.getenv("LF_SQL", "sqlite:///db.sqlite")
+ASQL = os.getenv("LF_ASQL", "sqlite+aiosqlite:///db.sqlite")
+WORKFLOW_SERVICE = os.getenv("LF_WORKFLOW_SERVICE", "http://localhost:8000")
 
 # General Folders for the server
-BASE_PATH = os.getenv("NB_BASEPATH", os.getcwd())
+BASE_PATH = os.getenv("LF_BASEPATH", os.getcwd())
 AGENT_DATA_FOLDER = ".worker_data/"
 SECURITY = {
     "JWT_ALG": "ES512",

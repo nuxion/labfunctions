@@ -1,9 +1,7 @@
 from collections import namedtuple
 
 # Shared defaults by server, agent and client
-QueuesNS = namedtuple("QueuesNS", ["control", "machine", "build"])
-Q_NS = QueuesNS(control="ctrl", machine="mch", build="bui")
-CLOUD_TAG = "nbworkflows"
+CLOUD_TAG = "lab"
 
 REFRESH_TOKEN_PATH = "auth/refresh_token"
 
@@ -21,7 +19,7 @@ ZIP_GIT_PREFIX = "src/"
 
 # Secrets and security
 SECRETS_FILENAME = ".secrets"
-NBVARS_VAR_NAME = "NB_NBVARS"
+NBVARS_VAR_NAME = "LF_LABVARS"
 NBVARS_FILENAME = "local.nbvars"
 PRIVKEY_VAR_NAME = "PRIVATE_KEY"
 
@@ -32,10 +30,10 @@ CLIENT_TIMEOUT = 60
 CLIENT_CREDS_FILE = "credentials.json"
 CLIENT_AGENT_CREDS_FILE = "agent.creds.json"
 
-DOCKERFILE_MAINTENER = "NB Workflows <package@nbworkflows.com>"
+DOCKERFILE_MAINTENER = "LabFunctions <package@labscalar.com>"
 DOCKERFILE_IMAGE = "nuxion/labfunctions-client"
 DOCKERFILE_IMAGE_GPU = "nuxion/labfunctions-client-gpu"
-DOCKER_AUTHOR = "nbworkflows"
+DOCKER_AUTHOR = "labfunctions"
 DOCKER_UID = "1000"
 DOCKER_GID = "997"
 
@@ -44,9 +42,9 @@ SANIC_APP_NAME = "labfunctions"
 
 NB_OUTPUTS = "outputs"
 
-EXECUTIONTASK_VAR = "NB_EXECUTION_TASK"
+EXECUTIONTASK_VAR = "LF_EXECUTION_TASK"
 
-BASE_PATH_ENV = "NB_BASE_PATH"
+BASE_PATH_ENV = "LF_BASE_PATH"
 
 PROJECT_UPLOADS = "uploads"
 PROJECT_HISTORY = "history"
