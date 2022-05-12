@@ -14,12 +14,17 @@ class DockerGPUSpec(BaseModel):
     nvidia_gpg_version = defaults.NVIDIA_GPG_VERSION
 
 
+class DockerAppUser(BaseModel):
+    uid: int = defaults.DOCKER_APP_UID
+    gid: int = defaults.DOCKER_APP_UID
+
+
 class DockerSpec(BaseModel):
     image: str
     maintainer: str
     build_packages: Optional[str] = None
     final_packages: Optional[str] = None
-    user: Optional[Dict[str, int]] = None
+    user: DockerAppUser = DockerAppUser()
     base_template: str = "Dockerfile.default"
     requirements: str = "requirements.txt"
     gpu: Optional[DockerGPUSpec] = None

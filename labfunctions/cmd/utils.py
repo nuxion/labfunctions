@@ -1,16 +1,56 @@
 import json
+import os
+from pathlib import Path
+from typing import List
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn
 
+from labfunctions import defaults, types
 from labfunctions.client.diskclient import DiskClient
-from labfunctions.utils import format_bytes
+from labfunctions.utils import format_bytes, mkdir_p, open_toml, write_toml
 
 console = Console()
 progress = Progress(
     SpinnerColumn(),
     "[progress.description]{task.description}",
 )
+
+
+class ConfigCli:
+    def __init__(self):
+        self.homedir = Path.home().resolve()
+        self.data = self.open()
+        self.write()
+
+    @staticmethod
+    def open() -> types.config.ConfigCliType:
+        homedir = Path.home().resolve()
+        fullconf = f"{defaults.CLIENT_HOME_DIR}/{defaults.CLIENT_CONFIG_CLI}"
+        try:
+            _conf = open_toml(f"{homedir / fullconf}")
+            conf = types.config.ConfigCliType(**_conf)
+        except FileNotFoundError:
+            url = os.environ.get(defaults.SERVICE_URL_ENV, defaults.SERVICE_URL)
+            conf = types.config.ConfigCliType(url_service=url)
+        return conf
+
+    def write(self):
+        homedir = Path.home().resolve()
+        fullconf = homedir / defaults.CLIENT_HOME_DIR / defaults.CLIENT_CONFIG_CLI
+        mkdir_p(homedir / defaults.CLIENT_HOME_DIR)
+
+        write_toml(fullconf.resolve(), self.data.dict())
+
+    def set(self, key, value):
+        setattr(self.data, key, value)
+        self.write()
+
+    def get(self, key):
+        return getattr(self.data, key)
+
+    def list(self) -> List[str]:
+        return list(self.data.dict().keys())
 
 
 def watcher(c: DiskClient, execid, stats=False):

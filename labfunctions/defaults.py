@@ -1,16 +1,20 @@
-from collections import namedtuple
-
 # Shared defaults by server, agent and client
 CLOUD_TAG = "lab"
+ENV_PREFIX = "LF_"
+
 
 REFRESH_TOKEN_PATH = "auth/refresh_token"
 
 API_VERSION = "v1"
+SERVICE_URL = "http://localhost:8000"
+SERVICE_URL_ENV = "LF_WORKFLOW_SERVICE"
 
 AGENT_USER_PREFIX = "agt"
 AGENT_SCOPES = "agent:rw"
 AGENT_ADMIN_SCOPES = "agent:r:w,admin:r"
 AGENT_LEN = 8
+AGENT_TOKEN_ENV = "LF_AGENT_TOKEN"
+AGENT_REFRESH_ENV = "LF_AGENT_REFRESH_TOKEN"
 
 NOTEBOOKS_DIR = "notebooks/"
 
@@ -29,13 +33,15 @@ CLIENT_HOME_DIR = ".labfunctions/"
 CLIENT_TIMEOUT = 60
 CLIENT_CREDS_FILE = "credentials.json"
 CLIENT_AGENT_CREDS_FILE = "agent.creds.json"
+CLIENT_CONFIG_CLI = "config.toml"
 
 DOCKERFILE_MAINTENER = "LabFunctions <package@labscalar.com>"
-DOCKERFILE_IMAGE = "nuxion/labfunctions-client"
-DOCKERFILE_IMAGE_GPU = "nuxion/labfunctions-client-gpu"
+DOCKERFILE_IMAGE = "nuxion/labfunctions"
 DOCKER_AUTHOR = "labfunctions"
 DOCKER_UID = "1000"
 DOCKER_GID = "997"
+DOCKER_APP_UID = 1089
+DOCKER_APP_GID = 1090
 
 # Sanic
 SANIC_APP_NAME = "labfunctions"
@@ -69,3 +75,8 @@ AGENT_ENV_TPL = "agent.docker.envfile"
 
 NVIDIA_GPG_VERSION = "2004"
 NVIDIA_GPG_KEY = "3bf863cc"
+DOCKER_CUDA_VER = "11.6"
+
+SERVER_LOG = "lab.server"
+ERROR_LOG = "lab.error"
+CLIENT_LOG = "lab.client"

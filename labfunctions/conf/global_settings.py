@@ -1,6 +1,8 @@
 import os
 import sys
 
+from labfunctions import defaults
+
 AGENT_TOKEN_EXP = (60 * 60) * 12
 # Services
 SQL = os.getenv("LF_SQL", "sqlite:///db.sqlite")
@@ -23,12 +25,16 @@ LOGCONFIG = dict(  # no cov
     version=1,
     disable_existing_loggers=False,
     loggers={
-        "nbwork.server": {"level": LOGLEVEL, "handlers": ["console"]},
-        "nbwork.error": {
+        defaults.SERVER_LOG: {"level": LOGLEVEL, "handlers": ["console"]},
+        defaults.ERROR_LOG: {
             "level": LOGLEVEL,
             "handlers": ["error_console"],
             "propagate": True,
             "qualname": "nbwork.error",
+        },
+        defaults.CLIENT_LOG: {
+            "level": LOGLEVEL,
+            "handlers": ["console", "error_console"],
         },
     },
     handlers={

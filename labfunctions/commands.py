@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 import docker
+from labfunctions import log
 from labfunctions.types.docker import (
     DockerBuildLog,
     DockerBuildLowLog,
@@ -35,12 +36,14 @@ def shell(
     :return: CompletedProcess instance - the result of the command execution.
     """
     if not silent:
-        log_msg = (
-            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-            f"Executing: {command}" + os.linesep
-        )
-        print(log_msg)
-        print(log_msg)
+        log_msg = "Executing: {command}"
+        # log_msg = (
+        #     f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+        #     f"Executing: {command}" + os.linesep
+        # )
+        # print(log_msg)
+        # print(log_msg)
+        log.client_logger.info(log_msg)
 
     proc = subprocess.run(
         shlex.split(command),
@@ -53,8 +56,10 @@ def shell(
     )
 
     if not silent:
-        print(proc.stderr.decode())
-        print(proc.stdout.decode())
+        log.error_logger.error(proc.stderr.decode())
+        log.client_logger.info(proc.stdout.decode())
+        # print(proc.stderr.decode())
+        # print(proc.stdout.decode())
 
     return proc
 
@@ -72,27 +77,29 @@ def docker_low_build(path, dockerfile, tag, rm=False) -> DockerBuildLowLog:
     _client = docker.APIClient(base_url="unix://var/run/docker.sock")
     generator = _client.build(path=path, dockerfile=dockerfile, tag=tag, rm=rm)
     error = False
-    log = ""
+    log_messages = ""
     while True:
         try:
             output = generator.__next__()
             output = output.decode().strip("\r\n")
             json_output = json.loads(output)
             if "stream" in json_output:
-                logging.info(json_output["stream"].strip("\n"))
-                log += json_output["stream"]
+                log.client_logger.info(json_output["stream"].strip("\n"))
+                log_messages += json_output["stream"]
             elif "errorDetail" in json_output:
-                logging.error(json_output["error"])
-                log += json_output["error"]
+                log.error_logger.error(json_output["error"])
+                log_messages += json_output["error"]
                 error = True
 
         except StopIteration:
-            logging.info("Docker image build complete.")
-            log += "Docker image build complete.\n"
+            log.client_logger.info("Docker image build complete")
+            log_messages += "Docker image build complete.\n"
             break
         except ValueError:
-            logging.info("Error parsing output from docker image build: %s" % output)
-            log += "Error parsing output from docker image build:{output}\n"
+            log.client_logger.info(
+                "Error parsing output from docker image build: %s" % output
+            )
+            log_messages += "Error parsing output from docker image build:{output}\n"
             # raise ValueError(log)
             error = True
 
@@ -119,10 +126,13 @@ class DockerCommand:
         self,
         cmd: str,
         image: str,
+        *,
         timeout: int = 120,
         env_data: Dict[str, Any] = {},
         remove: bool = True,
         require_gpu: bool = False,
+        network_mode: str = "bridge",
+        ports=None,
         resources=DockerResources(),
         volumes: List[DockerVolume] = [],
     ) -> DockerRunResult:
@@ -140,6 +150,8 @@ class DockerCommand:
                 runtime=runtime,
                 detach=True,
                 environment=env_data,
+                network_mode=network_mode,
+                ports=ports,
                 **resources.dict(),
             )
             result = self._wait_result(container, timeout)
@@ -151,10 +163,12 @@ class DockerCommand:
             if remove:
                 container.remove()
         except docker.errors.ContainerError as e:
+            log.error_logger.error(str(e))
             logs = str(e)
             status_code = -2
         except docker.errors.APIError as e:
             logs = str(e)
+            log.error_logger.error(str(e))
             status_code = -3
         return DockerRunResult(msg=logs, status=status_code)
 
@@ -203,6 +217,7 @@ class DockerCommand:
             push_log_str = self.docker.images.push(tag)
         except docker.errors.APIError as e:
             error = True
+            log.error_logger.error(str(e))
             push_log_str = str(e)
 
         return DockerPushLog(logs=push_log_str, error=error)

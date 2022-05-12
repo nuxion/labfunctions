@@ -15,7 +15,11 @@ from labfunctions.executors.local_exec import local_exec_env
 from labfunctions.hashes import generate_random
 from labfunctions.types import NBTask
 
-from .utils import console, watcher
+from .utils import ConfigCli, console, watcher
+
+cliconf = ConfigCli()
+URL = cliconf.data.url_service
+WF = cliconf.data.workflow_file
 
 
 def _parse_params_args(params):
@@ -37,23 +41,28 @@ def executorscli():
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
+    default=URL,
+    help="URL of the Lab Function service",
 )
 @click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
-@click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
-def local(from_file, url_service, dev, wfid):
+@click.option("--local", "-L", default=False, is_flag=True, help="Execute locally")
+def local(from_file, url_service, local, wfid):
     """Used by the agent to run workloads or for development purposes"""
     rsp = None
 
     if os.environ.get(defaults.EXECUTIONTASK_VAR):
-        console.print(f"=> Starting work")
+
+        nbclient = client.from_env()
+        console.print(f"=> Starting work inside container")
+        console.print(f"=> Current dir: {os.getcwd()}")
+        console.print(f"=> Base PATH: {nbclient.base_path}")
+        console.print(f"=> Service url: {nbclient._addr}")
         rsp = local_exec_env()
 
     elif wfid:
@@ -81,13 +90,13 @@ def local(from_file, url_service, dev, wfid):
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
@@ -141,13 +150,13 @@ def docker(from_file, url_service, notebook, wfid, action):
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option(
@@ -218,13 +227,13 @@ def notebook(
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option(
@@ -254,10 +263,13 @@ def jupyter(
     local,
 ):
     """Jupyter instance on demand"""
+    import os
+
+    os.environ["LF_BASE_PATH"] = os.getcwd()
 
     c = client.from_file(from_file, url_service=url_service)
     if local:
-        os.environ["NB_LOCAL"] = "yes"
+        os.environ["LF_LOCAL"] = "yes"
         random_url = generate_random(alphabet=defaults.NANO_URLSAFE_ALPHABET)
         opts = jupyter_exec.JupyterOpts(base_url=f"/{random_url}")
         jupyter_exec.jupyter_exec(opts)

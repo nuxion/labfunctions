@@ -1,6 +1,8 @@
 import os
 import sys
 
+from labfunctions import defaults
+
 # WARNING:
 # We do our best effort to keep sensible information private
 # but in the scenario of an intrusion into the network or machines
@@ -11,9 +13,6 @@ import sys
 # Main settings
 PROJECTID = ""
 PROJECT_NAME = ""
-
-WORKFLOW_SERVICE = os.getenv("LF_WORKFLOW_SERVICE", "http://localhost:8000")
-
 # Theese information is used to run workloads in the workers.
 # Don't modify at least you know what you are doing.
 # Log
@@ -22,7 +21,7 @@ LOGCONFIG = dict(  # no cov
     version=1,
     disable_existing_loggers=False,
     loggers={
-        "nbwork.client": {
+        defaults.CLIENT_LOG: {
             "level": LOGLEVEL,
             "handlers": ["console", "error_console"],
         },

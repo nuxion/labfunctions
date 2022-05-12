@@ -65,24 +65,27 @@ class NBTaskExecBase:
     def register(self, result: ExecutionResult):
         self.client.history_register(result)
         if result.output_name:
-            self.client.history_nb_output(result)
+            try:
+                self.client.history_nb_output(result)
+            except FileNotFoundError:
+                print(f"WARNING: file not found for {result.execid}")
 
     def notificate(self, ctx: ExecutionNBTask, result: ExecutionResult):
         raise NotImplementedError()
 
 
 class NBTaskDocker(NBTaskExecBase):
-    cmd = "nb exec local"
+    cmd = "lab exec local"
 
     def build_env(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        priv_key = self.client.projects_private_key()
+        priv_key = self.client.projects_private_key(data["projectid"])
         if not priv_key:
-            raise IndexError("No priv key found")
+            raise IndexError(f"No priv key found for {data['projectid']}")
 
         env = {
             defaults.PRIVKEY_VAR_NAME: priv_key,
             defaults.EXECUTIONTASK_VAR: json.dumps(data),
-            "NB_WORKFLOW_SERVICE": self.client._addr,
+            defaults.SERVICE_URL_ENV: self.client._addr,
             defaults.BASE_PATH_ENV: "/app",
         }
         return env
@@ -91,15 +94,16 @@ class NBTaskDocker(NBTaskExecBase):
         _started = time.time()
         env = self.build_env(ctx.dict())
         agent_token = self.client.projects_agent_token(projectid=ctx.projectid)
+        breakpoint()
         env.update(
             {
-                "NB_AGENT_TOKEN": agent_token.creds.access_token,
-                "NB_AGENT_REFRESH_TOKEN": agent_token.creds.refresh_token,
+                "LF_AGENT_TOKEN": agent_token.creds.access_token,
+                "LF_AGENT_REFRESH_TOKEN": agent_token.creds.refresh_token,
             }
         )
         cmd = DockerCommand()
         result = cmd.run(
-            self.cmd, ctx.runtime, ctx.timeout, env_data=env, require_gpu=ctx
+            self.cmd, ctx.runtime, timeout=ctx.timeout, env_data=env, require_gpu=ctx
         )
         error = False
         if result.status != 0:
@@ -108,15 +112,18 @@ class NBTaskDocker(NBTaskExecBase):
         elapsed = round(time.time() - _started)
         return ExecutionResult(
             projectid=ctx.projectid,
+            name=ctx.nb_name,
             execid=ctx.execid,
             wfid=ctx.wfid,
             cluster=ctx.cluster,
             machine=ctx.machine,
             runtime=ctx.runtime,
-            name=ctx.nb_name,
             params=ctx.params,
             input_=ctx.pm_input,
             elapsed_secs=elapsed,
+            output_dir=ctx.output_dir,
+            output_name=ctx.output_name,
+            error_dir=ctx.error_dir,
             error=error,
             error_msg=result.msg,
             created_at=ctx.created_at,
@@ -132,26 +139,34 @@ class NBTaskLocal(NBTaskExecBase):
 
         _started = time.time()
         _error = False
+        _error_msg = None
         Path(ctx.output_dir).mkdir(parents=True, exist_ok=True)
+        print(f"Current dir: {Path.cwd()}")
+        print(f"Input: {ctx.pm_input}")
         try:
             pm.execute_notebook(ctx.pm_input, ctx.pm_output, parameters=ctx.params)
         except pm.exceptions.PapermillExecutionError as e:
             self.logger.error(f"jobdid:{ctx.wfid} execid:{ctx.execid} failed {e}")
             _error = True
+            _error_msg = str(e)
             self._error_handler(ctx)
 
         elapsed = time.time() - _started
         return ExecutionResult(
-            wfid=ctx.wfid,
-            execid=ctx.execid,
             projectid=ctx.projectid,
             name=ctx.nb_name,
+            wfid=ctx.wfid,
+            execid=ctx.execid,
+            cluster=ctx.cluster,
+            machine=ctx.machine,
+            runtime=ctx.runtime,
             params=ctx.params,
             input_=ctx.pm_input,
             output_dir=ctx.output_dir,
             output_name=ctx.output_name,
             error_dir=ctx.error_dir,
             error=_error,
+            error_msg=_error_msg,
             elapsed_secs=round(elapsed, 2),
             created_at=ctx.created_at,
         )

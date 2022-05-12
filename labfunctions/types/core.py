@@ -104,6 +104,7 @@ class ExecutionResult(BaseModel):
     cluster: Optional[str] = None
     machine: Optional[str] = None
     runtime: Optional[str] = None
+    docker_name: Optional[str] = None
     output_name: Optional[str] = None
     output_dir: Optional[str] = None
     error_dir: Optional[str] = None

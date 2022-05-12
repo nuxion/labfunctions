@@ -218,8 +218,8 @@ class BaseClient:
         self._http = self._http_init()
 
     def load_creds(self):
-        at = os.getenv("NB_AGENT_TOKEN")
-        rt = os.getenv("NB_AGENT_REFRESH_TOKEN")
+        at = os.getenv(defaults.AGENT_TOKEN_ENV)
+        rt = os.getenv(defaults.AGENT_REFRESH_ENV)
         if at and rt:
             self.creds = types.TokenCreds(access_token=at, refresh_token=rt)
         self.creds = get_credentials_disk(self.homedir)

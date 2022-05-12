@@ -100,7 +100,7 @@ install:
 
 .PHONY: web
 web:
-	poetry run nb web --apps workflows,history,projects -A --workers 1 -L
+	poetry run lab web --apps workflows,history,projects -A --workers 1 -L
 
 .PHONY: docker-client
 docker-client:
@@ -110,7 +110,7 @@ docker-client:
 .PHONY: docker-client-gpu
 docker-client-gpu:
 	docker build -t ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} -f docker/Dockerfile.client.gpu .
-	docker tag ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} ${DOCKERID}/${PROJECTNAME}:${LF_VERSION}-client-${CUDA}
+	docker tag ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} ${DOCKERID}/${PROJECTNAME}:${LF_VERSION}-client-cuda${CUDA}
 
 .PHONY: docker-all
 docker-all:

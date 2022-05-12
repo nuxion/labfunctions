@@ -1,6 +1,8 @@
 import logging
 from enum import Enum
 
+from labfunctions import defaults
+
 # from warnings import warn
 
 
@@ -12,17 +14,17 @@ class Colors(str, Enum):  # no cov
     RED = "\033[01;31m"
 
 
-srv_logger = logging.getLogger("nbwork.server")  # no cov
+server_logger = logging.getLogger(defaults.SERVER_LOG)  # no cov
 """
 General Server logger
 """
 
-error_logger = logging.getLogger("nbwork.error")  # no cov
+error_logger = logging.getLogger(defaults.ERROR_LOG)  # no cov
 """
 Logger used for errors
 """
 
-c_logger = logging.getLogger("nbwork.agent")  # no cov
+client_logger = logging.getLogger(defaults.CLIENT_LOG)  # no cov
 """
 Logger used by the client
 """

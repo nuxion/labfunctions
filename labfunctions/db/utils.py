@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 
+import greenlet
 from sqlalchemy import func, select
 from sqlalchemy.sql.selectable import Select
+from sqlalchemy.util._concurrency_py3k import _AsyncIoGreenlet
+from sqlalchemy.util.concurrency import await_only
 
 
 @dataclass
@@ -54,3 +57,25 @@ def calculate_page(total, limit, page) -> PageCalc:
     if next_offset >= total:
         next_page = -1
     return PageCalc(limit=limit, offset=offset, next_page=next_page)
+
+
+def running_in_greenlet():
+    return isinstance(greenlet.getcurrent(), _AsyncIoGreenlet)
+
+
+def sync_as_async(fn):
+    """https://github.com/sqlalchemy/sqlalchemy/discussions/5923
+    It runs a session from the sync world into async functions"""
+
+    def go(*arg, **kw):
+        if running_in_greenlet():
+            return await_only(fn(*arg, **kw))
+        else:
+            # no greenlet, assume no event loop and blocking IO backend
+            coro = fn(*arg, **kw)
+            try:
+                coro.send(None)
+            except StopIteration as err:
+                return err.value
+
+    return go

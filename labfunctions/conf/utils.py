@@ -59,11 +59,22 @@ def define_base_path() -> str:
         try:
             base_path = execute_cmd("git rev-parse --show-toplevel")
         except:
-            base_path = str(Path(root_dir).parents[0])
+            # base_path = str(Path(root_dir).parents[0])
+            pass
     elif base_var:
         base_path = base_var
 
     return base_path
+
+
+def define_url_service(settings_dict) -> str:
+    """Define the url service for the client.
+    It prioritizes ENV variable over settings module"""
+    url = os.environ.get(defaults.SERVICE_URL_ENV)
+    if url:
+        return url
+    else:
+        return settings_dict.get("WORKFLOW_SERVICE", defaults.SERVICE_URL)
 
 
 def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
@@ -92,6 +103,8 @@ def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
         base_path = bp
     else:
         settings_dict["BASE_PATH"] = base_path
+    url = define_url_service(settings_dict)
+    settings_dict.update({"WORKFLOW_SERVICE": url})
 
     cfg = ClientSettings(**settings_dict)
     cfg.SETTINGS_MODULE = module_loaded

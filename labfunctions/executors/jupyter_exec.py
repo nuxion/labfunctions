@@ -35,7 +35,7 @@ def jupyter_exec(opts: JupyterOpts):
     token = opts.token or secrets.token_urlsafe(50)
     env = os.environ
     env.update({"JUPYTER_TOKEN": token})
-    is_local = os.environ.get("NB_LOCAL")
+    is_local = os.environ.get("LF_LOCAL")
     installed = check_jupyter_installed()
     if not installed and not is_local:
         shell("pip install jupyterlab")

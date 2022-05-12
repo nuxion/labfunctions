@@ -38,24 +38,23 @@ def from_file(
     return dc
 
 
-def from_env(settings: Optional[types.ClientSettings] = None) -> NBClient:
+def from_env(
+    settings: Optional[types.ClientSettings] = None, projectid=None
+) -> NBClient:
     """Creates a client using the settings module and environment variables"""
     if not settings:
         settings = load_client()
-    nbvars = secrets.load(settings.BASE_PATH)
-    at = nbvars.get("NB_ACCESS_TOKEN")
-    rt = nbvars.get("NB_REFRESH_TOKEN")
-    if at and rt:
-        os.environ["NB_ACCESS_TOKEN"] = at
-        os.environ["NB_REFRESH_TOKEN"] = rt
-
+    # nbvars = secrets.load(settings.BASE_PATH)
     # creds = _load_creds(settings, nbvars)
     pd = types.ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
+    if projectid:
+        pd.projectid = projectid
 
     wf_state = WorkflowsState(pd)
     c = NBClient(
         url_service=settings.WORKFLOW_SERVICE,
         wf_state=wf_state,
+        base_path=os.getenv(defaults.BASE_PATH_ENV),
     )
     c.load_creds()
     return c

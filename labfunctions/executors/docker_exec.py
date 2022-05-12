@@ -24,19 +24,10 @@ def docker_exec(ctx: ExecutionNBTask) -> ExecutionResult:
         - and getconf -a | grep ARG_MAX # (value in kib)
     """
 
-    agent_token = os.getenv("NB_AGENT_TOKEN")
-    refresh_token = os.getenv("NB_AGENT_REFRESH_TOKEN")
-    url_service = os.getenv("NB_WORKFLOW_SERVICE")
-    nbclient = client.agent(
-        url_service=url_service,
-        token=agent_token,
-        refresh=refresh_token,
-        projectid=ctx.projectid,
-    )
+    nbclient = client.from_env()
+    print("NB Addr: ", nbclient._addr)
     runner = NBTaskDocker(nbclient)
     result = runner.run(ctx)
     if result.error and not os.getenv("DEBUG"):
         runner.register(result)
     return result
-    # error_result = context.make_error_result(exec_ctx, elapsed)
-    # ag_client.history_register(result)
