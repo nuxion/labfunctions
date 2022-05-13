@@ -1,8 +1,15 @@
 version: "3.5"
+volumes:
+  pgdata:
+  labsecrets:
+
 services:
   postgres:
     image: postgres:14-alpine
     env_file: .env.docker
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     ports:
       - 5432:5432
     networks:
@@ -13,6 +20,10 @@ services:
       - 127.0.0.1:6379:6379
     networks:
       - lab
+  registry:
+    image: registry:2
+    ports:
+      - 127.0.0.1:5000:5000
   fileserver:
     image: nuxion/fileserver
     volumes:
@@ -23,13 +34,18 @@ services:
       - lab
   control-plane:
     image: nuxion/labfunctions:0.8.0
+    volumes:
+      labsecrets:/app/.secrets
+    restart: unless-stopped
     env_file: .env.docker
     command: >
-      lab web --apps workflows,history,projects,events,runtimes -A --workers 1 -L
+      lab web --apps workflows,history,projects,events,runtimes -A --workers 1 -L -I
     ports:
       - 127.0.0.1:8000:8000
     environment:
       LF_SERVER: true
+    volumes:
+      .secrets/:/app/.secrets
     networks:
       - lab
   lab-agent:
