@@ -8,7 +8,6 @@ import httpx
 from rich import print_json
 
 # from labfunctions.io.fileserver import FileFileserver
-from rich.console import Console
 from rich.table import Table
 
 from labfunctions import client, defaults
@@ -16,7 +15,11 @@ from labfunctions.client import init_script
 from labfunctions.conf import load_client
 from labfunctions.utils import format_seconds, mkdir_p
 
-console = Console()
+from .utils import ConfigCli, console
+
+cliconf = ConfigCli()
+URL = cliconf.data.url_service
+WF = cliconf.data.workflow_file
 
 
 def get_notebook(nbclient, row):
@@ -42,30 +45,30 @@ def get_notebook(nbclient, row):
     return output_result, uri
 
 
-@click.group(name="status")
-def statuscli():
+@click.group(name="log")
+def logcli():
     """
     History of tasks executed
     """
 
 
-@statuscli.command(name="history")
+@logcli.command(name="list")
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
+    default=URL,
+    help="URL of the Lab Function service",
 )
 @click.option("--wfid", "-w", default=None, help="Execution history of workflow id")
 @click.option("--last", "-l", default=1, help="The last executions")
-def historycli(from_file, url_service, last, wfid):
-    """History of tasks executions"""
+def listcli(from_file, url_service, last, wfid):
+    """List the history of tasks executions"""
     c = client.from_file(from_file, url_service=url_service)
 
     rsp = c.history_get_last(wfid, last)
@@ -96,28 +99,35 @@ def historycli(from_file, url_service, last, wfid):
     console.print(table)
 
 
-@statuscli.command(name="log")
+@logcli.command(name="get")
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
+    default=URL,
+    help="URL of the Lab Function service",
 )
-@click.option("--execid", "-e", default=None, help="Execution log of a task")
 @click.option("--nice", "-n", is_flag=True, default=True, help="Print nice output")
-def logcli(url_service, from_file, execid, nice):
+@click.argument("execid")
+def getcli(url_service, from_file, execid, nice):
     """log detail of a execution"""
     c = client.from_file(from_file, url_service=url_service)
     rsp = c.history_detail(execid)
     if not rsp:
         console.print(f"[red bold](x) Execution id {execid} not found[/]")
         sys.exit(-1)
-    print_json(data=rsp.dict())
-    if nice:
-        console.print(f"[red]{rsp.result.error_msg}[/]")
+    if not nice:
+        print_json(data=rsp.dict())
+        sys.exit(0)
+
+    console.print("=> Macro: ")
+    print_json(data=rsp.dict(exclude={"result"}))
+    console.print("=> Result Detail: ")
+    print_json(data=rsp.result.dict(exclude={"error_msg"}))
+    console.print("=> Errors: ")
+    console.print(f"[red]{rsp.result.error_msg}[/]")

@@ -3,19 +3,19 @@ import os
 import click
 from rich.console import Console
 
-from labfunctions.cmd.common import info, login, startproject
+from labfunctions.cmd.common import configcli, info, login, startproject
 
 
 def load_client_cli(cli):
     from labfunctions.cmd.executors import executorscli
-    from labfunctions.cmd.history import statuscli
+    from labfunctions.cmd.history import logcli
     from labfunctions.cmd.project import projectcli
     from labfunctions.cmd.runtimes import runtimescli
     from labfunctions.cmd.workflows import workflowscli
 
     cli.add_command(workflowscli)
     cli.add_command(projectcli)
-    cli.add_command(statuscli)
+    cli.add_command(logcli)
     cli.add_command(executorscli)
     cli.add_command(runtimescli)
 
@@ -43,7 +43,7 @@ def init_cli():
     @click.pass_context
     def cli(ctx):
         """
-        NB Workflow command line tool
+        Lab Functions command line tool
         """
 
     @click.command()
@@ -55,7 +55,7 @@ def init_cli():
         ver = get_version("__version__.py")
         console.print(f"[bold magenta]{ver}[/bold magenta]")
 
-    if os.environ.get("NB_SERVER", False):
+    if os.environ.get("LF_SERVER", False):
         load_server_cli(cli)
 
         if os.environ.get("DEBUG", False):
@@ -68,6 +68,7 @@ def init_cli():
     cli.add_command(login)
     cli.add_command(version)
     cli.add_command(info)
+    cli.add_command(configcli)
     return cli
 
 

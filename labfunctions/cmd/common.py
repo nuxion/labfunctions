@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import click
@@ -11,12 +12,15 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 
-from labfunctions import client
+from labfunctions import client, defaults
 from labfunctions.client import init_script
 from labfunctions.conf import load_client
 from labfunctions.utils import mkdir_p
 
-service = os.getenv("NS_WORKFLOW_SERVICE", "http://localhost:8000")
+from .utils import ConfigCli
+
+cliconf = ConfigCli()
+service = cliconf.data.url_service
 console = Console()
 
 
@@ -24,13 +28,22 @@ console = Console()
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
+    default=service,
+    help="URL of the Lab Functions",
 )
-def login(url_service):
+@click.option(
+    "--relogin",
+    "-r",
+    is_flag=True,
+    default=False,
+    help="Renew login",
+)
+def login(url_service, relogin):
     """Login to NB Workflows service"""
     # click.echo(f"\nLogin to NB Workflows services {url_service}\n")
     c = client.diskclient.DiskClient(url_service)
+    if relogin:
+        Path(f"{c.homedir}/{defaults.CLIENT_CREDS_FILE}").unlink()
     try:
         c.logincli()
         console.print("[bold green]Successfully logged")
@@ -81,8 +94,13 @@ def startproject(url_service, create_dirs, base_path):
             create = Confirm.ask("Create project in the server?", default=True)
             if create:
                 dc = client.diskclient.DiskClient(url_service, wf_state=state)
-                dc.logincli()
-                created = init_script.create_on_the_server(root, dc, state)
+                dc.create_homedir()
+                try:
+                    dc.logincli()
+                    created = init_script.create_on_the_server(root, dc, state)
+                except httpx.ConnectError:
+                    console.print(f"[red bold]Error connecting to {url_service}[/]")
+                    sys.exit(-1)
                 if created:
                     init_script.final_words(created.pd.name)
                     init_script.refresh_project(root, created, url_service)
@@ -100,7 +118,7 @@ def startproject(url_service, create_dirs, base_path):
 @click.option(
     "--url-service",
     "-u",
-    default=None,
+    default=service,
     help="URL of the LabFunctions Service",
 )
 @click.option(
@@ -112,6 +130,9 @@ def startproject(url_service, create_dirs, base_path):
 def info(url_service, from_file):
     """General info and status of the client"""
     # click.echo(f"\nLogin to NB Workflows services {url_service}\n")
+    import os
+
+    current = ""
     if Path(from_file).is_file():
         c = client.from_file()
     else:
@@ -120,3 +141,31 @@ def info(url_service, from_file):
         c = client.from_env(settings)
 
     print_json(data=c.info())
+
+
+@click.group("config")
+def configcli():
+    """Manage basic configs for Lab Functions"""
+
+
+@configcli.command("set")
+@click.argument("key")
+@click.argument("value")
+def setcli(key, value):
+    cliconf.set(key, value)
+    console.print(f"Key {key} set")
+
+
+@configcli.command("get")
+@click.argument("key")
+def getcli(key):
+    value = cliconf.get(key)
+    console.print(f"Key {key}: {value}")
+
+
+@configcli.command("list")
+def listcli():
+    keys = cliconf.list()
+    for k in keys:
+        v = cliconf.get(k)
+        console.print(f"{k}: {v}")

@@ -10,7 +10,9 @@ from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
 from labfunctions.conf import load_server
+from labfunctions.db.nosync import AsyncSQL
 from labfunctions.db.sync import SQL
+from labfunctions.db.utils import sync_as_async
 from labfunctions.managers import projects_mg, users_mg
 from labfunctions.security import auth_from_settings
 from labfunctions.security.redis_tokens import RedisTokenStore
@@ -73,9 +75,9 @@ def users(sql, superuser, scopes, username, action):
     db = SQL(sql)
     if action == "create":
         name = Prompt.ask("Username")
-        email = Prompt.ask("Email (optional)", default=None)
         password = getpass("Password: ")
         repeat = getpass("Password (repeat): ")
+        email = Prompt.ask("Email (optional)", default=None)
         if password != repeat:
             console.print("[bold red]Paswords doesn't match[/]")
             sys.exit(-1)
@@ -139,7 +141,7 @@ def users(sql, superuser, scopes, username, action):
 @click.option("--username", "-u", default=None, help="Agent username")
 @click.option("--admin", "-A", default=False, is_flag=True, help="Agent as admin")
 @click.option("--exp", "-e", default=30, help="Expire time")
-@click.argument("action", type=click.Choice(["create", "get-token", "delete"]))
+@click.argument("action", type=click.Choice(["create", "get-token", "delete", "list"]))
 def agent(sql, scopes, username, action, admin, exp):
     db = SQL(sql)
     store = RedisTokenStore(settings.WEB_REDIS)
@@ -188,6 +190,14 @@ def agent(sql, scopes, username, action, admin, exp):
             users_mg.delete_user(session, username)
             session.commit()
         console.print("[bold green]Agent deleted[/]")
+
+    elif action == "list":
+        # session = run_sync(async_session)
+        S = db.sessionmaker()
+        with S() as session:
+            agents = run_sync(projects_mg.get_agent_list, session)
+        for ag in agents:
+            console.print(f"=> [magenta]{ag}[/]")
 
 
 @managercli.command()

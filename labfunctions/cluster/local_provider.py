@@ -31,7 +31,7 @@ class LCConf(BaseSettings):
     working_dir: str
 
     class Config:
-        env_prefix = "NB_LCL_"
+        env_prefix = "LF_LCL_"
 
 
 class LocalProvider(ProviderSpec):

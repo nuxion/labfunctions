@@ -18,7 +18,7 @@ class KVLocal(GenericKVSpec):
     def __init__(self, bucket: str, client_opts: Dict[str, Any] = {}):
         self._opts = client_opts
         self._bucket = bucket
-        self._root = os.getenv("NB_EXT_KV_LOCAL_ROOT", ".nb_tmp")
+        self._root = os.getenv("LF_EXT_KV_LOCAL_ROOT", ".nb_tmp")
         mkdir_p(f"{self._root}/{self._bucket}")
 
     def uri(self, key):
@@ -74,7 +74,7 @@ class AsyncKVLocal(AsyncKVSpec):
     def __init__(self, bucket: str, client_opts: Dict[str, Any] = {}):
         self._opts = client_opts
         self._bucket = bucket
-        self._root = os.getenv("NB_EXT_KV_LOCAL_ROOT", ".nb_tmp")
+        self._root = os.getenv("LF_EXT_KV_LOCAL_ROOT", ".nb_tmp")
         mkdir_p(f"{self._root}/{self._bucket}")
 
     def uri(self, key):

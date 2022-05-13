@@ -24,8 +24,8 @@ class VolumeMock:
 
 @pytest.fixture
 def mock_driver(mocker):
-    os.environ["NB_GCE_SERVICE_ACCOUNT"] = "test_account"
-    os.environ["NB_GCE_PROJECT"] = "test_prj"
+    os.environ["LF_GCE_SERVICE_ACCOUNT"] = "test_account"
+    os.environ["LF_GCE_PROJECT"] = "test_prj"
 
     Driver = mocker.Mock()
     mocker.patch(

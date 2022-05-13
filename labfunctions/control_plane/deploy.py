@@ -33,7 +33,7 @@ def _prepare_docker_cmd(
 
     cmd = (
         f"docker run -d -v /var/run/docker.sock:/var/run/docker.sock "
-        f"-e NB_SERVER=true  --env-file={env_file} "
+        f"-e LF_SERVER=true  --env-file={env_file} "
         f"{docker_image}:{docker_version} "
         f"{nb_agent_cmd}"
     )

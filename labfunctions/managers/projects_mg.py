@@ -1,4 +1,5 @@
 from datetime import datetime
+from inspect import isawaitable
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
@@ -217,6 +218,7 @@ async def get_agent(
 ) -> Union[UserModel, None]:
     # prj = await get_by_projectid_model(session, projectid)
     stmt = users_mg.join_with_project(agentname)
+
     res = await session.execute(stmt)
     return res.scalar_one_or_none()
 
@@ -232,13 +234,18 @@ async def get_agent_project(session, projectid) -> Union[UserModel, None]:
     return res.scalar_one_or_none()
 
 
-async def get_agent_list(session, projectid) -> List[str]:
-    stmt = (
-        users_mg.join_by_project()
-        .where(UserModel.is_agent.is_(True))
-        .where(ProjectModel.projectid == projectid)
-    )
-    res = await session.execute(stmt)
+async def get_agent_list(session, projectid: Optional[str] = None) -> List[str]:
+    stmt = users_mg.select_user().where(UserModel.is_agent.is_(True))
+    if projectid:
+        stmt = (
+            users_mg.join_by_project()
+            .where(UserModel.is_agent.is_(True))
+            .where(ProjectModel.projectid == projectid)
+        )
+
+    res = session.execute(stmt)
+    if isawaitable(res):
+        res = await res
     return [r[0].username for r in res]
 
 

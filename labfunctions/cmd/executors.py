@@ -15,7 +15,11 @@ from labfunctions.executors.local_exec import local_exec_env
 from labfunctions.hashes import generate_random
 from labfunctions.types import NBTask
 
-from .utils import console, watcher
+from .utils import ConfigCli, console, watcher
+
+cliconf = ConfigCli()
+URL = cliconf.data.url_service
+WF = cliconf.data.workflow_file
 
 
 def _parse_params_args(params):
@@ -37,23 +41,28 @@ def executorscli():
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
+    default=URL,
+    help="URL of the Lab Function service",
 )
 @click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
-@click.option("--dev", "-d", default=False, is_flag=True, help="Execute locally")
-def local(from_file, url_service, dev, wfid):
+@click.option("--local", "-L", default=False, is_flag=True, help="Execute locally")
+def local(from_file, url_service, local, wfid):
     """Used by the agent to run workloads or for development purposes"""
     rsp = None
 
     if os.environ.get(defaults.EXECUTIONTASK_VAR):
-        console.print(f"=> Starting work")
+
+        nbclient = client.from_env()
+        console.print(f"=> Starting work inside container")
+        console.print(f"=> Current dir: {os.getcwd()}")
+        console.print(f"=> Base PATH: {nbclient.base_path}")
+        console.print(f"=> Service url: {nbclient._addr}")
         rsp = local_exec_env()
 
     elif wfid:
@@ -81,13 +90,13 @@ def local(from_file, url_service, dev, wfid):
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
@@ -98,9 +107,9 @@ def docker(from_file, url_service, notebook, wfid, action):
     if wfid and not notebook:
         c = client.from_file(from_file, url_service=url_service)
         exec_task = c.build_context(wfid)
-        os.environ["NB_AGENT_TOKEN"] = c.creds.access_token
-        os.environ["NB_AGENT_REFRESH_TOKEN"] = c.creds.refresh_token
-        os.environ["NB_WORKFLOW_SERVICE"] = url_service
+        os.environ["LF_AGENT_TOKEN"] = c.creds.access_token
+        os.environ["LF_AGENT_REFRESH_TOKEN"] = c.creds.refresh_token
+        os.environ["LF_WORKFLOW_SERVICE"] = url_service
         result = docker_exec(exec_task)
         print_json(data=result.dict())
 
@@ -141,13 +150,13 @@ def docker(from_file, url_service, notebook, wfid, action):
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option(
@@ -215,52 +224,45 @@ def notebook(
 
 
 @executorscli.command()
+# @click.option("--runtime", "-r", default=None, help="Runtime to use")
+# @click.option("--version", "-v", default=None, help="Runtime version to run")
+@click.option("--addr", "-a", default="127.0.0.1", help="Address to listen")
+@click.option("--image", "-i", default=None, help="Docker image to use")
+@click.option("--local", "-L", default=False, is_flag=True, help="Run local")
 @click.option(
-    "--from-file",
-    "-f",
-    default="workflows.yaml",
-    help="yaml file with the configuration",
+    "--docker", "-D", default=False, is_flag=True, help="Execute inside docker"
 )
-@click.option(
-    "--url-service",
-    "-u",
-    default=load_client().WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
-)
-@click.option(
-    "--param",
-    "-p",
-    multiple=True,
-    help="Params to be passed to the notebook file",
-)
-@click.option(
-    "--machine",
-    "-m",
-    default="cpu",
-    help="Machine where the notebook should run",
-)
-@click.option("--runtime", "-r", default=None, help="Runtime to use")
-@click.option("--cluster", "-c", default="default", help="Cluster where it should run")
-@click.option("--version", "-v", default=None, help="Runtime version to run")
-@click.option("--local", "-L", default=False, is_flag=True, help="Execute locally")
+@click.option("--remote", "-R", default=False, is_flag=True, help="Run remote")
 def jupyter(
-    url_service,
-    from_file,
-    param,
-    cluster,
-    runtime,
-    machine,
-    version,
+    image,
+    addr,
+    docker,
     local,
+    remote,
 ):
     """Jupyter instance on demand"""
+    import os
 
-    c = client.from_file(from_file, url_service=url_service)
-    if local:
-        os.environ["NB_LOCAL"] = "yes"
-        random_url = generate_random(alphabet=defaults.NANO_URLSAFE_ALPHABET)
-        opts = jupyter_exec.JupyterOpts(base_url=f"/{random_url}")
-        jupyter_exec.jupyter_exec(opts)
-    else:
+    if local and not docker:
+        # user local
+        ctx = jupyter_exec.create_jupyter_ctx(addr)
+        ctx.set_env()
+        jupyter_exec.jupyter_exec(install_jupyter=False)
+    elif local and docker:
+        # usar local but inside docker
+        ctx = jupyter_exec.create_jupyter_ctx(addr)
+        res = jupyter_exec.jupyter_docker_exec(addr, image)
+        console.print(res.msg)
+    elif remote:
+        # post a request to create a remote jupyter instance
         console.print("[bold yellow]Not implemented to run remote[/]")
         console.print("[bold yellow]Use -L instead[/]")
+    elif not local and docker:
+        # used by the control plane to start a jupyter instance
+        # ctx = jupyter_exec.create_jupyter_ctx(addr)
+        result = jupyter_exec.jupyter_exec(install_jupyter=True)
+        if result.error:
+            console.print(f"[bold red]{result.messages}[/]")
+    else:
+        console.print("[bold red]Bad use of parameters[/]")
+        sys.exit(-1)

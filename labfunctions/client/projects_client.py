@@ -4,6 +4,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import httpx
+
 from labfunctions import defaults, errors, secrets, types
 from labfunctions.errors.client import ProjectCreateError, ProjectUploadError
 from labfunctions.errors.runtimes import RuntimeCreationError
@@ -45,7 +47,7 @@ class ProjectsClient(BaseClient):
             pd = types.ProjectData(**r.json())
             pc = types.projects.ProjectCreated(pd=pd, private_key=pkey)
             if store_key:
-                store_private_key(pkey, pd.projectid)
+                store_private_key(pkey, self.working_area)
             return pc
         if r.status_code != 200:
             raise ProjectCreateError(name)
@@ -136,18 +138,25 @@ class ProjectsClient(BaseClient):
             return True
         return False
 
-    def projects_private_key(self, store_key=False) -> Union[str, None]:
+    def projects_private_key(
+        self, projectid: Optional[str] = None, store_key=False
+    ) -> Union[str, None]:
         """
         Gets private key to be shared to the docker container of a
         workflow task
         """
-        r = self._http.get(f"/projects/{self.projectid}/_private_key")
+        projectid = projectid or self.projectid
+        url = f"/projects/{projectid}/_private_key"
+        r = self._http.get(url)
 
         if r.status_code == 200:
-            key = r.json()["private_key"]
+            key = r.json().get("private_key")
+            if not key:
+                raise errors.PrivateKeyNotFound(self.projectid)
             if store_key:
-                store_private_key(key, self.projectid)
+                store_private_key(key, projectid)
             return key
+        raise errors.PrivateKeyNotFound(projectid)
         return None
 
     def runtimes_get_all(self, lt=5) -> List[types.RuntimeData]:

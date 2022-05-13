@@ -85,23 +85,23 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, BaseClient):
         p = getpass.getpass("Password: ")
         self.login(u, p)
 
-    def projects_private_key(self) -> str:
-        """Gets private key to be shared to the docker container of a
-        workflow task
-        """
-        try:
-            r = self._http.get(f"/projects/{self.projectid}/_private_key")
-        except httpx.ConnectError:
-            raise errors.PrivateKeyNotFound(self.projectid)
+    # def projects_private_key(self) -> str:
+    #     """Gets private key to be shared to the docker container of a
+    #     workflow task
+    #     """
+    #     try:
+    #         r = self._http.get(f"/projects/{self.projectid}/_private_key")
+    #     except httpx.ConnectError:
+    #         raise errors.PrivateKeyNotFound(self.projectid)
 
-        key = None
-        if r.status_code == 200:
-            key = r.json().get("private_key")
-        if not key:
-            raise errors.PrivateKeyNotFound(self.projectid)
+    #     key = None
+    #     if r.status_code == 200:
+    #         key = r.json().get("private_key")
+    #     if not key:
+    #         raise errors.PrivateKeyNotFound(self.projectid)
 
-        store_private_key(key, self.working_area)
-        return key
+    #     store_private_key(key, self.working_area)
+    #     return key
 
     def get_private_key(self) -> str:
         """shortcut for getting a private key locally

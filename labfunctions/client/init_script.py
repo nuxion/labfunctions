@@ -110,8 +110,10 @@ def init_lab_app(root, projectid, project_name, url_service=None):
 
 def _default_runtime(root):
     version = get_version()
-    default_cpu = f"{defaults.DOCKERFILE_IMAGE}:{version}"
-    default_gpu = f"{defaults.DOCKERFILE_IMAGE_GPU}:{version}"
+    default_cpu = f"{defaults.DOCKERFILE_IMAGE}:{version}-client"
+    default_gpu = (
+        f"{defaults.DOCKERFILE_IMAGE}:{version}-client-cuda{defaults.DOCKER_CUDA_VER}"
+    )
     render_to_file(
         "runtimes.yaml",
         str((root / f"runtimes.yaml").resolve()),

@@ -28,7 +28,7 @@ from .resources import TestTokenStore, create_app
 
 Session = sessionmaker()
 
-os.environ["NB_WORKFLOW_SERVICE"] = "http://localhost:8000"
+os.environ["LF_WORKFLOW_SERVICE"] = "http://localhost:8000"
 pytest_plugins = ("pytest_asyncio",)
 
 secret_auth = "testing"

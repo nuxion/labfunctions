@@ -5,8 +5,6 @@ import sys
 PROJECTID = ""
 PROJECT_NAME = ""
 
-WORKFLOW_SERVICE = os.getenv("NB_WORKFLOW_SERVICE", "http://localhost:8000")
-
 # Theese information is used to run workloads in the workers.
 # Don't modify at least you know what you are doing.
 # Log
@@ -15,7 +13,7 @@ LOGCONFIG = dict(  # no cov
     version=1,
     disable_existing_loggers=False,
     loggers={
-        "nbwork.client": {"level": LOGLEVEL, "handlers": ["console", "error_console"]},
+        "lab.client": {"level": LOGLEVEL, "handlers": ["console", "error_console"]},
     },
     handlers={
         "console": {
