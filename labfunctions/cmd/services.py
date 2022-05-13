@@ -12,16 +12,22 @@ from labfunctions.utils import get_external_ip, get_hostname, mkdir_p
 from .utils import console
 
 
-def create_secrets_certs():
+def create_secrets_certs(base_path):
     from labfunctions.commands import shell
 
-    if not Path(".secrets/ecsa.priv.pem").is_file():
-        mkdir_p(Path(".secrets").resolve())
+    if not Path(f"{base_path}/.secrets/ecdsa.priv.pem").is_file():
+        mkdir_p(Path(f"{base_path}/.secrets").resolve())
         shell(
-            "openssl ecparam -genkey -name secp521r1 -noout -out .secrets/ecsa.priv.pem"
+            (
+                f"openssl ecparam -genkey -name secp521r1 -noout "
+                f"-out {base_path}/.secrets/ecdsa.priv.pem"
+            )
         )
         shell(
-            "openssl ec -in .secrets/ecsa.priv.pem -pubout -out .secrets/ecsa.pub.pem"
+            (
+                f"openssl ec -in {base_path}/.secrets/ecdsa.priv.pem -pubout "
+                f"-out {base_path}/.secrets/ecdsa.pub.pem"
+            )
         )
         console.print("=> Secrets created")
     else:
@@ -61,7 +67,8 @@ def webcli(host, port, workers, apps, auto_reload, access_log, debug, init_secre
     from labfunctions.server import create_app
 
     if init_secrets:
-        create_secrets_certs()
+        create_secrets_certs(settings.BASE_PATH)
+    console.print("BASE PATH: ", settings.BASE_PATH)
 
     list_bp = apps.split(",")
     app = create_app(settings, list_bp)
