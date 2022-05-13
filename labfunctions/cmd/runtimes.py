@@ -3,8 +3,6 @@ import sys
 from pathlib import Path
 
 import click
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn
 from rich.table import Table
 
 from labfunctions import client, defaults, errors, runtimes, secrets
@@ -16,15 +14,12 @@ from labfunctions.runtimes.context import build_upload_uri, create_build_ctx
 from labfunctions.types.runtimes import RuntimeSpec
 from labfunctions.utils import execute_cmd, open_yaml
 
-from .utils import watcher
+from .utils import ConfigCli, console, progress, watcher
 
 settings = load_client()
-
-console = Console()
-progress = Progress(
-    SpinnerColumn(),
-    "[progress.description]{task.description}",
-)
+cliconf = ConfigCli()
+URL = cliconf.data.url_service
+WF = cliconf.data.workflow_file
 
 
 @click.group(name="runtimes")
@@ -39,13 +34,13 @@ def runtimescli():
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=settings.WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option(
@@ -149,10 +144,10 @@ def build(
             console.print("[bold red](x) Error uploading file[/]")
     elif local:
         PROJECTS_STORE_CLASS = "labfunctions.io.kv_local.KVLocal"
-        PROJECTS_STORE_BUCKET = "nbworkflows"
-        os.environ["NB_AGENT_TOKEN"] = c.creds.access_token
-        os.environ["NB_AGENT_REFRESH_TOKEN"] = c.creds.refresh_token
-        os.environ["NB_RUN_LOCAL"] = "yes"
+        PROJECTS_STORE_BUCKET = "labfunctions"
+        os.environ["LF_AGENT_TOKEN"] = c.creds.access_token
+        os.environ["LF_AGENT_REFRESH_TOKEN"] = c.creds.refresh_token
+        os.environ["LF_RUN_LOCAL"] = "yes"
         kv = GenericKVSpec.create(PROJECTS_STORE_CLASS, PROJECTS_STORE_BUCKET)
         ctx = create_build_ctx(
             c.projectid,
@@ -195,14 +190,14 @@ def build(
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=WF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=settings.WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
+    default=URL,
+    help="URL of the Lab functions service",
 )
 def listcli(from_file, url_service):
     """List of runtimes available for this project"""

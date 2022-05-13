@@ -16,7 +16,7 @@ from .factories import BuildCtxFactory, DockerBuildLogFactory, ProjectDataFactor
 
 @pytest.fixture
 def kvstore() -> GenericKVSpec:
-    kv = GenericKVSpec.create("labfunctions.io.kv_local.KVLocal", "nbworkflows")
+    kv = GenericKVSpec.create("labfunctions.io.kv_local.KVLocal", "labfunctions")
     return kv
 
 
@@ -32,18 +32,11 @@ def test_builder_unzip_runtime(mocker: MockerFixture, tempdir):
     assert is_file
 
 
-def test_builder_BuildTask(mocker: MockerFixture, kvstore):
+def test_builder_BuildTask_init(mocker: MockerFixture, kvstore):
     client = NBClient(url_service="http://localhost:8000")
-    mock = mocker.patch(
-        "labfunctions.runtimes.builder.client.agent", return_value=client
-    )
-
-    task = builder.BuildTask("test", kvstore=kvstore, nbclient=client)
-    task2 = builder.BuildTask("test", kvstore=kvstore)
+    task = builder.BuildTask(client, kvstore=kvstore)
 
     assert isinstance(task.client, NBClient)
-    assert task2.client._addr == "http://localhost:8000"
-    assert mock.called
 
 
 def test_builder_BuildTask_get_runtime(mocker: MockerFixture, kvstore, tempdir):
@@ -55,7 +48,7 @@ def test_builder_BuildTask_get_runtime(mocker: MockerFixture, kvstore, tempdir):
     mock.get_stream.return_value = [str(x).encode() for x in range(6)]
     # mock.get_stream = stream_data
     client = NBClient(url_service="http://localhost:8000")
-    task = builder.BuildTask("test", kvstore=kvstore, nbclient=client)
+    task = builder.BuildTask(client, kvstore=kvstore)
     task.kv = mock
     task.get_runtime_file(f"{tempdir}/test.zip", "dowload_zip_url")
     is_file = Path(f"{tempdir}/test.zip").is_file()
@@ -79,7 +72,7 @@ def test_builder_BuildTask_run(mocker: MockerFixture, kvstore, tempdir):
         "labfunctions.runtimes.builder.DockerCommand.build", return_value=log
     )
 
-    task = builder.BuildTask("test", kvstore=kvstore, nbclient=client)
+    task = builder.BuildTask(client, kvstore=kvstore)
     log_run = task.run(ctx)
     assert unzip.called
     assert get_runtime.called
@@ -104,7 +97,7 @@ def test_builder_BuildTask_run_repo(mocker: MockerFixture, kvstore, tempdir):
         "labfunctions.runtimes.builder.DockerCommand.build", return_value=log
     )
 
-    task = builder.BuildTask("test", kvstore=kvstore, nbclient=client)
+    task = builder.BuildTask(client, kvstore=kvstore)
     log_run = task.run(ctx)
     assert unzip.called
     assert get_runtime.called
@@ -127,13 +120,13 @@ def test_builder_exec(mocker: MockerFixture, kvstore):
         "labfunctions.runtimes.builder.BuildTask.run", return_value=log
     )
     agent = mocker.patch(
-        "labfunctions.runtimes.builder.client.agent", return_value=agent_mock
+        "labfunctions.runtimes.builder.client.from_env", return_value=agent_mock
     )
     task_mock.run.return_value = mocker.Mock(return_value=log)
 
     result = builder.builder_exec(ctx)
 
     assert id(result) == id(log)
+    assert task_mock.call_args[0][0].execid == ctx.execid
     # assert task_mock.call_args_list[0][0][0] == ctx.projectid
     assert result.error is False
-    assert agent.call_args_list[0][1]["url_service"] == "http://localhost:8000"

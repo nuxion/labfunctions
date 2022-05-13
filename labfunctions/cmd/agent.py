@@ -53,9 +53,9 @@ def runcli(redis, workers, qnames, cluster, ip_address, agent_name, machine_id):
     from labfunctions.control_plane import agent
 
     sys.path.append(settings.BASE_PATH)
-    os.environ["NB_AGENT_TOKEN"] = settings.AGENT_TOKEN
-    os.environ["NB_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
-    os.environ["NB_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
+    os.environ["LF_AGENT_TOKEN"] = settings.AGENT_TOKEN
+    os.environ["LF_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
+    os.environ["LF_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
     ip_address = ip_address or get_external_ip(settings.DNS_IP_ADDRESS)
     queues = qnames.split(",")
 

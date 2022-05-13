@@ -32,7 +32,7 @@ class GCConf(BaseSettings):
     credential_file: Optional[str] = None
 
     class Config:
-        env_prefix = "NB_GCE_"
+        env_prefix = "LF_GCE_"
 
 
 def get_gce_driver():

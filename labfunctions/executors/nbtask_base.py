@@ -94,7 +94,6 @@ class NBTaskDocker(NBTaskExecBase):
         _started = time.time()
         env = self.build_env(ctx.dict())
         agent_token = self.client.projects_agent_token(projectid=ctx.projectid)
-        breakpoint()
         env.update(
             {
                 "LF_AGENT_TOKEN": agent_token.creds.access_token,

@@ -100,7 +100,10 @@ install:
 
 .PHONY: web
 web:
-	poetry run lab web --apps workflows,history,projects -A --workers 1 -L
+	lab web --apps workflows,history,projects,runtimes -A --workers 1 -L
+
+agent:
+	poetry run lab agent run --qnames cpu,gpu,build,control -m local/ba/asd
 
 .PHONY: docker-client
 docker-client:

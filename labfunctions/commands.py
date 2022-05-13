@@ -103,7 +103,7 @@ def docker_low_build(path, dockerfile, tag, rm=False) -> DockerBuildLowLog:
             # raise ValueError(log)
             error = True
 
-    return DockerBuildLowLog(error=error, logs=log)
+    return DockerBuildLowLog(error=error, logs=log_messages)
 
 
 class DockerCommand:
