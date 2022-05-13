@@ -3,7 +3,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 USER root
 SHELL ["/bin/bash", "-c"]
 ENV LF_PKG=labfunctions
-ENV LF_VERSION=0.8.0a7
+ENV LF_VERSION=0.8.0a8
 # ADD requirements/requirements_client.txt /tmp/requirements.txt
 COPY . /opt/labfunctions
 # add root/local/bin to path to suppress pip warning
@@ -15,10 +15,10 @@ WORKDIR /opt/labfunctions
 RUN echo "Starting build stage" \
     && apt-get update -y && apt-get install -y --no-install-recommends \
     build-essential \
+    && python3 -m pip install --upgrade pip \
     && python3 setup.py sdist \
     && pip install --user dist/${LF_PKG}-${LF_VERSION}.tar.gz \
     && echo "Finish build stage"
-   # && pip install --user -r /tmp/requirements.txt
 
 FROM python:3.8.13-buster as app
 MAINTAINER Xavier Petit <nuxion@gmail.com>
@@ -28,7 +28,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
     && mkdir -p /app && chown app:app /app \
-    && apt-get clean &&  rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
 USER app

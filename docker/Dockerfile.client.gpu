@@ -3,7 +3,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 USER root
 SHELL ["/bin/bash", "-c"]
 ENV LF_PKG=labfunctions
-ENV LF_VERSION=0.8.0a7
+ENV LF_VERSION=0.8.0a8
 # ADD requirements/requirements_client.txt /tmp/requirements.txt
 COPY . /opt/labfunctions
 # add root/local/bin to path to suppress pip warning
@@ -77,7 +77,7 @@ RUN groupadd app -g 1090 \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
     python3-pip python3-setuptools \
-    && apt-get clean &&  rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
 USER app
