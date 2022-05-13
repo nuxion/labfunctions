@@ -3,13 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+Installation
+========================================
+.. toctree::
+   :maxdepth: 2
+
+   labfunctions/installation
+
+
 API Documentation
 ========================================
 
 .. toctree::
    :maxdepth: 2
 
-   nb_workflows/api_reference
+   labfunctions/api_reference
 
 
 User Guide

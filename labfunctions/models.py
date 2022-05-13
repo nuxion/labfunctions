@@ -24,10 +24,10 @@ from sqlalchemy_serializer import SerializerMixin
 from labfunctions.db.common import Base
 
 assoc_projects_users = Table(
-    "nb_projects_users",
+    "lf_projects_users",
     Base.metadata,
-    Column("project_id", ForeignKey("nb_project.projectid")),
-    Column("user_id", ForeignKey("nb_user.id")),
+    Column("project_id", ForeignKey("lf_project.projectid")),
+    Column("user_id", ForeignKey("lf_user.id")),
 )
 
 
@@ -39,7 +39,7 @@ class ProjectRelationMixin:
     def project_id(cls):
         return Column(
             String(16),
-            ForeignKey("nb_project.projectid", ondelete="SET NULL"),
+            ForeignKey("lf_project.projectid", ondelete="SET NULL"),
             nullable=True,
         )
 
@@ -81,7 +81,7 @@ class HistoryModel(Base, SerializerMixin, ProjectRelationMixin):
     :param status: -1 fail, 0 ok.
     """
 
-    __tablename__ = "nb_history"
+    __tablename__ = "lf_history"
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(BigInteger, primary_key=True)
@@ -112,7 +112,7 @@ class ProjectModel(Base, SerializerMixin):
     :param status: -1 fail, 0 ok.
     """
 
-    __tablename__ = "nb_project"
+    __tablename__ = "lf_project"
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(BigInteger, primary_key=True)
@@ -123,7 +123,7 @@ class ProjectModel(Base, SerializerMixin):
     repository = Column(String(2048), nullable=True)
     owner_id = Column(
         BigInteger,
-        ForeignKey("nb_user.id", ondelete="SET NULL"),
+        ForeignKey("lf_user.id", ondelete="SET NULL"),
         nullable=True,
     )
     owner = relationship(
@@ -131,7 +131,7 @@ class ProjectModel(Base, SerializerMixin):
     )
     # agent_id = Column(
     #     BigInteger,
-    #     ForeignKey("nb_user.id", ondelete="SET NULL"),
+    #     ForeignKey("lf_user.id", ondelete="SET NULL"),
     #     nullable=True,
     # )
     # agent = relationship(
@@ -155,7 +155,7 @@ class ProjectModel(Base, SerializerMixin):
 
 
 class UserModel(UserMixin, Base):
-    __tablename__ = "nb_user"
+    __tablename__ = "lf_user"
     __mapper_args__ = {"eager_defaults": True}
 
     username = Column(String(), index=True, unique=True, nullable=False)
@@ -181,9 +181,9 @@ class WorkflowModel(Base, SerializerMixin, ProjectRelationMixin):
     :param enabled: if the task should run or not.
     """
 
-    __tablename__ = "nb_workflow"
+    __tablename__ = "lf_workflow"
     __table_args__ = (
-        UniqueConstraint("alias", "project_id", name="_nb_workflow__project_alias"),
+        UniqueConstraint("alias", "project_id", name="_lf_workflow__project_alias"),
     )
     # needed for async support
     __mapper_args__ = {"eager_defaults": True}
@@ -206,10 +206,10 @@ class NotebookFile(Base, ProjectRelationMixin):
     Notebook Register
     """
 
-    __tablename__ = "nb_notebook_file"
+    __tablename__ = "lf_notebook_file"
     __table_args__ = (
         UniqueConstraint(
-            "nb_name", "project_id", name="_nb_notebook_file__name_project"
+            "nb_name", "project_id", name="_lf_notebook_file__name_project"
         ),
     )
     __mapper_args__ = {"eager_defaults": True}
@@ -224,7 +224,7 @@ class NotebookFile(Base, ProjectRelationMixin):
     )
     owner_id = Column(
         BigInteger,
-        ForeignKey("nb_user.id", ondelete="SET NULL"),
+        ForeignKey("lf_user.id", ondelete="SET NULL"),
         nullable=False,
     )
     created_at = Column(DateTime(), server_default=functions.now(), nullable=False)
@@ -237,7 +237,7 @@ class RuntimeModel(Base, ProjectRelationMixin):
     runtime_name = should be nbworkflows/[projectid]-[runtime_name]
     """
 
-    __tablename__ = "nb_runtime"
+    __tablename__ = "lf_runtime"
     __mapper_args__ = {"eager_defaults": True}
 
     id = Column(Integer, primary_key=True)
@@ -255,10 +255,10 @@ class RuntimeModel(Base, ProjectRelationMixin):
 
 class MachineModel(Base):
 
-    __tablename__ = "nb_machine"
+    __tablename__ = "lf_machine"
     __mapper_args__ = {"eager_defaults": True}
     __table_args__ = (
-        UniqueConstraint("name", "provider", name="_nb_machine__name_provider"),
+        UniqueConstraint("name", "provider", name="_lf_machine__name_provider"),
     )
 
     id = Column(Integer, primary_key=True)

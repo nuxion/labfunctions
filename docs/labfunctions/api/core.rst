@@ -10,19 +10,19 @@ Scheduler
 The module **nb_workflows.scheduler**
 
 ..
-    .. automodule:: nb_workflows.scheduler
+    .. automodule:: labfunctions.scheduler
         :members:
         :show-inheritance:
         :inherited-members:
 
-.. autoclass:: nb_workflows.scheduler.SchedulerExecutor
+.. autoclass:: labfunctions.scheduler.SchedulerExecutor
                :members:
 
 
 Scheduler Dispatcher
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: nb_workflows.scheduler
+.. automodule:: labfunctions.scheduler
                 :members: scheduler_dispatcher 
 
 

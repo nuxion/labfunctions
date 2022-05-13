@@ -41,12 +41,12 @@ As a second goal, but maybe that's for a following release, is adding other stor
 ## Next version 0.8.0
 
 **MUST**
-- [ ] NBTask args refactor 
-- [ ] Does runtimes struct need a name to be associated with? 
+- [-] NBTask args refactor 
+- [x] Does runtimes struct need a name to be associated with? 
 - [x] RQWorker: Overwrite worker self ip discovery logic
 - [x] RQWorker: Activity time
-- [ ] RQWorker: Agent token generation for workers
-- [ ] Workflows: Allows workflows execution by alias (the same for history)
+- [x] RQWorker: Agent token generation for workers
+- [x] Workflows: Allows workflows execution by alias (the same for history)
 - [x] Review settings strategy for server/worker
 - [x] A machine types registry by cloud vendor (gcloud / digitalocean)
 - [x] Autoscaling workers

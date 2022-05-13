@@ -1,21 +1,18 @@
 version: "3.5"
 services:
   postgres:
-     image: postgres:14-alpine
-     environment:
-       POSTGRES_PASSWORD: secret
-       POSTGRES_DB: nb_workflows
-       POSTGRES_USER: nb_workflows 
-     ports:
-       - 5432:5432
-     networks:
-       - nb
+    image: postgres:14-alpine
+    env_file: .env.docker
+    ports:
+      - 5432:5432
+    networks:
+      - lab
   redis:
     image: redis:6-alpine
     ports:
-      - 6379:6379
+      - 127.0.0.1:6379:6379
     networks:
-      - nb
+      - lab
   fileserver:
     image: nuxion/fileserver
     volumes:
@@ -23,50 +20,27 @@ services:
     ports:
       - 4444:4444
     networks:
-      - nb
-  nb-web:
-    image: nuxion/nb_workflows
+      - lab
+  control-plane:
+    image: nuxion/labfunctions:0.8.0
+    env_file: .env.docker
     command: >
-      nb web --apps workflows,history,projects,events,runtimes -A --workers 1 -L
+      lab web --apps workflows,history,projects,events,runtimes -A --workers 1 -L
     ports:
       - 127.0.0.1:8000:8000
     environment:
-      # NB_SQL: sqlite:///app/db.sqlite
-      # NB_ASQL: sqlite+aiosqlite:///app/db.sqlite
-      NB_SQL: postgresql://nb_workflows:secret@postgres:5432/nb_workflows
-      NB_ASQL: postgresql+asyncpg://nb_workflows:secret@postgres:5432/nb_workflows
-      NB_RQ_REDIS_HOST: redis
-      NB_RQ_REDIS_PORT: 6379
-      NB_RQ_REDIS_DB: 2
-      NB_FILESERVER: http://fileserver:4444
-      NB_WEB_REDIS: redis://redis:6379/0
-      NB_SERVER: true
+      LF_SERVER: true
     networks:
-      - nb
-  nb-worker:
-    image: nuxion/nb_workflows
+      - lab
+  lab-agent:
+    image: nuxion/labfunctions:0.8.0
+    env_file: .env.docker
     command: >
-      nb rqworker -w 1 -q control,mch.default
+      lab agent -w 1 -q control,mch.default
+      agent run --qnames cpu,build,control -m local/ba/example
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock 
-    environment:
-      # NB_SQL: sqlite:///app/db.sqlite
-      # NB_ASQL: sqlite+aiosqlite:///app/db.sqlite
-      NB_SQL: postgresql://nb_workflows:secret@postgres:5432/nb_workflows
-      NB_ASQL: postgresql+asyncpg://nb_workflows:secret@postgres:5432/nb_workflows
-      NB_AGENT_TOKEN: changethis
-      NB_AGENT_REFRESH_TOKEN: changethis
-      NB_RQ_REDIS_HOST: redis
-      NB_RQ_REDIS_PORT: 6379
-      NB_RQ_REDIS_DB: 2
-      NB_FILESERVER: http://fileserver:4444
-      NB_WEB_REDIS: redis://redis:6379/0
-      NB_SERVER: true
     networks:
-      - nb
-
-
-
-
+      - lab
 networks:
-  nb: 
+  lab: 

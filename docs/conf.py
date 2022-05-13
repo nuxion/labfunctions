@@ -16,11 +16,11 @@ import sys
 root_directory = os.path.dirname(os.getcwd())
 sys.path.insert(0, root_directory)
 
-import nb_workflows
+import labfunctions
 
 # -- Project information -----------------------------------------------------
 
-project = "NB Workflows"
+project = "Lab Functions"
 copyright = "2022, Xavier Petit"
 author = "Xavier Petit"
 
