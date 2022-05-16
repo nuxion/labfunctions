@@ -18,8 +18,8 @@ export USAGE
 GIT_TAG := $(shell git describe --tags)
 CUDA=11.6
 # from poetry pyproject.toml
-LF_VERSION :=$(shell python scripts/get_version.py)
-FULLPY_PKG := $(shell python scripts/get_package_name.py)
+LF_VERSION :=$(shell python3 scripts/get_version.py)
+FULLPY_PKG := $(shell python3 scripts/get_package_name.py)
 API_VERSION := "v1"
 BUILD := $(shell git rev-parse --short HEAD)
 PROJECTNAME := $(shell basename "$(PWD)")

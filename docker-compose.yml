@@ -2,6 +2,7 @@ version: "3.5"
 volumes:
   pgdata:
   labsecrets:
+  labstore:
 
 services:
   postgres:
@@ -35,7 +36,8 @@ services:
   control-plane:
     image: nuxion/labfunctions:0.8.0
     volumes:
-      labsecrets:/app/.secrets
+      - labsecrets:/app/.secrets
+      - labsstore:/app/.nb_tmp
     restart: unless-stopped
     env_file: .env.docker
     command: >
@@ -51,11 +53,14 @@ services:
   lab-agent:
     image: nuxion/labfunctions:0.8.0
     env_file: .env.docker
+    environment:
+      LF_SERVER: true
     command: >
-      lab agent -w 1 -q control,mch.default
       agent run --qnames cpu,build,control -m local/ba/example
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock 
+      - /var/run/docker.sock:/var/run/docker.sock
+      - labsecrets:/app/.secrets
+      - labsstore:/app/.nb_tmp
     networks:
       - lab
 networks:
