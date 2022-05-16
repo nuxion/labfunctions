@@ -11,14 +11,14 @@ ENV PATH=$PATH:/root/.local/bin
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /opt/labfunctions
 
+
 RUN echo "Starting build stage" \
     && apt-get update -y && apt-get install -y --no-install-recommends \
     build-essential \
     && python3 -m pip install --upgrade pip \
     && python3 setup.py sdist \
     && pip install --user dist/${LF_PKG}-${LF_VERSION}.tar.gz \
-    && pip install --user -r requirements/requirements_all.txt \
- 	&& echo "Finish build stage"
+    && pip install --user -r requirements/requirements_all.txt \&& echo "Finish build stage"
 
 FROM python:3.8.13-buster as app
 MAINTAINER Xavier Petit <nuxion@gmail.com>
@@ -27,11 +27,17 @@ SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
-    && mkdir -p /app/.secrets && chown -R app:app /app \
+    && mkdir -p /app/.secrets \
+    && mkdir -p /app/.nb_tmp && chown app:app -R /app \
+    && mkdir -p /data && chown app:app -R /data \
+    && mkdir -p /models && chown app:app -R /models \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
 VOLUME /app/.secrets
+VOLUME /app/.nb_tmp
+VOLUME /data
+VOLUME /models
 USER app
 WORKDIR /app
 ENV PATH=$PATH:/home/app/.local/bin

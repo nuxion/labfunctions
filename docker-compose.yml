@@ -34,20 +34,18 @@ services:
     networks:
       - lab
   control-plane:
-    image: nuxion/labfunctions:0.8.0
+    image: nuxion/labfunctions:0.8.0-alpha.8
     volumes:
       - labsecrets:/app/.secrets
-      - labsstore:/app/.nb_tmp
+      - labstore:/app/.nb_tmp
     restart: unless-stopped
     env_file: .env.docker
+    environment:
+      LF_SERVER: "yes"
     command: >
       lab web --apps workflows,history,projects,events,runtimes -A --workers 1 -L -I
     ports:
       - 127.0.0.1:8000:8000
-    environment:
-      LF_SERVER: true
-    volumes:
-      .secrets/:/app/.secrets
     networks:
       - lab
   lab-agent:
@@ -56,11 +54,11 @@ services:
     environment:
       LF_SERVER: true
     command: >
-      agent run --qnames cpu,build,control -m local/ba/example
+      lab agent run --qnames cpu,build,control -m local/ba/example
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - labsecrets:/app/.secrets
-      - labsstore:/app/.nb_tmp
+      - labstore:/app/.nb_tmp
     networks:
       - lab
 networks:
