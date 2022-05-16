@@ -33,7 +33,7 @@ def managercli():
 
 
 def alembic_ugprade(dburi, to="head"):
-    alembic_cfg = AlembicConfig("labfunctions/db/alembic.ini")
+    alembic_cfg = AlembicConfig("labfunctions/alembic.ini")
     alembic_cfg.set_main_option("sqlalchemy.url", dburi)
     command.upgrade(alembic_cfg, to)
 
