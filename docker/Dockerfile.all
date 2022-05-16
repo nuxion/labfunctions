@@ -18,7 +18,8 @@ RUN echo "Starting build stage" \
     && python3 -m pip install --upgrade pip \
     && python3 setup.py sdist \
     && pip install --user dist/${LF_PKG}-${LF_VERSION}.tar.gz \
-    && pip install --user -r requirements/requirements_all.txt \&& echo "Finish build stage"
+    && pip install --user -r requirements/requirements_all.txt \
+    && echo "Finish build stage"
 
 FROM python:3.8.13-buster as app
 MAINTAINER Xavier Petit <nuxion@gmail.com>
