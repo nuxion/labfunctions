@@ -27,7 +27,9 @@ SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
-    && mkdir -p /app && chown app:app /app \
+    && mkdir -p /app/.secrets && chown app:app -R /app \
+    && mkdir /data && chown app:app /data \
+    && mkdir /models && chown app:app /models \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/

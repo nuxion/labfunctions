@@ -11,7 +11,6 @@ ENV PATH=$PATH:/root/.local/bin
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /opt/labfunctions
 
-
 RUN echo "Starting build stage" \
     && apt-get update -y && apt-get install -y --no-install-recommends \
     build-essential \
@@ -28,10 +27,11 @@ SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
-    && mkdir -p /app && chown app:app /app \
+    && mkdir -p /app/.secrets && chown -R app:app /app \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
+VOLUME /app/.secrets
 USER app
 WORKDIR /app
 ENV PATH=$PATH:/home/app/.local/bin

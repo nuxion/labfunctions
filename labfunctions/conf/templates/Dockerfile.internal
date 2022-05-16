@@ -80,7 +80,7 @@ RUN apt-get update && apt-get install -y python3 python3-pip python3-setuptools
 
 RUN groupadd app -g {{ data.user.gid }} \
     && useradd -m -d /home/app app -u {{ data.user.uid }} -g {{ data.user.gid }} \
-    && mkdir -p /app && chown app:app /app \
+    && mkdir -p /app/.secrets && chown app:app -R /app \
     {% if data.final_packages -%}
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
@@ -89,6 +89,7 @@ RUN groupadd app -g {{ data.user.gid }} \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
+VOLUME /app/.secrets
 USER app
 WORKDIR /app
 ENV PATH=$PATH:/home/app/.local/bin
