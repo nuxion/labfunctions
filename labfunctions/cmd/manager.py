@@ -18,7 +18,7 @@ from labfunctions.security import auth_from_settings
 from labfunctions.security.redis_tokens import RedisTokenStore
 from labfunctions.server import create_web_redis
 from labfunctions.types.user import UserOrm
-from labfunctions.utils import run_sync
+from labfunctions.utils import pkg_route, run_sync
 
 settings = load_server()
 console = Console()
@@ -33,7 +33,9 @@ def managercli():
 
 
 def alembic_ugprade(dburi, to="head"):
-    alembic_cfg = AlembicConfig("labfunctions/alembic.ini")
+    route = pkg_route()
+
+    alembic_cfg = AlembicConfig(f"{route}/alembic.ini")
     alembic_cfg.set_main_option("sqlalchemy.url", dburi)
     command.upgrade(alembic_cfg, to)
 
