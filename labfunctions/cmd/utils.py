@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from pathlib import Path
 from typing import List
 
@@ -76,3 +77,34 @@ def watcher(c: DiskClient, execid, stats=False):
             console.print(msg)
         last = evt.id
         events += 1
+
+
+def create_secrets_certs(base_path):
+    from labfunctions.commands import shell
+
+    if not Path(f"{base_path}/.secrets/ecdsa.priv.pem").is_file():
+        mkdir_p(Path(f"{base_path}/.secrets").resolve())
+        res = shell(
+            (
+                f"openssl ecparam -genkey -name secp521r1 -noout "
+                f"-out {base_path}/.secrets/ecdsa.priv.pem"
+            ),
+            check=False,
+        )
+        if res.returncode != 0:
+            console.print(f"[red]{res.stderr}[/]")
+            sys.exit(-1)
+        res = shell(
+            (
+                f"openssl ec -in {base_path}/.secrets/ecdsa.priv.pem -pubout "
+                f"-out {base_path}/.secrets/ecdsa.pub.pem"
+            ),
+            check=False,
+        )
+        if res.returncode != 0:
+            console.print(f"[red]{res.stderr}[/]")
+            sys.exit(-1)
+
+        console.print("=> Secrets created")
+    else:
+        console.print("=> Keys already exist")

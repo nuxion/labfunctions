@@ -9,30 +9,7 @@ from labfunctions.control_plane import rqscheduler
 from labfunctions.types.agent import AgentConfig
 from labfunctions.utils import get_external_ip, get_hostname, mkdir_p
 
-from .utils import console
-
-
-def create_secrets_certs(base_path):
-    from labfunctions.commands import shell
-
-    if not Path(f"{base_path}/.secrets/ecdsa.priv.pem").is_file():
-        mkdir_p(Path(f"{base_path}/.secrets").resolve())
-        shell(
-            (
-                f"openssl ecparam -genkey -name secp521r1 -noout "
-                f"-out {base_path}/.secrets/ecdsa.priv.pem"
-            )
-        )
-        shell(
-            (
-                f"openssl ec -in {base_path}/.secrets/ecdsa.priv.pem -pubout "
-                f"-out {base_path}/.secrets/ecdsa.pub.pem"
-            )
-        )
-        console.print("=> Secrets created")
-    else:
-        console.print("=> Keys already exist")
-
+from .utils import console, create_secrets_certs
 
 hostname = get_hostname()
 
