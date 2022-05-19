@@ -149,3 +149,16 @@ See [Roadmap](/ROADMAP.md) *draft*
 - [Scale aware approach](https://queue.acm.org/detail.cfm?id=3025012)
 
 
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at the [issues
+page](https://github.com/nuxion/labfunctions). This project is intended to be
+a safe, welcoming space for collaboration, and contributors are expected to
+adhere to the [Contributor Covenant](http://contributor-covenant.org) code of
+conduct.
+
+
+## License
+
+This project is licensed under Apache 2.0. Refer to
+[LICENSE.txt](https://github.com/nuxion/labfunctions/blob/main/LICENSE).
