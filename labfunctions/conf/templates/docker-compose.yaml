@@ -1,0 +1,65 @@
+version: "3.5"
+volumes:
+  pgdata:
+  labsecrets:
+  labstore:
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    env_file: .env.docker
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - lab
+  redis:
+    image: redis:6-alpine
+    ports:
+      - {{ data.ip }}:6379:6379
+    networks:
+      - lab
+  registry:
+    image: registry:2
+    ports:
+      - {{ data.ip }}:5000:5000
+  fileserver:
+    image: nuxion/fileserver
+    volumes:
+      - ./fileserver.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 4444:4444
+    networks:
+      - lab
+  control-plane:
+    image: nuxion/labfunctions:{{ data.version }}
+    volumes:
+      - labsecrets:/app/.secrets
+      - labstore:/app/.nb_tmp
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      LF_SERVER: "yes"
+    command: >
+      lab web --apps workflows,history,projects,events,runtimes -A --workers 1 -L -I
+    ports:
+      - {{ data.ip }}:8000:8000
+    networks:
+      - lab
+  agent:
+    image: nuxion/labfunctions:{{ data.version }}
+    env_file: .env.docker
+    environment:
+      LF_SERVER: true
+    command: >
+      lab agent run --qnames cpu,build,control -m local/ba/example
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - labsecrets:/app/.secrets
+      - labstore:/app/.nb_tmp
+    networks:
+      - lab
+networks:
+  lab: 

@@ -55,8 +55,11 @@ class HistoryClient(BaseClient):
         """
         url = f"/history/{self.projectid}/_get_output?file={uri}"
         with self._http.stream("GET", url) as r:
-            for data in r.iter_bytes():
-                yield data
+            if r.status_code == 200:
+                for data in r.iter_bytes():
+                    yield data
+            else:
+                raise errors.HistoryNotebookError(self._addr, uri)
 
     def history_nb_output(self, exec_result: types.ExecutionResult) -> bool:
         """Upload the notebook from the execution result

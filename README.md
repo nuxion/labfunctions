@@ -138,7 +138,7 @@ See [Roadmap](/ROADMAP.md) *draft*
 
 ## :post_office: Architecture
 
-![labfunctions architecture](/docs/platform-workflows.jpg)
+![labfunctions architecture](/docs/img/platform-workflows.jpg)
 
 
 ## :bookmark_tabs: References & inspirations

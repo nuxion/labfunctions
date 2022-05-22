@@ -84,11 +84,27 @@ def runtimescli():
     default=False,
     help="Build runtime locally",
 )
+@click.option(
+    "--requirements",
+    "-r",
+    is_flag=True,
+    default=False,
+    help="Generates a requirements.txt file base on a pip export",
+)
 @click.argument("name", default="default")
 def build(
-    url_service, from_file, only_bundle, env_file, current, stash, watch, name, local
+    url_service,
+    from_file,
+    only_bundle,
+    env_file,
+    current,
+    stash,
+    watch,
+    name,
+    local,
+    requirements,
 ):
-    """Freeze and build a runtime for your proyect into the server"""
+    """Freeze and build a runtime for your project into the server"""
     c = client.from_file(from_file, url_service)
     # prepare secrets
     try:
@@ -98,7 +114,8 @@ def build(
         pv = None
         # sys.exit(-1)
 
-    # _agent_token = c.projects_agent_token()
+    if requirements:
+        execute_cmd("pip3 list --format=freeze > requirements.txt")
 
     spec = runtimes.get_spec_from_file(name)
     if not spec:
@@ -200,7 +217,7 @@ def build(
     help="URL of the Lab functions service",
 )
 def listcli(from_file, url_service):
-    """List of runtimes available for this project"""
+    """List of available runtimes for this project"""
     c = client.from_file(from_file, url_service)
     runtimes = c.runtimes_get_all()
     table = Table(title="Runtimes for the project")

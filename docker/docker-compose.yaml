@@ -48,8 +48,8 @@ services:
       - 127.0.0.1:8000:8000
     networks:
       - lab
-  lab-agent:
-    image: nuxion/labfunctions:0.8.0
+  agent:
+    image: nuxion/labfunctions:0.8.0-alpha.8
     env_file: .env.docker
     environment:
       LF_SERVER: true

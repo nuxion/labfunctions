@@ -102,8 +102,9 @@ install:
 web:
 	lab web --apps workflows,history,projects,runtimes -A --workers 1 -L
 
+.PHONY: agent
 agent:
-	poetry run lab agent run --qnames cpu,gpu,build,control -m local/ba/asd
+	lab agent run --qnames cpu,gpu,build,control -m local/ba/asd
 
 .PHONY: docker-client
 docker-client:

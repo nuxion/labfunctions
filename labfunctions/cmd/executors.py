@@ -86,32 +86,32 @@ def local(from_file, url_service, local, wfid):
         console.print(f"=>[bold green] WFID: {rsp.wfid} locally executed[/]")
 
 
-@executorscli.command()
-@click.option(
-    "--from-file",
-    "-f",
-    default=WF,
-    help="yaml file with the configuration",
-)
-@click.option(
-    "--url-service",
-    "-u",
-    default=URL,
-    help="URL of the NB Workflow Service",
-)
-@click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
-@click.option("--notebook", "-n", default=None, help="Notebook to execute")
-@click.argument("action", type=click.Choice(["workflow", "notebook"]))
-def docker(from_file, url_service, notebook, wfid, action):
-    """It will run the task inside a docker container, it exist only as a tester"""
-    if wfid and not notebook:
-        c = client.from_file(from_file, url_service=url_service)
-        exec_task = c.build_context(wfid)
-        os.environ["LF_AGENT_TOKEN"] = c.creds.access_token
-        os.environ["LF_AGENT_REFRESH_TOKEN"] = c.creds.refresh_token
-        os.environ["LF_WORKFLOW_SERVICE"] = url_service
-        result = docker_exec(exec_task)
-        print_json(data=result.dict())
+# @executorscli.command()
+# @click.option(
+#     "--from-file",
+#     "-f",
+#     default=WF,
+#     help="yaml file with the configuration",
+# )
+# @click.option(
+#     "--url-service",
+#     "-u",
+#     default=URL,
+#     help="URL of the NB Workflow Service",
+# )
+# @click.option("--wfid", "-W", default=None, help="Workflow ID to execute")
+# @click.option("--notebook", "-n", default=None, help="Notebook to execute")
+# @click.argument("action", type=click.Choice(["workflow", "notebook"]))
+# def docker(from_file, url_service, notebook, wfid, action):
+#     """It will run the task inside a docker container, it exist only as a tester"""
+#     if wfid and not notebook:
+#         c = client.from_file(from_file, url_service=url_service)
+#         exec_task = c.build_context(wfid)
+#         os.environ["LF_AGENT_TOKEN"] = c.creds.access_token
+#         os.environ["LF_AGENT_REFRESH_TOKEN"] = c.creds.refresh_token
+#         os.environ["LF_WORKFLOW_SERVICE"] = url_service
+#         result = docker_exec(exec_task)
+#         print_json(data=result.dict())
 
 
 # @executorscli.command()

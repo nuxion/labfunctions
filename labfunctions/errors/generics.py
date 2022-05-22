@@ -30,6 +30,12 @@ class WorkflowRegisterClientError(Exception):
         super().__init__(_msg)
 
 
+class HistoryNotebookError(Exception):
+    def __init__(self, addr, uri):
+        _msg = f"Error getting {uri} from {addr}"
+        super().__init__(_msg)
+
+
 class ProjectNotFound(Exception):
     def __init__(self, message):
         super().__init__(message)

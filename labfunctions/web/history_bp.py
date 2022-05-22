@@ -155,6 +155,7 @@ async def history_get_output(request, projectid):
     Upload a workflow project
     """
     # pylint: disable=unused-argument
+    breakpoint()
     uri = request.args.get("file")
     key = f"{projectid}/{uri}"
     response = await request.respond(content_type="application/octet-stream")
