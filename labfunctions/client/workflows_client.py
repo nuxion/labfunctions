@@ -113,8 +113,7 @@ class WorkflowsClient(BaseClient):
 
         if r.status_code == 200:
             return WorkflowDataWeb(**r.json())
-        if r.status_code == 404:
-            return None
+        return None
 
     def workflows_delete(self, wfid) -> int:
         r = self._http.delete(f"/workflows/{self.projectid}/{wfid}")
@@ -129,6 +128,7 @@ class WorkflowsClient(BaseClient):
         r = self._http.post(f"/workflows/{self.projectid}/queue/{wfid}")
         if r.status_code == 202:
             return r.json()["execid"]
+        return ""
 
     def notebook_run(
         self,

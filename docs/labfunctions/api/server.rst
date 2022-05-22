@@ -1,10 +1,10 @@
 Server
 ===========
 
-nb_workflows.server
+labfunctions.server
 ---------
 
-.. automodule:: nb_workflows.server
+.. automodule:: labfunctions.server
     :members:
     :show-inheritance:
     :inherited-members:

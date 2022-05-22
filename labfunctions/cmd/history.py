@@ -10,7 +10,7 @@ from rich import print_json
 # from labfunctions.io.fileserver import FileFileserver
 from rich.table import Table
 
-from labfunctions import client, defaults
+from labfunctions import client, defaults, errors
 from labfunctions.client import init_script
 from labfunctions.conf import load_client
 from labfunctions.utils import format_seconds, mkdir_p
@@ -39,8 +39,10 @@ def get_notebook(nbclient, row):
             with open(uri, "wb") as f:
                 for chunk in nbclient.history_get_output(uri):
                     f.write(chunk)
-        except Exception as e:
-            console.print(f"[bold red]Error getting result from {uri}[/]")
+        except (Exception, errors.HistoryNotebookError) as e:
+            # console.print(f"[bold red]Error getting result from {uri}[/]")
+            Path(uri).unlink()
+            output_result = False
             console.print(f"[bold red]{e}[/]")
     return output_result, uri
 
