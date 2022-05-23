@@ -1,6 +1,8 @@
 # Shared defaults by server, agent and client
 CLOUD_TAG = "lab"
 ENV_PREFIX = "LF_"
+LABFILE_VER = "0.3"
+LABFILE_NAME = "labfile.yaml"
 
 
 REFRESH_TOKEN_PATH = "auth/refresh_token"

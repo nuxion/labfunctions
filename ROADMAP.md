@@ -2,33 +2,24 @@
 
 This file is used only as kind of backlog or/and draft for ideas. 
 
-Current version: 0.7.0
+Current version: 0.8.0
 
 ## Next version 0.9.0
 
 **MUST:**
-- [ ] A default runtime available for a first time project creation
-- [ ] Define if History will be written from inside the docker execution or outside
-- [ ] Refactor: clean deprecated packages as core, agent and agent_client
-- [ ] Security: direct implementation of a JWT System
-- [ ] Security: constraint access by scopes(permissions) and claims(by project)
-- [ ] Workflows: enable/disable workflows from cli
-- [ ] rq_bp: Re-enable observability of jobs and workers running for admin users. 
-- [ ] Tests: >= 60%
-- [ ] If docker container fails, the error is not registered
-- [ ] History: Save last log lines from docker container ?
+- [x] workflows.yaml file change to labfile.yaml
+- [ ] GPU scaling
+- [ ] migration rq to libq
+- [ ] scheudler inside de control plane
+- [ ] cluster autoscaling as a background process
+- [ ] Tests: >= 65%
+- [ ] Fix broken tests
 
 
 **MAY:**
-- [ ] E2E: complete testing of project creation, workflows push and execution
 - [ ] Watch events logs on demand
-- [ ] Review ExecutionTaskResult 
 - [-] Timeouts default for server, tasks and clients
-- [ ] Executors: Review function logic and resilience for errors. 
-- [ ] Prometheus metrics
-- [ ] Evaluates dockerfile generation only in server-side
-- [ ] S3/GStorage plugin implementation to be used as fileserver (notebooks result, project uploads and so on)
-- [ ] In WorkflowState NBTask could be a List instead of a unique value, this could allows sequencial executions of notebooks. 
+- [ ] refactor of cluster package
 
 **Details**
 
@@ -52,8 +43,15 @@ As a second goal, but maybe that's for a following release, is adding other stor
 - [x] Autoscaling workers
 - [x] Doc: how to install client nb-workflows
 - [x] Tests: >= 55%
+- [x] Security: direct implementation of a JWT System
+- [x] A default runtime available for a first time project creation
+- [x] GStorage plugin implementation to be used as fileserver (notebooks result, project uploads and so on)
+- [x] Executors: Review function logic and resilience for errors. 
+- [x] General client config added
 
 **MAY**
+- [x] Refactor: clean deprecated packages as core, agent and agent_client
+- [x] Review ExecutionTaskResult 
 - [ ] CI/CD: constraint merges to main branch
 - [ ] Doc: about architecture
 - [ ] Doc: branch and release strategy adopted
@@ -98,7 +96,7 @@ The goal of this release is a functional system that delivery the promise of rem
 With that in mind, the focus will be in the stabilization of workflows executions, adding tests cases, execution feedback and cli enhancements.
 
 
-## Draft 
+## Backlog
 
 **independent from a schedule release**
 
@@ -112,7 +110,12 @@ With that in mind, the focus will be in the stabilization of workflows execution
 - [ ] If a job dies by timeout or by a runtime error, the docker spawned will still be running, review this case. 
 - [ ] Default project for each user ? this will allow uploading and executing notebooks from any place without worryng about dependencies. 
 - [ ] Separation between client and server, settings flag ? base settings shared? 
-- [ ] Jupyter on demand instance
+- [-] Jupyter on demand instance (locally)
 - [ ] Executors: Docker volumes specification **cancelled**
 - [ ] Optional [Any] Dockerfile RUN command definition from settings. **Cancelled**
 - [x] Executors: SeqPipe implmentation **cancelled**
+- [ ] Security: constraint access by scopes(permissions) and claims(by project)
+- [ ] In WorkflowState NBTask could be a List instead of a unique value, this could allows sequencial executions of notebooks. 
+- [ ] Evaluates dockerfile generation only in server-side
+- [ ] Prometheus metrics
+- [ ] E2E: complete testing of project creation, workflows push and execution

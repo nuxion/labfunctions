@@ -21,6 +21,7 @@ from .utils import ConfigCli
 
 cliconf = ConfigCli()
 service = cliconf.data.url_service
+labfile = cliconf.data.lab_file
 console = Console()
 
 
@@ -124,7 +125,7 @@ def startproject(url_service, create_dirs, base_path):
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=labfile,
     help="yaml file with the configuration",
 )
 def info(url_service, from_file):

@@ -2,14 +2,20 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, BaseSettings, RedisDsn
 
-from labfunctions.defaults import EXECID_LEN, PROJECTID_MIN_LEN, SERVICE_URL, WFID_LEN
+from labfunctions.defaults import (
+    EXECID_LEN,
+    LABFILE_NAME,
+    PROJECTID_MIN_LEN,
+    SERVICE_URL,
+    WFID_LEN,
+)
 
 
 class ConfigCliType(BaseModel):
     """Config for default values for cli"""
 
     url_service: str = SERVICE_URL
-    workflow_file: Optional[str] = None
+    lab_file: Optional[str] = LABFILE_NAME
 
 
 class SecuritySettings(BaseSettings):

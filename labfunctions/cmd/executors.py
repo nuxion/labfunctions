@@ -19,7 +19,7 @@ from .utils import ConfigCli, console, watcher
 
 cliconf = ConfigCli()
 URL = cliconf.data.url_service
-WF = cliconf.data.workflow_file
+WF = cliconf.data.lab_file
 
 
 def _parse_params_args(params):

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from labfunctions import defaults
 
 from .docker import DockerfileImage
+from .projects import ProjectData
 
 
 class ScheduleData(BaseModel):
@@ -156,3 +157,9 @@ class WorkflowDataWeb(BaseModel):
 @dataclass
 class WorkflowsList:
     rows: List[WorkflowData]
+
+
+class Labfile(BaseModel):
+    project: ProjectData
+    version: str = "0.2"
+    workflows: Optional[Dict[str, WorkflowDataWeb]] = {}

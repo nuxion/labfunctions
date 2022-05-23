@@ -6,7 +6,7 @@ from factory import SubFactory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from labfunctions import utils
-from labfunctions.client.state import WorkflowsState
+from labfunctions.client.labstate import LabState
 from labfunctions.hashes import generate_random
 from labfunctions.models import (
     HistoryModel,
@@ -155,9 +155,9 @@ class WorkflowDataFactory(factory.Factory):
     schedule = factory.LazyAttribute(lambda n: ScheduleDataFactory())
 
 
-class WorkflowsStateFactory(factory.Factory):
+class LabStateFactory(factory.Factory):
     class Meta:
-        model = WorkflowsState
+        model = LabState
 
     project = factory.LazyAttribute(lambda n: ProjectDataFactory())
     workflows = factory.LazyAttribute(lambda n: WorkflowDataWebFactory())

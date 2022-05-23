@@ -10,8 +10,8 @@ from rich.prompt import Confirm, Prompt
 from labfunctions import client, defaults, runtimes
 from labfunctions.client import from_file
 from labfunctions.client.diskclient import DiskClient
+from labfunctions.client.labstate import LabState
 from labfunctions.client.nbclient import NBClient
-from labfunctions.client.state import WorkflowsState
 from labfunctions.conf import load_client
 from labfunctions.conf.jtemplates import get_package_dir, render_to_file
 from labfunctions.hashes import generate_random
@@ -137,7 +137,7 @@ def create_folders(root, folders: List[str]):
         mkdir_p(root / f)
 
 
-def workflow_state_init(root, name, projectid=None) -> WorkflowsState:
+def lab_state_init(root, name, projectid=None) -> LabState:
 
     wd = _example_workflow()
     wd_dict = {wd.alias: wd}
@@ -149,13 +149,13 @@ def workflow_state_init(root, name, projectid=None) -> WorkflowsState:
         )
 
     pd = ProjectData(name=name, projectid=projectid)
-    wf_state = WorkflowsState(pd, workflows=wd_dict, version="0.2.0")
-    wf_state.write(root / "workflows.yaml")
-    return wf_state
+    lab_state = LabState(pd, workflows=wd_dict)
+    lab_state.write(root / defaults.LABFILE_NAME)
+    return lab_state
 
 
 def create_on_the_server(
-    root, dc: DiskClient, state: WorkflowsState
+    root, dc: DiskClient, state: LabState
 ) -> Union[ProjectCreated, None]:
     rsp = dc.projects_create(
         state.project_name,
@@ -165,23 +165,15 @@ def create_on_the_server(
     )
     if rsp:
         dc.state.projectid = rsp.pd.projectid
-        # valid_agent = dc.projects_create_agent()
-        # agent_creds = dc.projects_agent_token(rsp.pd.agent)
-        # with open(f"{dc.working_area}/{defaults.CLIENT_AGENT_CREDS_FILE}", "w") as f:
-        #    f.write(agent_creds.json())
-        # with open(f"{root}/local.nbvars", "a") as f:
-        #    f.write(f"AGENT_TOKEN={agent_creds.access_token}\n")
-        #    f.write(f"AGENT_REFRESH_TOKEN={agent_creds.refresh_token}\n")
+
         return rsp
     return None
 
 
 def verify_pre_existent(root) -> bool:
     # exist = (root / "local.nbvars").is_file()
-    exist = False
-    nb_tmp = (root / ".nb_tmp").is_dir()
-    wf_file = (root / "workflows.yaml").resolve().is_file()
-    if exist or nb_tmp or wf_file:
+    lab_file = (root / defaults.LABFILE_NAME).resolve().is_file()
+    if lab_file:
         return True
     return False
 
@@ -227,18 +219,18 @@ def init_automatic(
     project_name: str,
     url_service: str,
     settings: Optional[ClientSettings] = None,
-) -> WorkflowsState:
+) -> LabState:
     root = Path(base_path)
     settings = settings or load_client()
 
     create_folders(root, DIRECTORIES)
     init_project_files(root, PROJECT_FILES)
 
-    state = workflow_state_init(root, project_name)
+    state = lab_state_init(root, project_name)
     init_lab_app(root, state.projectid, project_name, url_service)
     return state
 
 
 def refresh_project(root, pc: ProjectCreated, url_service: str):
-    state = workflow_state_init(root, pc.pd.name, pc.pd.projectid)
+    state = lab_state_init(root, pc.pd.name, pc.pd.projectid)
     init_lab_app(root, state.projectid, pc.pd.name, url_service)
