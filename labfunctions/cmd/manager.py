@@ -16,7 +16,6 @@ from labfunctions.db.utils import sync_as_async
 from labfunctions.managers import projects_mg, users_mg
 from labfunctions.security import auth_from_settings
 from labfunctions.security.redis_tokens import RedisTokenStore
-from labfunctions.server import create_web_redis
 from labfunctions.types.user import UserOrm
 from labfunctions.utils import pkg_route, run_sync
 

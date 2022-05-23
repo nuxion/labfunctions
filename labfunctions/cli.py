@@ -22,16 +22,16 @@ def load_client_cli(cli):
 
 def load_server_cli(cli):
     from labfunctions.cmd.agent import agentcli
-    from labfunctions.cmd.cluster import clustercli
+
+    # from labfunctions.cmd.cluster import clustercli
     from labfunctions.cmd.manager import managercli
     from labfunctions.cmd.runtimes import runtimescli
-    from labfunctions.cmd.services import schedulercli, webcli
+    from labfunctions.cmd.services import webcli
 
     cli.add_command(managercli)
     cli.add_command(webcli)
-    cli.add_command(schedulercli)
     cli.add_command(agentcli)
-    cli.add_command(clustercli)
+    # cli.add_command(clustercli)
     cli.add_command(runtimescli)
 
 

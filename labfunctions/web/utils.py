@@ -4,7 +4,6 @@ from labfunctions import defaults
 from labfunctions.conf.server_settings import settings
 from labfunctions.control import SchedulerExec
 from labfunctions.io.kvspec import AsyncKVSpec
-from labfunctions.scheduler import SchedulerExecutor
 
 
 def get_query_param2(request, key, default_val=None):
