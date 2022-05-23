@@ -94,7 +94,7 @@ def startproject(url_service, create_dirs, base_path):
             state = init_script.init_automatic(base_path, name, url_service)
             create = Confirm.ask("Create project in the server?", default=True)
             if create:
-                dc = client.diskclient.DiskClient(url_service, wf_state=state)
+                dc = client.diskclient.DiskClient(url_service, lab_state=state)
                 dc.create_homedir()
                 try:
                     dc.logincli()

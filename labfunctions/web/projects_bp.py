@@ -19,7 +19,7 @@ from labfunctions.utils import run_async, secure_filename
 from labfunctions.web.utils import (
     get_kvstore,
     get_query_param2,
-    get_scheduler,
+    get_scheduler2,
     stream_reader,
 )
 
@@ -202,6 +202,7 @@ async def project_agents_list(request, projectid: str):
 @projects_bp.post("/<projectid:str>/_build")
 @openapi.body({"application/json": types.RuntimeSpec})
 @openapi.parameter("version", str, "query")
+@openapi.body({"application/json": types.runtimes.BuildCtx})
 @protected()
 async def project_build(request, projectid):
     """
@@ -209,29 +210,14 @@ async def project_build(request, projectid):
     """
     # pylint: disable=unused-argument
     spec = types.RuntimeSpec(**request.json)
-
-    root = pathlib.Path(projectid)
-
     version = get_query_param2(request, "version", None)
-
-    # session = request.ctx.session
-    # async with session.begin():
-    #    pd = await projects_mg.get_by_projectid(session, projectid)
-    # if pd:
-    ctx = create_build_ctx(
-        projectid,
-        spec,
-        version,
-        project_store_class=settings.PROJECTS_STORE_CLASS_SYNC,
-        project_store_bucket=settings.PROJECTS_STORE_BUCKET,
-        registry=settings.DOCKER_REGISTRY,
+    scheduler = get_scheduler2(request)
+    session = request.ctx.session
+    ctx = await scheduler.enqueue_build(
+        session, runtime=spec, projectid=projectid, version=version
     )
 
-    sche = get_scheduler(request, settings.BUILD_QUEUE)
-    job = await run_async(sche.enqueue_build, ctx)
-
-    return json(dict(msg="ok", execid=job.id), 202)
-    # return json(dict(msg="not found"), 404)
+    return json(ctx.dict(), 202)
 
 
 @projects_bp.post("/<projectid:str>/_upload", stream=True)

@@ -60,6 +60,8 @@ class ServerSettings(BaseSettings):
     DEV_MODE: bool = False
     WEB_REDIS: Optional[RedisDsn] = None
     RQ_REDIS: Optional[RedisDsn] = None
+    QUEUE_REDIS: Optional[RedisDsn] = None
+    QUEUE_DEFAULT_TIMEOUT: str = "30m"
     CONTROL_QUEUE: str = "default.control"
     BUILD_QUEUE: str = "default.build"
 

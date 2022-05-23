@@ -1,10 +1,13 @@
+import logging
 import os
 import sys
 
 import click
+from rich.logging import RichHandler
 
 from labfunctions.conf.server_settings import settings
-from labfunctions.control_plane import rqscheduler
+
+# from labfunctions.control_plane import rqscheduler
 from labfunctions.types.agent import AgentConfig
 from labfunctions.utils import get_external_ip, get_hostname
 
@@ -46,16 +49,32 @@ def agentcli():
     default=None,
     help="Agent Name",
 )
+@click.option(
+    "--debug",
+    "-D",
+    is_flag=True,
+    default=False,
+    help="Debug log",
+)
 @click.option("--machine-id", "-m", default=f"localhost/ba/{hostname}")
-def runcli(redis, workers, qnames, cluster, ip_address, agent_name, machine_id):
+def runcli(redis, workers, qnames, cluster, ip_address, agent_name, machine_id, debug):
     """Run the agent"""
     # pylint: disable=import-outside-toplevel
-    from labfunctions.control_plane import agent
+    # from labfunctions.control_plane import agent
+    from labfunctions.control import agent
 
-    sys.path.append(settings.BASE_PATH)
-    os.environ["LF_AGENT_TOKEN"] = settings.AGENT_TOKEN
-    os.environ["LF_AGENT_REFRESH_TOKEN"] = settings.AGENT_REFRESH_TOKEN
-    os.environ["LF_WORKFLOW_SERVICE"] = settings.WORKFLOW_SERVICE
+    level = "INFO"
+    if debug:
+        level = "DEBUG"
+    FORMAT = "%(message)s"
+    logging.basicConfig(
+        level=level,
+        format=FORMAT,
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True)],
+    )
+
+    agent.set_env(settings)
     ip_address = ip_address or get_external_ip(settings.DNS_IP_ADDRESS)
     queues = qnames.split(",")
 
@@ -74,13 +93,13 @@ def runcli(redis, workers, qnames, cluster, ip_address, agent_name, machine_id):
     agent.run(conf)
 
 
-@click.command(name="scheduler")
-@click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
-@click.option(
-    "--interval", "-i", default=60, help="How often the scheduler checks for work"
-)
-@click.option("--log-level", "-L", default="INFO")
-def rqschedulercli(redis, interval, log_level):
-    """Run RQ scheduler"""
-    # pylint: disable=import-outside-toplevel
-    rqscheduler.run(redis, interval, log_level)
+# @click.command(name="scheduler")
+# @click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
+# @click.option(
+#     "--interval", "-i", default=60, help="How often the scheduler checks for work"
+# )
+# @click.option("--log-level", "-L", default="INFO")
+# def rqschedulercli(redis, interval, log_level):
+#     """Run RQ scheduler"""
+#     # pylint: disable=import-outside-toplevel
+#     rqscheduler.run(redis, interval, log_level)

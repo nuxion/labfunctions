@@ -2,6 +2,7 @@ from sanic import Blueprint, Request, Sanic
 
 from labfunctions import defaults
 from labfunctions.conf.server_settings import settings
+from labfunctions.control import SchedulerExec
 from labfunctions.io.kvspec import AsyncKVSpec
 from labfunctions.scheduler import SchedulerExecutor
 
@@ -20,12 +21,11 @@ def parse_page_limit(request, def_pg="1", def_lt="100"):
     return page, limit
 
 
-def get_scheduler(
-    request: Request, qname=settings.CONTROL_QUEUE, is_async=True
-) -> SchedulerExecutor:
+def get_scheduler2(
+    request: Request,
+) -> SchedulerExec:
     current_app = Sanic.get_app(request.app.name)
-    r = current_app.ctx.rq_redis
-    return SchedulerExecutor(r, qname=qname, is_async=is_async)
+    return current_app.ctx.scheduler
 
 
 def get_kvstore(request: Request) -> AsyncKVSpec:
