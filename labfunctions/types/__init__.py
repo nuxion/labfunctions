@@ -7,6 +7,7 @@ from .core import (
     HistoryLastResponse,
     HistoryRequest,
     HistoryResult,
+    Labfile,
     NBTask,
     ScheduleData,
     SimpleExecCtx,

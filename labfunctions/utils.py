@@ -239,6 +239,11 @@ def write_toml(filepath, data):
         f.write(_dump)
 
 
+class IndentDumper(yaml.Dumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super(IndentDumper, self).increase_indent(flow, False)
+
+
 def open_yaml(filepath: str):
     with open(filepath, "r") as f:
         data = f.read()

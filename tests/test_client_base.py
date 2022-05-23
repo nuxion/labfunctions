@@ -7,7 +7,7 @@ from labfunctions.errors import LoginError
 from labfunctions.errors.client import LoginError, WorkflowStateNotSetError
 from labfunctions.types import TokenCreds
 
-from .factories import WorkflowsStateFactory
+from .factories import LabStateFactory
 
 url = "http://localhost:8000"
 
@@ -110,7 +110,7 @@ def test_client_base_events_pub(monkeypatch, mocker: MockerFixture):
     http = mocker.MagicMock()
     http.post.return_value = mock_post()
 
-    bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory())
+    bc = BaseClient(url_service=url, lab_state=LabStateFactory())
     bc._http = http
 
     bc.events_publish("test", "hello test")
@@ -129,7 +129,7 @@ def test_client_base_events_listen(mocker: MockerFixture):
     mocker.patch("labfunctions.client.base.httpx.stream", return_value=stream_mock)
 
     creds = TokenCreds(access_token="test", refresh_token="test")
-    bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory(), creds=creds)
+    bc = BaseClient(url_service=url, lab_state=LabStateFactory(), creds=creds)
 
     gen = bc.events_listen("test", "hello test")
     rsp = gen.__next__()
@@ -153,7 +153,7 @@ def test_client_base_events_listen_exit(mocker: MockerFixture):
     mocker.patch("labfunctions.client.base.httpx.stream", return_value=stream_mock)
 
     creds = TokenCreds(access_token="test", refresh_token="test")
-    bc = BaseClient(url_service=url, wf_state=WorkflowsStateFactory(), creds=creds)
+    bc = BaseClient(url_service=url, lab_state=LabStateFactory(), creds=creds)
 
     events = []
     for evt in bc.events_listen("test"):

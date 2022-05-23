@@ -19,7 +19,7 @@ from .utils import ConfigCli, console, progress, watcher
 settings = load_client()
 cliconf = ConfigCli()
 URL = cliconf.data.url_service
-WF = cliconf.data.workflow_file
+WF = cliconf.data.lab_file
 
 
 @click.group(name="runtimes")

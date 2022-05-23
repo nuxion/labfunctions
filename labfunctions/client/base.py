@@ -7,13 +7,12 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Union
 import httpx
 import jwt
 
-from labfunctions import defaults, errors, types
+from labfunctions import defaults, errors, log, types
+from labfunctions.client.labstate import LabState
+from labfunctions.client.utils import get_credentials_disk
 from labfunctions.events import EventManager
 from labfunctions.hashes import generate_random
 from labfunctions.utils import mkdir_p, open_yaml, write_yaml
-
-from .state import WorkflowsState
-from .utils import get_credentials_disk
 
 
 def get_http_client(**kwargs) -> httpx.Client:
@@ -93,7 +92,7 @@ class BaseClient:
         self,
         url_service: str,
         creds: Optional[types.TokenCreds] = None,
-        wf_state: Optional[WorkflowsState] = None,
+        lab_state: Optional[LabState] = None,
         version=defaults.API_VERSION,
         http_init_func=get_http_client,
         timeout=defaults.CLIENT_TIMEOUT,
@@ -102,13 +101,12 @@ class BaseClient:
         self._addr = url_service
         self._creds = creds
         self._auth: Optional[AuthFlow] = None
-        self.logger = logging.getLogger("nbwork.agent")
-        self.state = wf_state
+        self.logger = log.client_logger
+        self.state = lab_state
         self._version = version
         self._timeout = timeout
         self._http_creator = http_init_func
         self._http: httpx.Client = self._http_init()
-        self.logger = logging.getLogger("nbwork.client")
         self.base_path = base_path
         self._home = Path.home() / defaults.CLIENT_HOME_DIR
 
@@ -140,7 +138,7 @@ class BaseClient:
             "workflows_service": self._addr,
             "homedir": str(self.homedir),
             "working_area": str(self.working_area),
-            "file": self.state.workflows_file,
+            "file": self.state.filepath,
             "workflows": workflows,
             "user": self.user,
             "base_path": self.base_path,

@@ -12,20 +12,24 @@ from labfunctions.client import init_script
 from labfunctions.conf import load_client
 from labfunctions.utils import mkdir_p
 
-console = Console()
+from .utils import ConfigCli, console
+
+cliconf = ConfigCli()
+URL = cliconf.data.url_service
+LF = cliconf.data.lab_file
 
 
 @click.group(name="wf")
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=LF,
     help="yaml file with the configuration",
 )
 @click.option(
     "--url-service",
     "-u",
-    default=load_client().WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.pass_context

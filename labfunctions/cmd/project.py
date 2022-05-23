@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 import click
-from rich.console import Console
 from rich.table import Table
 
 from labfunctions import client, defaults, secrets
@@ -11,11 +10,13 @@ from labfunctions.conf import load_client
 from labfunctions.errors.client import ProjectUploadError
 from labfunctions.utils import execute_cmd
 
-from .utils import watcher
+from .utils import ConfigCli, console, watcher
 
-settings = load_client()
+cliconf = ConfigCli()
+URL = cliconf.data.url_service
+LF = cliconf.data.lab_file
 
-console = Console()
+# settings = load_client()
 
 
 @click.group(name="project")
@@ -30,13 +31,13 @@ def projectcli():
 @click.option(
     "--url-service",
     "-u",
-    default=settings.WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=LF,
     help="yaml file with the configuration",
 )
 @click.option(
@@ -90,13 +91,13 @@ def agent(url_service, from_file, agentname, action):
 @click.option(
     "--url-service",
     "-u",
-    default=settings.WORKFLOW_SERVICE,
+    default=URL,
     help="URL of the NB Workflow Service",
 )
 @click.option(
     "--from-file",
     "-f",
-    default="workflows.yaml",
+    default=LF,
     help="yaml file with the configuration",
 )
 def listcli(url_service, from_file):
@@ -112,22 +113,3 @@ def listcli(url_service, from_file):
     for p in projects:
         table.add_row(p.projectid, p.name, p.description)
     console.print(table)
-
-
-@projectcli.command()
-@click.option(
-    "--url-service",
-    "-u",
-    default=settings.WORKFLOW_SERVICE,
-    help="URL of the NB Workflow Service",
-)
-@click.option(
-    "--from-file",
-    "-f",
-    default="workflows.yaml",
-    help="yaml file with the configuration",
-)
-def info(url_service, from_file):
-    """Project's summary"""
-    c = client.from_file(url_service=url_service)
-    c.info()

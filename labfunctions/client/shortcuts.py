@@ -6,27 +6,25 @@ from labfunctions.conf import load_client
 from labfunctions.utils import secure_filename
 
 from .diskclient import DiskClient
+from .labstate import LabState
 from .nbclient import NBClient
-from .state import WorkflowsState
-from .state import from_file as ws_from_file
 
 
 def from_file(
-    filepath="workflows.yaml", url_service=None, home_dir=defaults.CLIENT_HOME_DIR
+    filepath=defaults.LABFILE_NAME, url_service=None, home_dir=defaults.CLIENT_HOME_DIR
 ) -> DiskClient:
     """intialize a py:class:`labfunctions.client.diskclient.DiskClient`
     using data from local like workflows.yaml.
     """
 
     settings = load_client()
-    wf_state = ws_from_file(filepath)
-    wf_state._file = filepath
-    wf_service = url_service or settings.WORKFLOW_SERVICE
+    lab_state = LabState.from_file(filepath)
+    lf_service = url_service or settings.WORKFLOW_SERVICE
     # if not creds:
     #    creds = login_cli(url_service, home_dir)
     dc = DiskClient(
-        url_service=wf_service,
-        wf_state=wf_state,
+        url_service=lf_service,
+        lab_state=lab_state,
         base_path=settings.BASE_PATH,
     )
     dc.load_creds()
@@ -42,18 +40,17 @@ def from_env(
     settings: Optional[types.ClientSettings] = None, projectid=None
 ) -> NBClient:
     """Creates a client using the settings module and environment variables"""
-    if not settings:
-        settings = load_client()
+    settings = settings or load_client()
     # nbvars = secrets.load(settings.BASE_PATH)
     # creds = _load_creds(settings, nbvars)
     pd = types.ProjectData(name=settings.PROJECT_NAME, projectid=settings.PROJECTID)
     if projectid:
         pd.projectid = projectid
 
-    wf_state = WorkflowsState(pd)
+    lab_state = LabState(pd)
     c = NBClient(
         url_service=settings.WORKFLOW_SERVICE,
-        wf_state=wf_state,
+        lab_state=lab_state,
         base_path=os.getenv(defaults.BASE_PATH_ENV),
     )
     c.load_creds()
@@ -82,6 +79,6 @@ def agent(url_service, token, refresh, projectid) -> NBClient:
     :param refresh: refresh_token
     :param projectid: projectid
     """
-    wf = WorkflowsState(types.ProjectData(name="", projectid=projectid))
+    lf = LabState(types.ProjectData(name="", projectid=projectid))
     creds = types.TokenCreds(access_token=token, refresh_token=refresh)
-    return NBClient(url_service=url_service, creds=creds, wf_state=wf)
+    return NBClient(url_service=url_service, creds=creds, lab_state=lf)
