@@ -38,10 +38,10 @@ The focus will be in observability and security.
 
 As a second goal, but maybe that's for a following release, is adding other storage options tied to google cloud an aws. 
 
-## Next version 0.8.0
+## Version 0.8.0
 
 **MUST**
-- [-] NBTask args refactor 
+- [x] NBTask args refactor 
 - [x] Does runtimes struct need a name to be associated with? 
 - [x] RQWorker: Overwrite worker self ip discovery logic
 - [x] RQWorker: Activity time
@@ -50,7 +50,7 @@ As a second goal, but maybe that's for a following release, is adding other stor
 - [x] Review settings strategy for server/worker
 - [x] A machine types registry by cloud vendor (gcloud / digitalocean)
 - [x] Autoscaling workers
-- [ ] Doc: how to install client nb-workflows
+- [x] Doc: how to install client nb-workflows
 - [x] Tests: >= 55%
 
 **MAY**
