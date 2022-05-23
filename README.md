@@ -2,7 +2,7 @@
 
 [![labfunctions](https://github.com/nuxion/labfunctions/actions/workflows/main.yaml/badge.svg)](https://github.com/nuxion/labfunctions/actions/workflows/main.yaml)
 [![readthedocs](https://readthedocs.org/projects/labfunctions/badge/?version=latest)](https://labfunctions.readthedocs.io/en/latest/)
-[![PyPI - Version](https://img.shields.io/pypi/v/labfunctions)](https://pypi.org/project/labfuncions/)
+[![PyPI - Version](https://img.shields.io/pypi/v/labfunctions)](https://pypi.org/project/labfunctions/)
 [![PyPI - Format](https://img.shields.io/pypi/format/labfunctions)](https://pypi.org/project/labfunctions/)
 [![PyPI - Status](https://img.shields.io/pypi/status/labfunctions)](https://pypi.org/project/labfunctions/)
 [![Docker last](https://img.shields.io/docker/v/nuxion/labfunctions/0.7.0)](https://hub.docker.com/r/nuxion/labfunctions/tags)
