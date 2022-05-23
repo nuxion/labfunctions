@@ -16,6 +16,7 @@ Current version: 0.8.0
 - [ ] Fix broken tests
 - [ ] Fix smart_open dependecy for the client
 - [ ] Doc: release process
+- [x] Task execution
 
 **MAY:**
 - [ ] Watch events logs on demand

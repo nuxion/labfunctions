@@ -11,6 +11,7 @@ from .core import (
     NBTask,
     ScheduleData,
     SimpleExecCtx,
+    TaskStatus,
     WorkflowData,
     WorkflowDataWeb,
     WorkflowsList,

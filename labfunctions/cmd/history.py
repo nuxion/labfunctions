@@ -133,3 +133,29 @@ def getcli(url_service, from_file, execid, nice):
     print_json(data=rsp.result.dict(exclude={"error_msg"}))
     console.print("=> Errors: ")
     console.print(f"[red]{rsp.result.error_msg}[/]")
+
+
+@logcli.command(name="task")
+@click.option(
+    "--from-file",
+    "-f",
+    default=WF,
+    help="yaml file with the configuration",
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=URL,
+    help="URL of the Lab Function service",
+)
+# @click.option("--nice", "-n", is_flag=True, default=True, help="Print nice output")
+@click.argument("execid")
+def taskcli(url_service, from_file, execid):
+    """log detail of a execution"""
+    c = client.from_file(from_file, url_service=url_service)
+    rsp = c.task_status(execid)
+    if not rsp:
+        console.print(f"[red bold](x) Execution id {execid} not found[/]")
+        sys.exit(-1)
+
+    print_json(data=rsp.dict())

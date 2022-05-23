@@ -16,7 +16,7 @@ from labfunctions.managers.users_mg import inject_user
 from labfunctions.security.web import protected
 from labfunctions.types import ExecutionResult, HistoryRequest, NBTask
 from labfunctions.utils import today_string
-from labfunctions.web.utils import get_kvstore, get_query_param2
+from labfunctions.web.utils import get_kvstore, get_query_param2, get_scheduler2
 
 history_bp = Blueprint("history", url_prefix="history", version=API_VERSION)
 
@@ -155,7 +155,6 @@ async def history_get_output(request, projectid):
     Upload a workflow project
     """
     # pylint: disable=unused-argument
-    breakpoint()
     uri = request.args.get("file")
     key = f"{projectid}/{uri}"
     response = await request.respond(content_type="application/octet-stream")
@@ -163,3 +162,20 @@ async def history_get_output(request, projectid):
     async for chunk in kv_store.get_stream(key):
         await response.send(chunk)
     await response.eof()
+
+
+@history_bp.get("/<projectid:str>/task/<execid:str>")
+@openapi.parameter("projectid", str, "path")
+@openapi.response(200, "project")
+@openapi.response(404, "not found")
+@protected()
+async def history_get_task(request, projectid, execid):
+    """Get private key based on the project"""
+    # pylint: disable=unused-argument
+
+    scheduler = get_scheduler2(request)
+    task = await scheduler.get_task(execid)
+    if not task:
+        return json({"msg": "not found"}, 404)
+
+    return json(task.dict(), 200)

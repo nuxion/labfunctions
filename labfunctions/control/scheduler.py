@@ -1,8 +1,10 @@
-from typing import Optional
+from typing import Optional, Union
 
 from libq.connections import create_pool
+from libq.errors import JobNotFound
 from libq.jobs import Job
 from libq.queue import Queue
+from libq.types import JobResult
 from redis.asyncio import ConnectionPool
 
 from labfunctions import conf, defaults, types
@@ -98,3 +100,23 @@ class SchedulerExec:
         )
 
         return ctx
+
+    async def _get_job(self, execid: str) -> Union[Job, None]:
+        job = Job(execid, conn=self.conn)
+        try:
+            await job.fetch()
+        except JobNotFound:
+            return None
+        return job
+
+    async def get_task(self, execid: str) -> Union[types.TaskStatus, None]:
+        job = await self._get_job(execid)
+        if not job:
+            return None
+
+        return types.TaskStatus(
+            execid=execid,
+            status=job.status,
+            queue=job._payload.queue,
+            retries=job._payload.retries,
+        )
