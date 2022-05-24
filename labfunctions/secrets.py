@@ -35,7 +35,7 @@ def _open_vars_file(vars_file) -> Dict[str, Any]:
 
             return vars_
     except FileNotFoundError:
-        logger.warning(f"Not {vars_file} found")
+        logger.warning(f"No {vars_file} found")
         return {}
 
 
