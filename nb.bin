@@ -1,5 +1,0 @@
-#!/usr/local/bin/python
-from nb_workflows.cli import cli
-
-if __name__ == '__main__':
-    cli()

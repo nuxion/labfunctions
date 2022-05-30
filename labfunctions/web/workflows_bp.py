@@ -11,12 +11,7 @@ from sanic_ext import openapi
 from labfunctions.conf.server_settings import settings
 from labfunctions.defaults import API_VERSION
 from labfunctions.errors.generics import WorkflowRegisterError
-from labfunctions.executors import ExecID
-
-# from labfunctions.executors.context import ExecID, create_notebook_ctx_ondemand
 from labfunctions.managers import projects_mg, runtimes_mg, workflows_mg
-from labfunctions.notebooks import create_notebook_ctx
-from labfunctions.scheduler import SchedulerExecutor, scheduler_dispatcher
 from labfunctions.security.web import protected
 from labfunctions.types import (
     NBTask,
@@ -33,7 +28,7 @@ from labfunctions.utils import (
     secure_filename,
 )
 
-from .utils import get_scheduler
+from .utils import get_scheduler2
 
 workflows_bp = Blueprint("workflows", url_prefix="workflows", version=API_VERSION)
 
@@ -68,25 +63,14 @@ async def notebooks_run(request, projectid):
     """
     # pylint: disable=unused-argument
 
-    # nb_files = list_workflows()
     session = request.ctx.session
     try:
         task = NBTask(**request.json)
     except ValidationError:
         return json(dict(msg="wrong params"), 400)
 
-    execid = ExecID()
-    id_ = execid.firm_with(ExecID.types.web)
-    runtime = None
-    if task.runtime:
-        runtime = await runtimes_mg.get_runtime(
-            session, projectid, task.runtime, task.version
-        )
-
-    nb_ctx = create_notebook_ctx(projectid, task, execid=id_, runtime=runtime)
-    scheduler = get_scheduler(request, is_async=is_async)
-    await run_async(scheduler.enqueue_notebook, nb_ctx)
-
+    scheduler = get_scheduler2(request)
+    nb_ctx = await scheduler.enqueue_notebook(session, projectid=projectid, task=task)
     return json(nb_ctx.dict(), 202)
 
 
@@ -106,81 +90,81 @@ async def workflows_list(request, projectid):
     return json(dict(rows=data), 200)
 
 
-@workflows_bp.post("/<projectid>")
-@openapi.body({"application/json": WorkflowDataWeb})
-@openapi.parameter("projectid", str, "path")
-@openapi.response(200, {"msg": str}, "Notebook Workflow already exist")
-@openapi.response(201, {"wfid": str}, "Notebook Workflow registered")
-@openapi.response(400, {"msg": str}, description="wrong params")
-@openapi.response(404, {"msg": str}, description="project not found")
-@protected()
-async def workflow_create(request, projectid):
-    """
-    Register a notebook workflow and schedule it
-    """
-    try:
-        wfd = WorkflowDataWeb(**request.json)
-    except ValidationError:
-        return json(dict(msg="wrong params"), 400)
-
-    session = request.ctx.session
-    scheduler = get_scheduler(request, is_async=is_async)
-
-    async with session.begin():
-        try:
-            wfid = await workflows_mg.register(session, projectid, wfd)
-            if wfd.schedule and wfd.enabled:
-                await scheduler.schedule(projectid, wfid, wfd)
-        except WorkflowRegisterError as e:
-            return json(dict(msg="workflow already exist"), status=200)
-
-        return json(dict(wfid=wfid), status=201)
-
-
-@workflows_bp.put("/<projectid>")
-@openapi.body({"application/json": WorkflowDataWeb})
-@openapi.parameter("projectid", str, "path")
-@openapi.response(200, {"wfid": str}, "Notebook Workflow accepted")
-@openapi.response(400, {"msg": str}, description="wrong params")
-@openapi.response(503, {"msg": str}, description="Error persiting the job")
-@protected()
-async def workflow_update(request, projectid):
-    """
-    Register a notebook workflow and schedule it
-    """
-    try:
-        wfd = WorkflowDataWeb(**request.json)
-    except ValidationError:
-        return json(dict(msg="wrong params"), 400)
-
-    session = request.ctx.session
-    scheduler = get_scheduler(request, is_async=is_async)
-
-    async with session.begin():
-        try:
-            wfid = await workflows_mg.register(session, projectid, wfd, update=True)
-            if wfd.schedule and wfd.enabled:
-                await scheduler.schedule(projectid, wfid, wfd)
-        except WorkflowRegisterError as e:
-            return json(dict(msg=str(e)), status=503)
-
-        return json(dict(wfid=wfid), status=201)
+# @workflows_bp.post("/<projectid>")
+# @openapi.body({"application/json": WorkflowDataWeb})
+# @openapi.parameter("projectid", str, "path")
+# @openapi.response(200, {"msg": str}, "Notebook Workflow already exist")
+# @openapi.response(201, {"wfid": str}, "Notebook Workflow registered")
+# @openapi.response(400, {"msg": str}, description="wrong params")
+# @openapi.response(404, {"msg": str}, description="project not found")
+# @protected()
+# async def workflow_create(request, projectid):
+#     """
+#     Register a notebook workflow and schedule it
+#     """
+#     try:
+#         wfd = WorkflowDataWeb(**request.json)
+#     except ValidationError:
+#         return json(dict(msg="wrong params"), 400)
+#
+#     session = request.ctx.session
+#     scheduler = get_scheduler(request, is_async=is_async)
+#
+#     async with session.begin():
+#         try:
+#             wfid = await workflows_mg.register(session, projectid, wfd)
+#             if wfd.schedule and wfd.enabled:
+#                 await scheduler.schedule(projectid, wfid, wfd)
+#         except WorkflowRegisterError as e:
+#             return json(dict(msg="workflow already exist"), status=200)
+#
+#         return json(dict(wfid=wfid), status=201)
 
 
-@workflows_bp.delete("/<projectid>/<wfid>")
-@openapi.parameter("projectid", str, "path")
-@openapi.parameter("wfid", str, "path")
-@protected()
-async def workflow_delete(request, projectid, wfid):
-    """Delete from db and queue a workflow"""
-    # pylint: disable=unused-argument
-    session = request.ctx.session
-    scheduler = get_scheduler(request, is_async=is_async)
-    async with session.begin():
-        await scheduler.delete_workflow(session, projectid, wfid)
-        await session.commit()
+# @workflows_bp.put("/<projectid>")
+# @openapi.body({"application/json": WorkflowDataWeb})
+# @openapi.parameter("projectid", str, "path")
+# @openapi.response(200, {"wfid": str}, "Notebook Workflow accepted")
+# @openapi.response(400, {"msg": str}, description="wrong params")
+# @openapi.response(503, {"msg": str}, description="Error persiting the job")
+# @protected()
+# async def workflow_update(request, projectid):
+#     """
+#     Register a notebook workflow and schedule it
+#     """
+#     try:
+#         wfd = WorkflowDataWeb(**request.json)
+#     except ValidationError:
+#         return json(dict(msg="wrong params"), 400)
+#
+#     session = request.ctx.session
+#     scheduler = get_scheduler(request, is_async=is_async)
+#
+#     async with session.begin():
+#         try:
+#             wfid = await workflows_mg.register(session, projectid, wfd, update=True)
+#             if wfd.schedule and wfd.enabled:
+#                 await scheduler.schedule(projectid, wfid, wfd)
+#         except WorkflowRegisterError as e:
+#             return json(dict(msg=str(e)), status=503)
+#
+#         return json(dict(wfid=wfid), status=201)
 
-    return json(dict(msg="done"), 200)
+
+# @workflows_bp.delete("/<projectid>/<wfid>")
+# @openapi.parameter("projectid", str, "path")
+# @openapi.parameter("wfid", str, "path")
+# @protected()
+# async def workflow_delete(request, projectid, wfid):
+#     """Delete from db and queue a workflow"""
+#     # pylint: disable=unused-argument
+#     session = request.ctx.session
+#     scheduler = get_scheduler(request, is_async=is_async)
+#     async with session.begin():
+#         await scheduler.delete_workflow(session, projectid, wfid)
+#         await session.commit()
+#
+#     return json(dict(msg="done"), 200)
 
 
 @workflows_bp.get("/<projectid>/<wfid>")
@@ -201,38 +185,38 @@ async def workflow_get(request, projectid, wfid):
     return json(dict(msg="Not found"), 404)
 
 
-@workflows_bp.post("/<projectid>/queue/<wfid>")
-@openapi.parameter("projectid", str, "path")
-@openapi.parameter("wfid", str, "path")
-@openapi.response(202, dict(execid=str))
-@protected()
-async def workflow_enqueue(request, projectid, wfid):
-    """Enqueue a worflow"""
-    # pylint: disable=unused-argument
-    sche = get_scheduler(request, is_async=is_async)
-    execid = ExecID()
-    signed = execid.firm_with(ExecID.types.web)
-    job = await run_async(sche.dispatcher, projectid, wfid, signed)
+# @workflows_bp.post("/<projectid>/queue/<wfid>")
+# @openapi.parameter("projectid", str, "path")
+# @openapi.parameter("wfid", str, "path")
+# @openapi.response(202, dict(execid=str))
+# @protected()
+# async def workflow_enqueue(request, projectid, wfid):
+#     """Enqueue a worflow"""
+#     # pylint: disable=unused-argument
+#     sche = get_scheduler(request, is_async=is_async)
+#     execid = ExecID()
+#     signed = execid.firm_with(ExecID.types.web)
+#     job = await run_async(sche.dispatcher, projectid, wfid, signed)
+#
+#     return json(dict(execid=job.id), 202)
 
-    return json(dict(execid=job.id), 202)
 
-
-@workflows_bp.post("/<projectid>/_ctx/<wfid>")
-@openapi.parameter("projectid", str, "path")
-@openapi.parameter("wfid", str, "path")
-@openapi.response(200)
-@openapi.response(404, {"msg": str}, description="Job not found")
-@protected()
-async def workflow_generate_ctx(request, projectid, wfid):
-    """Enqueue a workflow on demand"""
-    # pylint: disable=unused-argument
-    execid = ExecID()
-    signed = execid.firm_with(ExecID.types.web)
-
-    session = request.ctx.session
-    async with session.begin():
-        nb_ctx = await workflows_mg.prepare_notebook_job_async(
-            session, projectid, wfid, signed
-        )
-    # job = await run_async(scheduler.dispatcher, projectid, wfid)
-    return json(nb_ctx.dict(), 200)
+# @workflows_bp.post("/<projectid>/_ctx/<wfid>")
+# @openapi.parameter("projectid", str, "path")
+# @openapi.parameter("wfid", str, "path")
+# @openapi.response(200)
+# @openapi.response(404, {"msg": str}, description="Job not found")
+# @protected()
+# async def workflow_generate_ctx(request, projectid, wfid):
+#     """Enqueue a workflow on demand"""
+#     # pylint: disable=unused-argument
+#     execid = ExecID()
+#     signed = execid.firm_with(ExecID.types.web)
+#
+#     session = request.ctx.session
+#     async with session.begin():
+#         nb_ctx = await workflows_mg.prepare_notebook_job_async(
+#             session, projectid, wfid, signed
+#         )
+#     # job = await run_async(scheduler.dispatcher, projectid, wfid)
+#     return json(nb_ctx.dict(), 200)

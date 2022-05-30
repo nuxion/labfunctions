@@ -30,6 +30,7 @@ class AgentConfig(BaseModel):
     heartbeat_check_every: int
     agent_name: Optional[str] = None
     workers_n = 1
+    max_jobs: int = 10
 
 
 class AgentRequest(BaseModel):

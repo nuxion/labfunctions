@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Union
 
 from labfunctions import defaults, errors, secrets, types
+from labfunctions.log import client_logger
 from labfunctions.utils import parse_var_line
 
 from .base import BaseClient
@@ -69,6 +70,7 @@ class HistoryClient(BaseClient):
         form_data = dict(output_name=exec_result.output_name)
 
         file_dir = f"{exec_result.output_dir}/{exec_result.output_name}"
+
         _addr = f"/history/{exec_result.projectid}/_output_ok"
         if exec_result.error:
             _addr = f"/history/{exec_result.projectid}/_output_fail"
@@ -83,3 +85,9 @@ class HistoryClient(BaseClient):
         if rsp.status_code == 201:
             return True
         return False
+
+    def task_status(self, execid: str) -> Union[types.TaskStatus, None]:
+        rsp = self._http.get(f"/history/{self.projectid}/task/{execid}")
+        if rsp.status_code == 200:
+            return types.TaskStatus(**rsp.json())
+        return None

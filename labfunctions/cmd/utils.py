@@ -79,26 +79,22 @@ def watcher(c: DiskClient, execid, stats=False):
         events += 1
 
 
-def create_secrets_certs(base_path):
+def create_secrets_certs(pubkey_path, privkey_path):
     from labfunctions.commands import shell
 
-    if not Path(f"{base_path}/.secrets/ecdsa.priv.pem").is_file():
-        mkdir_p(Path(f"{base_path}/.secrets").resolve())
+    base_path = Path(privkey_path).resolve().parent
+
+    if not Path(privkey_path).is_file():
+        mkdir_p(base_path)
         res = shell(
-            (
-                f"openssl ecparam -genkey -name secp521r1 -noout "
-                f"-out {base_path}/.secrets/ecdsa.priv.pem"
-            ),
+            (f"openssl ecparam -genkey -name secp521r1 -noout " f"-out {privkey_path}"),
             check=False,
         )
         if res.returncode != 0:
             console.print(f"[red]{res.stderr}[/]")
             sys.exit(-1)
         res = shell(
-            (
-                f"openssl ec -in {base_path}/.secrets/ecdsa.priv.pem -pubout "
-                f"-out {base_path}/.secrets/ecdsa.pub.pem"
-            ),
+            (f"openssl ec -in {privkey_path} -pubout " f"-out {pubkey_path}"),
             check=False,
         )
         if res.returncode != 0:

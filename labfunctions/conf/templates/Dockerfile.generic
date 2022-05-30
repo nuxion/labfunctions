@@ -69,6 +69,8 @@ RUN groupadd app -g {{ data.user.gid }} \
     && useradd -m -d /home/app app -u {{ data.user.uid }} -g {{ data.user.gid }} \
     && mkdir /data && chown app:app /data \
     && mkdir /models && chown app:app /models \
+    && mkdir -p /secrets && chown app:app /secrets \
+    && mkdir -p /labstore && chown app:app /labstore \
     {% if data.final_packages -%}
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
@@ -78,8 +80,11 @@ RUN groupadd app -g {{ data.user.gid }} \
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
 COPY --chown=app:app . /app
 
+VOLUME /secrets
+VOLUME /labstore
 VOLUME /data
 VOLUME /models
+
 USER app
 WORKDIR /app
 ENV PATH=$PATH:/home/app/.local/bin

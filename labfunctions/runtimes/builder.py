@@ -81,7 +81,7 @@ class BuildTask:
         self.client.runtime_create(req)
 
 
-def builder_exec(ctx: BuildCtx):
+def builder_exec(ctx: BuildCtx) -> DockerBuildLog:
     """
     It will get the bundle file, build the container and register it
     """

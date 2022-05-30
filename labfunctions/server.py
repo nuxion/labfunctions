@@ -2,16 +2,16 @@ from contextvars import ContextVar
 from importlib import import_module
 from typing import List
 
-import aioredis
-import redis
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
 
 from labfunctions import defaults
+from labfunctions.control import SchedulerExec
 from labfunctions.db.nosync import AsyncSQL
 from labfunctions.events import EventManager
 from labfunctions.io.kvspec import AsyncKVSpec
+from labfunctions.redis_conn import create_pool
 from labfunctions.security import auth_from_settings, sanic_init_auth
 from labfunctions.security.redis_tokens import RedisTokenStore
 from labfunctions.types import ServerSettings
@@ -44,17 +44,11 @@ def create_db_instance(url) -> AsyncSQL:
     return AsyncSQL(url)
 
 
-def create_web_redis(url):
-    return aioredis.from_url(url, decode_responses=True)
-
-
-def create_rq_redis(url):
-    return redis.from_url(url)
-
-
-def create_projects_store(store_class, store_bucket) -> AsyncKVSpec:
+def create_projects_store(
+    store_class, store_bucket, base_root="/tmp/labstore"
+) -> AsyncKVSpec:
     Class = get_class(store_class)
-    return Class(store_bucket)
+    return Class(store_bucket, {"root": base_root})
 
 
 def create_app(
@@ -62,8 +56,7 @@ def create_app(
     list_bp: List[str],
     app_name=defaults.SANIC_APP_NAME,
     db_func=create_db_instance,
-    web_redis_func=create_web_redis,
-    rq_func=create_rq_redis,
+    create_redis=create_pool,
     projects_store_func=create_projects_store,
     with_auth=True,
     with_auth_bp=True,
@@ -88,7 +81,7 @@ def create_app(
 
     init_blueprints(app, list_bp)
 
-    web_redis = web_redis_func(settings.WEB_REDIS)
+    web_redis = create_redis(settings.WEB_REDIS)
     if with_auth:
         _store = RedisTokenStore(web_redis)
         auth = auth_from_settings(settings.SECURITY, _store)
@@ -101,12 +94,16 @@ def create_app(
         """This function runs one time per worker"""
         _db = db_func(settings.ASQL)
         _base_model_session_ctx = ContextVar("session")
+        _queue_pool = create_redis(settings.QUEUE_REDIS)
 
         current_app.ctx.kv_store = projects_store_func(
             settings.PROJECTS_STORE_CLASS_ASYNC, settings.PROJECTS_STORE_BUCKET
         )
         current_app.ctx.web_redis = web_redis.client()
-        current_app.ctx.rq_redis = rq_func(settings.RQ_REDIS)
+        current_app.ctx.queue_redis = _queue_pool
+        current_app.ctx.scheduler = SchedulerExec(
+            _queue_pool, control_queue=settings.CONTROL_QUEUE
+        )
         current_app.ctx.db = _db
         await current_app.ctx.db.init()
 

@@ -1,7 +1,8 @@
 from typing import Optional, Union
 
-import aioredis
-from aioredis.client import Redis
+from redis.asyncio import Redis
+
+from labfunctions.redis_conn import create_pool
 
 from .base import TokenStoreSpec
 from .utils import generate_token
@@ -10,7 +11,7 @@ from .utils import generate_token
 class RedisTokenStore(TokenStoreSpec):
     def __init__(self, redis: Union[Redis, str], namespace: str = "rtkn"):
         if isinstance(redis, str):
-            _redis = aioredis.from_url(redis, decode_responses=True)
+            _redis = create_pool(redis, decode_responses=True)
         else:
             _redis = redis
         self.redis: Redis = _redis

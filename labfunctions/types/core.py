@@ -163,3 +163,10 @@ class Labfile(BaseModel):
     project: ProjectData
     version: str = "0.2"
     workflows: Optional[Dict[str, WorkflowDataWeb]] = {}
+
+
+class TaskStatus(BaseModel):
+    execid: str
+    status: str
+    queue: str
+    retries: int

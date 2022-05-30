@@ -5,7 +5,6 @@ from pathlib import Path
 import click
 
 from labfunctions.conf.server_settings import settings
-from labfunctions.control_plane import rqscheduler
 from labfunctions.types.agent import AgentConfig
 from labfunctions.utils import get_external_ip, get_hostname, mkdir_p
 
@@ -44,7 +43,9 @@ def webcli(host, port, workers, apps, auto_reload, access_log, debug, init_secre
     from labfunctions.server import create_app
 
     if init_secrets:
-        create_secrets_certs(settings.BASE_PATH)
+        create_secrets_certs(
+            settings.SECURITY.JWT_PUBLIC, settings.SECURITY.JWT_PRIVATE
+        )
     console.print("BASE PATH: ", settings.BASE_PATH)
 
     list_bp = apps.split(",")
@@ -59,15 +60,3 @@ def webcli(host, port, workers, apps, auto_reload, access_log, debug, init_secre
         debug=debug,
         access_log=access_log,
     )
-
-
-@click.command(name="scheduler")
-@click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
-@click.option(
-    "--interval", "-i", default=60, help="How often the scheduler checks for work"
-)
-@click.option("--log-level", "-L", default="INFO")
-def schedulercli(redis, interval, log_level):
-    """Run RQ scheduler"""
-    # pylint: disable=import-outside-toplevel
-    rqscheduler.run(redis, interval, log_level)

@@ -1,7 +1,7 @@
 import json
 from typing import List, Union
 
-import aioredis
+from redis.asyncio import Redis
 
 from labfunctions.types.events import EventSSE
 from labfunctions.utils import secure_filename
@@ -11,9 +11,7 @@ DEFAULT_TTL = 60 * 60
 
 
 class EventManager:
-    def __init__(
-        self, redis: aioredis.client.Redis, block_ms=BLOCK_MS, ttl_secs=DEFAULT_TTL
-    ):
+    def __init__(self, redis: Redis, block_ms=BLOCK_MS, ttl_secs=DEFAULT_TTL):
         """
         It manages the interaction with Redis Streams data structure
         Also it format data into SSE format.

@@ -23,7 +23,7 @@ runtimes:
       build_packages: build-essential 
       base_template: Dockerfile.internal
       extra:
-        pkg_version: 0.8.0a8
+        pkg_version: 0.8.0
   official-gpu:
     description: Official client with GPU support
     container:
