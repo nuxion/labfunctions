@@ -27,7 +27,7 @@ classifiers = [
 lab = "labfunctions.cli:cli"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.10"
+python = ">=3.8,<3.11"
 # server
 uvloop = { version="^0.16.0", optional=true}
 sanic = {version="^21.6.2", optional=true}
