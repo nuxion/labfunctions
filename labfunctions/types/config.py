@@ -23,8 +23,6 @@ class SecuritySettings(BaseSettings):
     JWT_PRIVATE: str
     JWT_ALG: str = "ES512"
     JWT_EXP: int = 30  # 30 minutes
-    # JWT_PUBLIC: str = ".secrets/ecdsa.pub.pem"
-    # JWT_PRIVATE: str = ".secrets/ecdsa.priv.pem"
     JWT_REQUIRES_CLAIMS: List[str] = ["exp"]
     JWT_SECRET: Optional[str] = None
     JWT_ISS: Optional[str] = None
@@ -59,7 +57,6 @@ class ServerSettings(BaseSettings):
 
     DEV_MODE: bool = False
     WEB_REDIS: Optional[RedisDsn] = None
-    RQ_REDIS: Optional[RedisDsn] = None
     QUEUE_REDIS: Optional[RedisDsn] = None
     QUEUE_DEFAULT_TIMEOUT: str = "30m"
     CONTROL_QUEUE: str = "default.control"

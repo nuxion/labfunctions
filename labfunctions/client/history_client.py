@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Union
 
 from labfunctions import defaults, errors, secrets, types
+from labfunctions.log import client_logger
 from labfunctions.utils import parse_var_line
 
 from .base import BaseClient
@@ -69,6 +70,7 @@ class HistoryClient(BaseClient):
         form_data = dict(output_name=exec_result.output_name)
 
         file_dir = f"{exec_result.output_dir}/{exec_result.output_name}"
+
         _addr = f"/history/{exec_result.projectid}/_output_ok"
         if exec_result.error:
             _addr = f"/history/{exec_result.projectid}/_output_fail"

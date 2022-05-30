@@ -112,8 +112,7 @@ def zip_current(
 
     secrets_file = get_secrets_filepath(working_area)
     dst = root / ".secrets"
-    if dst.is_file():
-        dst.write_bytes(secrets_file.read_bytes())
+    dst.write_bytes(secrets_file.read_bytes())
 
     with ZipFile(output_file, "w") as z:
         for i in Path(".").glob("**/*"):

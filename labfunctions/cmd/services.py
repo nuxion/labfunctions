@@ -43,7 +43,9 @@ def webcli(host, port, workers, apps, auto_reload, access_log, debug, init_secre
     from labfunctions.server import create_app
 
     if init_secrets:
-        create_secrets_certs(settings.BASE_PATH)
+        create_secrets_certs(
+            settings.SECURITY.JWT_PUBLIC, settings.SECURITY.JWT_PRIVATE
+        )
     console.print("BASE PATH: ", settings.BASE_PATH)
 
     list_bp = apps.split(",")

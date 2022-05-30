@@ -2,7 +2,6 @@ import asyncio
 import os
 import tempfile
 
-import aioredis
 import pytest
 import pytest_asyncio
 from redislite import Redis
@@ -12,6 +11,7 @@ from labfunctions.conf.server_settings import settings
 from labfunctions.db.nosync import AsyncSQL
 from labfunctions.db.sync import SQL
 from labfunctions.models import HistoryModel, UserModel, WorkflowModel
+from labfunctions.redis_conn import create_pool
 from labfunctions.security import AuthSpec, auth_from_settings, sanic_init_auth
 
 from .factories import (
@@ -148,7 +148,7 @@ async def sanic_app(async_conn):
     settings.EVENTS_BLOCK_MS = 5
     settings.EVENTS_STREAM_TTL_SECS = 5
 
-    rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+    rweb = create_pool(settings.WEB_REDIS, decode_responses=True)
     # rweb = Redis("/tmp/RWeb.rdb")
 
     rqdb = Redis("/tmp/RQWeb.rdb")
@@ -162,7 +162,7 @@ async def sanic_app(async_conn):
 
 @pytest.fixture
 async def async_redis_web():
-    rweb = aioredis.from_url(settings.WEB_REDIS, decode_responses=True)
+    rweb = create_pool(settings.WEB_REDIS, decode_responses=True)
     await rweb.flushdb()
     yield rweb
 

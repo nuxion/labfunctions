@@ -24,7 +24,7 @@ def agentcli():
 
 @agentcli.command(name="run")
 @click.option("--workers", "-w", default=1, help="How many workers spawn")
-@click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
+@click.option("--redis", "-r", default=settings.QUEUE_REDIS, help="Redis full dsn")
 @click.option(
     "--qnames",
     "-q",
@@ -91,15 +91,3 @@ def runcli(redis, workers, qnames, cluster, ip_address, agent_name, machine_id, 
     )
 
     agent.run(conf)
-
-
-# @click.command(name="scheduler")
-# @click.option("--redis", "-r", default=settings.RQ_REDIS, help="Redis full dsn")
-# @click.option(
-#     "--interval", "-i", default=60, help="How often the scheduler checks for work"
-# )
-# @click.option("--log-level", "-L", default="INFO")
-# def rqschedulercli(redis, interval, log_level):
-#     """Run RQ scheduler"""
-#     # pylint: disable=import-outside-toplevel
-#     rqscheduler.run(redis, interval, log_level)
