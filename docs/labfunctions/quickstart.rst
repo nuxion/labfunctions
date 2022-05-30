@@ -5,14 +5,14 @@ Here we cover how to create a project locally.
 
 .. note::
 
-   This guide presume that you have a server already installed, if not check :doc:`/labfunctions/server_installation`
+   This guide assumes that you have a server already installed, if not check :doc:`/labfunctions/server_installation`
 
 
 
 Client installation
 --------------------
 
-Thereis multiple ways to install labfunctions client. Here will be installing it in a `Virtual environment <https://realpython.com/python-virtual-environments-a-primer/>`_
+There are multiple ways to install the ``labfunctions`` client. Here we'll be installing it in a `virtual environment <https://realpython.com/python-virtual-environments-a-primer/>`_
 
 
 .. code-block:: bash
@@ -25,19 +25,19 @@ Thereis multiple ways to install labfunctions client. Here will be installing it
 
 
 .. warning::
-   We recommend that you pin the package version because apis can change without notice and break your setup. You should do this until we got a stable version.
+   We recommend that you pin the package version because the API can change without notice and break your setup. You should do this until we got a stable version.
 
 
 Start Project
 --------------
 
-In the same folder that the previous step, we need to initialize our project. This command will create the files and folders needed to run our notebooks. 
+In the same folder of the previous step, we need to initialize our project. This command will create the files and folders needed to run our notebooks. 
 
 .. tip::
    
-   You can set server URL with ::
+   You can set the server URL with ::
 
-     lab config set url_server https://myurl.com
+     lab config set url_service https://myurl.com
      # verify running:
      lab config get url_service
 
@@ -46,7 +46,7 @@ In the same folder that the previous step, we need to initialize our project. Th
                 
                 lab startproject .
 
-It will ask you about the project name, user and so on. At the end it will print a command to test if all is working right, run it.
+It will ask you about the project name, user and so on. At the end it will print a command to test if all is working alright, you should run it.
 
 .. code-block:: bash
 
@@ -78,21 +78,21 @@ It will ask you about the project name, user and so on. At the end it will print
                 }
 
 
-Congratulations all is working.
+If you see a similar output, congratulations! All seems to be working.
 
 Runtime
 ---------
 
-Now that we started our project and we run the notebook that comes as an example, the next logical step is deploing it into production.
+Now that we started our project and we ran the notebook that comes as an example, the next logical step is deploying it into production.
 
 But to do that, our notebook code needs a **Runtime**.
 
 .. tip::
 
-   The runtime concept could be complex, for more information refer to :ref:`Runtimes`
+   The runtime concept can be difficult to grasp, for more information please refer to :ref:`Runtimes`
    
 
-To build the default runtime provided by lab functions, the command is:
+To build the default runtime provided by Lab Functions, the command is:
 
 .. code-block:: bash
 
@@ -100,7 +100,7 @@ To build the default runtime provided by lab functions, the command is:
                 => Bundling runtime default
                 (x) requirements file missing from requirements.txt
 
-If we see a message error like that, it is because we didn't export the packages dependencies of our project. Lab functions let you choose your prefered way to do it, but the final format should be a **requirements.txt** file.
+If we see a message error like this, it is because we didn't export the package dependencies of our project. Lab Functions lets you choose your preferred way to do it, but the final format should be a **requirements.txt** file.
 
 If you are in a virtualenv and using pip, you can do:
 
@@ -120,7 +120,7 @@ After that, we can run again the same command:
 
 
 .. warning::
-    We are using the flag **--current** to build an untracked version of the project for simplicity, real use cases should include git to get versioned runtimes.
+    We are using the flag **--current** to build an untracked version of the project for simplicity, but real use cases should include git to get versioned runtimes.
     
 
     
