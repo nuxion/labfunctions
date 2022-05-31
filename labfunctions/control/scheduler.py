@@ -1,17 +1,88 @@
 from typing import Optional, Union
 
+from libq.base import JobStoreSpec
 from libq.connections import create_pool
 from libq.errors import JobNotFound
+from libq.job_store import RedisJobStore
 from libq.jobs import Job
 from libq.queue import Queue
-from libq.types import JobResult
+from libq.scheduler import Scheduler
+from libq.types import JobPayload, JobResult, JobSchedule
+from libq.utils import now_secs
 from redis.asyncio import ConnectionPool
 
 from labfunctions import conf, defaults, types
 from labfunctions.executors import ExecID
-from labfunctions.managers import runtimes_mg
+from labfunctions.managers import runtimes_mg, workflows_mg
 from labfunctions.notebooks import create_notebook_ctx
 from labfunctions.runtimes.context import create_build_ctx
+
+
+async def create_task_ctx(
+    session, projectid: str, task: types.NBTask, prefix=None
+) -> types.ExecutionNBTask:
+    execid = str(ExecID(prefix=prefix))
+    runtime = None
+    if task.runtime:
+        runtime = await runtimes_mg.get_runtime(
+            session, projectid, task.runtime, task.version
+        )
+
+    nb_ctx = create_notebook_ctx(projectid, task, execid=execid, runtime=runtime)
+    return nb_ctx
+
+
+class JobManager:
+    """
+    Manage periodic tasks like Workflows
+    """
+
+    tasks = {
+        "workflow": "labfunctions.control.tasks.workflow_dispatcher",
+    }
+
+    def __init__(self, conn: ConnectionPool = None, *, store: JobStoreSpec = None):
+
+        self.conn = conn or create_pool()
+        self.store = store or RedisJobStore(self.conn)
+        self.scheduler = Scheduler(self.store, conn=self.conn)
+
+    async def register_workflow(
+        self, session, *, projectid: str, wd: types.WorkflowDataWeb
+    ):
+        runtime = None
+        # wd: types.WorkflowDataWeb = await workflows_mg.get_by_wfid_prj(session,
+        #                                                               projectid,
+        #                                                               wfid)
+
+        task = wd.nbtask
+        qname = f"{task.cluster}.{task.machine}"
+        ctx = await create_task_ctx(session, projectid, task)
+        sche = JobSchedule(
+            interval=wd.schedule.interval,
+            cron=wd.schedule.cron,
+            repeat=wd.schedule.repeat,
+        )
+
+        job = JobPayload(
+            func_name=self.tasks["workflow"],
+            timeout=task.timeout,
+            background=True,
+            params={"data": ctx.dict()},
+            status=0,
+            queue=qname,
+            created_ts=now_secs(),
+            schedule=sche,
+        )
+        await self.store.put(wd.wfid, job)
+        await self.enqueue_job(wd.wfid)
+
+    async def unregister_workflow(self, wfid: str):
+        await self.scheduler.remove_job(wfid)
+        await self.store.delete(wfid)
+
+    async def enqueue_job(self, jobid: str):
+        await self.scheduler.enqueue_job(jobid)
 
 
 class SchedulerExec:
@@ -51,23 +122,21 @@ class SchedulerExec:
         # self.scheduler = Scheduler(queue=self.Q, connection=self.redis)
 
     async def enqueue_notebook(
-        self, session, *, projectid: str, task: types.NBTask
+        self,
+        session,
+        *,
+        projectid: str,
+        task: types.NBTask,
+        prefix=None,
     ) -> types.ExecutionNBTask:
 
-        execid = str(ExecID())
-        runtime = None
-        if task.runtime:
-            runtime = await runtimes_mg.get_runtime(
-                session, projectid, task.runtime, task.version
-            )
-
-        nb_ctx = create_notebook_ctx(projectid, task, execid=execid, runtime=runtime)
+        nb_ctx = await create_task_ctx(session, projectid, task, prefix=prefix)
 
         qname = f"{nb_ctx.cluster}.{nb_ctx.machine}"
         Q = Queue(qname, conn=self.conn)
         job = await Q.enqueue(
             self.tasks["notebook"],
-            execid=execid,
+            execid=nb_ctx.execid,
             timeout=task.timeout,
             background=True,
             params={"data": nb_ctx.dict()},
@@ -100,6 +169,21 @@ class SchedulerExec:
         )
 
         return ctx
+
+    async def enqueue_workflow(
+        self, session, *, projectid: str, wfid: str
+    ) -> Union[types.ExecutionNBTask, None]:
+        execid = str(ExecID())
+        runtime = None
+        wd: types.WorkflowDataWeb = await workflows_mg.get_by_wfid_prj(
+            session, projectid, wfid
+        )
+        if wd and wd.enabled:
+            ctx = await self.enqueue_notebook(
+                session, projectid=projectid, task=wd.nbtask
+            )
+            return ctx
+        return None
 
     async def _get_job(self, execid: str) -> Union[Job, None]:
         job = Job(execid, conn=self.conn)

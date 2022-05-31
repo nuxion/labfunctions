@@ -25,6 +25,16 @@ from labfunctions.utils import get_version
 WFDATA_RULES = ("-id", "-project", "-project_id", "-created_at", "-updated_at")
 
 
+def model2data(wm: WorkflowModel) -> WorkflowDataWeb:
+    return WorkflowDataWeb(
+        alias=wm.alias,
+        nbtask=NBTask(**wm.nbtask),
+        enabled=wm.enabled,
+        wfid=wm.wfid,
+        schedule=ScheduleData(**wm.schedule),
+    )
+
+
 def _update(wfid: str, projectid: str, wfd: WorkflowDataWeb):
 
     task_dict = wfd.nbtask.dict()
@@ -77,7 +87,7 @@ async def get_by_wfid(session, wfid) -> WorkflowData:
     return None
 
 
-async def get_by_wfid_prj(session, projectid, wfid) -> WorkflowData:
+async def get_by_wfid_prj(session, projectid, wfid) -> WorkflowDataWeb:
     stmt = (
         select_workflow()
         .where(WorkflowModel.wfid == wfid)
@@ -86,7 +96,7 @@ async def get_by_wfid_prj(session, projectid, wfid) -> WorkflowData:
     result = await session.execute(stmt)
     row = result.scalar()
     if row:
-        return WorkflowData(**row.to_dict(rules=WFDATA_RULES))
+        return model2data(row)
     return None
 
 
@@ -128,6 +138,7 @@ async def get_by_alias(session, alias) -> Union[WorkflowModel, None]:
 
 async def register(session, projectid: str, wfd: WorkflowDataWeb, update=False) -> str:
     """Register workflows"""
+    breakpoint()
     wfid = generate_wfid()
 
     if update:

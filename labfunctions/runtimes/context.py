@@ -42,7 +42,7 @@ def local_runtime_data(
 
 
 def execid_for_build(size=defaults.EXECID_LEN):
-    return f"bld.{generate_random(size)}"
+    return f"bld{generate_random(size)}"
 
 
 def build_upload_uri(projectid, runtime_name, version) -> str:

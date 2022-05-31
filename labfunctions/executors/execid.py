@@ -19,9 +19,11 @@ class ExecID:
 
     types = FirmsTypes()
 
-    def __init__(self, execid=None, size=defaults.EXECID_LEN):
+    def __init__(self, execid=None, size=defaults.EXECID_LEN, prefix=None):
         """A general class with manage executions id for different queues in RQ"""
         self._id = execid or generate_random(size=size)
+        if prefix:
+            self._id = f"{prefix}{self._id}"
 
     def firm_by_type(self, firm_type) -> str:
         """it will look at self.types to find the sign"""
