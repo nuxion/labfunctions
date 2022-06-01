@@ -1,14 +1,8 @@
 from typing import Optional, Union
 
-from libq.base import JobStoreSpec
-from libq.connections import create_pool
+from libq import JobStoreSpec, Queue, RedisJobStore, Scheduler, create_pool
 from libq.errors import JobNotFound
-from libq.job_store import RedisJobStore
 from libq.jobs import Job
-from libq.queue import Queue
-from libq.scheduler import Scheduler
-from libq.types import JobPayload, JobResult, JobSchedule
-from libq.utils import now_secs
 from redis.asyncio import ConnectionPool
 
 from labfunctions import conf, defaults, types
@@ -51,35 +45,28 @@ class JobManager:
         self, session, *, projectid: str, wd: types.WorkflowDataWeb
     ):
         runtime = None
-        # wd: types.WorkflowDataWeb = await workflows_mg.get_by_wfid_prj(session,
-        #                                                               projectid,
-        #                                                               wfid)
-
         task = wd.nbtask
+
         qname = f"{task.cluster}.{task.machine}"
         ctx = await create_task_ctx(session, projectid, task)
-        sche = JobSchedule(
+        ctx.wfid = wd.wfid
+
+        await self.scheduler.create_job(
+            self.tasks["workflow"],
+            queue=qname,
+            jobid=wd.wfid,
+            params={"data": ctx.dict()},
             interval=wd.schedule.interval,
             cron=wd.schedule.cron,
+            background=True,
             repeat=wd.schedule.repeat,
         )
-
-        job = JobPayload(
-            func_name=self.tasks["workflow"],
-            timeout=task.timeout,
-            background=True,
-            params={"data": ctx.dict()},
-            status=0,
-            queue=qname,
-            created_ts=now_secs(),
-            schedule=sche,
-        )
-        await self.store.put(wd.wfid, job)
         await self.enqueue_job(wd.wfid)
 
-    async def unregister_workflow(self, wfid: str):
-        await self.scheduler.remove_job(wfid)
-        await self.store.delete(wfid)
+    async def unregister_workflow(self, wfid: str, remove_job=True):
+        await self.scheduler.unregister_job(wfid)
+        if remove_job:
+            await self.scheduler.remove_job(wfid)
 
     async def enqueue_job(self, jobid: str):
         await self.scheduler.enqueue_job(jobid)
@@ -95,7 +82,8 @@ class SchedulerExec:
     confusing. When we talk about jobs we talk about the task executed by RQ or RQ-Scheduler.
 
     :param redis: A Redis instance
-    :param qname: configured by default from settings, it MUST BE consistent between the different control plane components.
+    :param qname: configured by default from settings, it MUST BE consistent
+    between the different control plane components.
     """
 
     tasks = {

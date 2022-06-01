@@ -1242,7 +1242,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "libq"
-version = "0.6.0"
+version = "0.7.1"
 description = "Simple async and sync queue system"
 category = "main"
 optional = false
@@ -2958,7 +2958,7 @@ server = ["uvloop", "sanic", "sanic-openapi", "sanic-ext", "SQLAlchemy", "SQLAlc
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "2bc419bdce51381c2f768a66ef4702466f3d2262d424de7b5ce822ca3c6b795b"
+content-hash = "9c73041279a0a8d06640b21049df4a7c0ef8bf6cdaedfdb8d9fb14b3ea757abf"
 
 [metadata.files]
 aiofiles = [
@@ -3776,8 +3776,8 @@ lazy-object-proxy = [
     {file = "lazy_object_proxy-1.7.1-pp37.pp38-none-any.whl", hash = "sha256:d66906d5785da8e0be7360912e99c9188b70f52c422f9fc18223347235691a84"},
 ]
 libq = [
-    {file = "libq-0.6.0-py3-none-any.whl", hash = "sha256:f21bfe954b03fc9f3792701579fd46039a1fded08a5c2cea2421869071f66c8e"},
-    {file = "libq-0.6.0.tar.gz", hash = "sha256:6cb6c3f64e1fd7162fb35c738cc5d7bdb0428694bec0ffdfc69ac47dcbbbeb63"},
+    {file = "libq-0.7.1-py3-none-any.whl", hash = "sha256:42654bbba02363cad88c4adef9b8fcca89e5e44fdea361618817641cd34358e7"},
+    {file = "libq-0.7.1.tar.gz", hash = "sha256:f7e3ef97755a657fe94906ef593568a7a693f755bc8067e2201466875c50bf88"},
 ]
 livereload = [
     {file = "livereload-2.6.3.tar.gz", hash = "sha256:776f2f865e59fde56490a56bcc6773b6917366bce0c267c60ee8aaf1a0959869"},

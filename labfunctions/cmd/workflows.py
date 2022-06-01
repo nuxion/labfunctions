@@ -141,6 +141,9 @@ def list_wf(url_service, from_file):
 def delete(wfid, url_service, from_file):
     """Delete a workflow definition from server"""
     c = client.from_file(from_file, url_service=url_service)
+    wf = c.state.find_by_id(wfid)
+    if wf:
+        c.state.delete_workflow(wf.alias)
     rsp = c.workflows_delete(wfid)
     c.write()
     print(f"Wfid: {wfid}, deleted. Code {rsp}")

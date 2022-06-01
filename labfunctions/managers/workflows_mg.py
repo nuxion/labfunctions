@@ -138,7 +138,6 @@ async def get_by_alias(session, alias) -> Union[WorkflowModel, None]:
 
 async def register(session, projectid: str, wfd: WorkflowDataWeb, update=False) -> str:
     """Register workflows"""
-    breakpoint()
     wfid = generate_wfid()
 
     if update:

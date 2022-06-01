@@ -54,7 +54,6 @@ class WorkflowsClient(BaseClient):
             f"/workflows/{self.projectid}",
             json=wd.dict(),
         )
-        breakpoint()
         code = r.status_code
         if code == 400 or code == 503:
             raise WorkflowRegisterClientError(wd.wfid, self.projectid)
@@ -72,7 +71,6 @@ class WorkflowsClient(BaseClient):
         _workflows = self.state.snapshot()
         errors = []
         created = []
-        breakpoint()
         for _, wd in _workflows.workflows.items():
             try:
                 if update:

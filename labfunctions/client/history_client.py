@@ -33,6 +33,8 @@ class HistoryClient(BaseClient):
         if wfid:
             query = f"/history/{self.projectid}/{wfid}?lt={last}"
         rsp = self._http.get(query)
+        if rsp.status_code == 404:
+            return []
         rows = []
         for r in rsp.json()["rows"]:
             h = types.HistoryResult(**r)

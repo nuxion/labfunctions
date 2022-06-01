@@ -74,6 +74,9 @@ def listcli(from_file, url_service, last, wfid):
     c = client.from_file(from_file, url_service=url_service)
 
     rsp = c.history_get_last(wfid, last)
+    if not rsp:
+        console.print("No history logs")
+        sys.exit(0)
     table = Table(title="History")
     # table.add_column("alias", style="cyan", no_wrap=True, justify="center")
     table.add_column("wfid", style="cyan", justify="center")
