@@ -3,6 +3,9 @@ import sys
 from datetime import datetime
 from typing import List
 
+from libq.job_store import RedisJobStore
+from libq.scheduler import Scheduler
+
 # from .heartbeat import HeartbeatThread
 # from .register import AgentRegister
 # from .worker import start_worker
@@ -53,6 +56,8 @@ def run(conf: AgentConfig):
         workers=[],
         birthday=_now,
     )
+    store = RedisJobStore()
+    scheduler = Scheduler(store, conn=conn)
     worker = AsyncWorker(
         queues=",".join(cluster_queues),
         conn=conn,

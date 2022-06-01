@@ -20,6 +20,13 @@ LF = cliconf.data.lab_file
 
 
 @click.group(name="wf")
+def workflowscli():
+    """
+    Start the creation of new workflows in your current folder
+    """
+
+
+@click.command()
 @click.option(
     "--from-file",
     "-f",
@@ -32,27 +39,6 @@ LF = cliconf.data.lab_file
     default=URL,
     help="URL of the NB Workflow Service",
 )
-@click.pass_context
-def workflowscli(ctx, from_file, url_service):
-    """
-    Start the creation of new workflows in your current folder
-    """
-    ctx.ensure_object(dict)
-
-    ctx.obj["URL"] = url_service
-    ctx.obj["WF_FILE"] = from_file
-
-
-# @workflowscli.command()
-# @click.pass_context
-# def init(ctx):
-#     """initialize a project"""
-#     url_service = ctx.obj["URL"]
-#     c = client.init(url_service)
-#     c.write()
-
-
-@click.command()
 @click.option(
     "--notebook",
     "-n",
@@ -65,19 +51,28 @@ def workflowscli(ctx, from_file, url_service):
     required=True,
     help="An alias for this workflow",
 )
-@click.pass_context
-def create(ctx, notebook, alias):
+def create(url_service, from_file, notebook, alias):
     """Creates a workflow definition from a Notebook,
     if the notebook file doesn't exist, it will be created.
     (Changes aren't pushed to the server until a nb wf push
     is executed)."""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
     c.create_workflow(notebook, alias)
 
 
 @workflowscli.command()
+@click.option(
+    "--from-file",
+    "-f",
+    default=LF,
+    help="yaml file with the configuration",
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=URL,
+    help="URL of the NB Workflow Service",
+)
 @click.option(
     "--update",
     "-u",
@@ -85,14 +80,11 @@ def create(ctx, notebook, alias):
     default=False,
     help="Updates workflows when push",
 )
-@click.pass_context
-def push(ctx, update):
+def push(url_service, from_file, update):
     """Push workflows definitions to the server"""
     action = "updated" if update else "created"
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
-    rsp = c.workflows_push(update=update)
+    rsp = c.workflows_push(wf_file=from_file, update=update)
     for r in rsp.errors:
         console.print(f"[bold red]{r.alias} failed[/]")
     for r in rsp.created:
@@ -103,11 +95,20 @@ def push(ctx, update):
 
 
 @workflowscli.command(name="list")
-@click.pass_context
-def list_wf(ctx):
+@click.option(
+    "--from-file",
+    "-f",
+    default=LF,
+    help="yaml file with the configuration",
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=URL,
+    help="URL of the NB Workflow Service",
+)
+def list_wf(url_service, from_file):
     """List workflows registered in the server"""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
 
     c = client.from_file(from_file, url_service=url_service)
     data = c.workflows_list()
@@ -123,52 +124,26 @@ def list_wf(ctx):
     console.print(table)
 
 
-# @workflowscli.command()
-# @click.option("--local", "-l", default=False, is_flag=True, help="execute locally")
-# @click.option("--dev", "-d", default=False, is_flag=True, help="execute locally")
-# @click.option("--wfid", "-W", required=False, help="workflow id to execute")
-# @click.option("--notebook", "-n", required=False, help="notebook name to execute")
-# @click.pass_context
-# def exec(ctx, local, dev, wfid, notebook):
-#     """Exec workflows remote or locally"""
-#
-#     url_service = ctx.obj["URL"]
-#     from_file = ctx.obj["WF_FILE"]
-#     if not local and not dev:
-#         c = client.from_file(from_file, url_service=url_service)
-#         rsp = c.workflows_enqueue(wfid)
-#         if rsp:
-#             click.echo(f"Executed: {rsp} on the server {url_service}")
-#         else:
-#             click.echo(f"Something went wrong")
-#     elif dev:
-#         rsp = local_dev_exec(wfid)
-#         if rsp:
-#             click.echo(f"Wfid: {rsp.wfid} locally executed")
-#             click.echo(f"Executionid: {rsp.execid}")
-#             status = "OK"
-#             if rsp.error:
-#                 status = "ERROR"
-#             click.echo(f"Status: {status}")
-#     elif local:
-#         rsp = local_exec_env()
-#         if rsp:
-#             click.echo(f"WFID: {rsp.wfid} locally executed")
-#             click.echo(f"EXECID: {rsp.execid}")
-#             status = "OK"
-#             if rsp.error:
-#                 status = "ERROR"
-#             click.echo(f"Status: {status}")
-
-
 @workflowscli.command()
+@click.option(
+    "--from-file",
+    "-f",
+    default=LF,
+    help="yaml file with the configuration",
+)
+@click.option(
+    "--url-service",
+    "-u",
+    default=URL,
+    help="URL of the NB Workflow Service",
+)
 @click.argument("wfid", required=True)
-@click.pass_context
-def delete(ctx, wfid):
+def delete(wfid, url_service, from_file):
     """Delete a workflow definition from server"""
-    url_service = ctx.obj["URL"]
-    from_file = ctx.obj["WF_FILE"]
     c = client.from_file(from_file, url_service=url_service)
+    wf = c.state.find_by_id(wfid)
+    if wf:
+        c.state.delete_workflow(wf.alias)
     rsp = c.workflows_delete(wfid)
     c.write()
     print(f"Wfid: {wfid}, deleted. Code {rsp}")

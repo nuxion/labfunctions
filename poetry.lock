@@ -437,6 +437,17 @@ tomli = {version = "*", optional = true, markers = "python_version < \"3.11\" an
 toml = ["tomli"]
 
 [[package]]
+name = "croniter"
+version = "1.3.5"
+description = "croniter provides iteration for datetime object with cron like format"
+category = "main"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[package.dependencies]
+python-dateutil = "*"
+
+[[package]]
 name = "cryptography"
 version = "36.0.2"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
@@ -1231,13 +1242,14 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "libq"
-version = "0.4.0"
+version = "0.7.1"
 description = "Simple async and sync queue system"
 category = "main"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = ">=3.8,<3.11"
 
 [package.dependencies]
+croniter = ">=1.3.5,<2.0.0"
 hiredis = ">=2.0.0,<3.0.0"
 nanoid = ">=2.0.0,<3.0.0"
 orjson = ">=3.6.8,<4.0.0"
@@ -1631,6 +1643,7 @@ numpy = [
     {version = ">=1.18.5", markers = "platform_machine != \"aarch64\" and platform_machine != \"arm64\" and python_version < \"3.10\""},
     {version = ">=1.19.2", markers = "platform_machine == \"aarch64\" and python_version < \"3.10\""},
     {version = ">=1.20.0", markers = "platform_machine == \"arm64\" and python_version < \"3.10\""},
+    {version = ">=1.21.0", markers = "python_version >= \"3.10\""},
 ]
 python-dateutil = ">=2.8.1"
 pytz = ">=2020.1"
@@ -2944,8 +2957,8 @@ server = ["uvloop", "sanic", "sanic-openapi", "sanic-ext", "SQLAlchemy", "SQLAlc
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.8,<3.10"
-content-hash = "1a8a797153821703a5aa811a16e21bf352f5413954ff75d52da41d04e7211b54"
+python-versions = ">=3.8,<3.11"
+content-hash = "9c73041279a0a8d06640b21049df4a7c0ef8bf6cdaedfdb8d9fb14b3ea757abf"
 
 [metadata.files]
 aiofiles = [
@@ -3243,6 +3256,10 @@ coverage = [
     {file = "coverage-6.4-cp39-cp39-win_amd64.whl", hash = "sha256:e35217031e4b534b09f9b9a5841b9344a30a6357627761d4218818b865d45055"},
     {file = "coverage-6.4-pp36.pp37.pp38-none-any.whl", hash = "sha256:e637ae0b7b481905358624ef2e81d7fb0b1af55f5ff99f9ba05442a444b11e45"},
     {file = "coverage-6.4.tar.gz", hash = "sha256:727dafd7f67a6e1cad808dc884bd9c5a2f6ef1f8f6d2f22b37b96cb0080d4f49"},
+]
+croniter = [
+    {file = "croniter-1.3.5-py2.py3-none-any.whl", hash = "sha256:4f72faca42c00beb6e30907f1315145f43dfbe5ec0ad4ada24b4c0d57b86a33a"},
+    {file = "croniter-1.3.5.tar.gz", hash = "sha256:7592fc0e8a00d82af98dfa2768b75983b6fb4c2adc8f6d0d7c931a715b7cefee"},
 ]
 cryptography = [
     {file = "cryptography-36.0.2-cp36-abi3-macosx_10_10_universal2.whl", hash = "sha256:4e2dddd38a5ba733be6a025a1475a9f45e4e41139d1321f412c6b360b19070b6"},
@@ -3759,8 +3776,8 @@ lazy-object-proxy = [
     {file = "lazy_object_proxy-1.7.1-pp37.pp38-none-any.whl", hash = "sha256:d66906d5785da8e0be7360912e99c9188b70f52c422f9fc18223347235691a84"},
 ]
 libq = [
-    {file = "libq-0.4.0-py3-none-any.whl", hash = "sha256:f1aa58d3aa1b6928158218d57e306527e44b09dd7f142221a490b938d5a1e359"},
-    {file = "libq-0.4.0.tar.gz", hash = "sha256:372579053e4e63fc83ac0aa5630f59bc9a6b48b207fc43e81283d407b6da8d29"},
+    {file = "libq-0.7.1-py3-none-any.whl", hash = "sha256:42654bbba02363cad88c4adef9b8fcca89e5e44fdea361618817641cd34358e7"},
+    {file = "libq-0.7.1.tar.gz", hash = "sha256:f7e3ef97755a657fe94906ef593568a7a693f755bc8067e2201466875c50bf88"},
 ]
 livereload = [
     {file = "livereload-2.6.3.tar.gz", hash = "sha256:776f2f865e59fde56490a56bcc6773b6917366bce0c267c60ee8aaf1a0959869"},

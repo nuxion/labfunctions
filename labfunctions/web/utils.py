@@ -2,7 +2,7 @@ from sanic import Blueprint, Request, Sanic
 
 from labfunctions import defaults
 from labfunctions.conf.server_settings import settings
-from labfunctions.control import SchedulerExec
+from labfunctions.control import JobManager, SchedulerExec
 from labfunctions.io.kvspec import AsyncKVSpec
 
 
@@ -25,6 +25,11 @@ def get_scheduler2(
 ) -> SchedulerExec:
     current_app = Sanic.get_app(request.app.name)
     return current_app.ctx.scheduler
+
+
+def get_job_manager(request: Request) -> JobManager:
+    current_app = Sanic.get_app(request.app.name)
+    return current_app.ctx.job_manager
 
 
 def get_kvstore(request: Request) -> AsyncKVSpec:

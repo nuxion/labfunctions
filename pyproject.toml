@@ -68,7 +68,7 @@ tenacity = "^8.0.1"
 papermill = "^2.3.4"
 redis = "^4.3.1"
 hiredis = "^2.0.0"
-libq = "^0.4.0"
+libq = "^0.7.1"
 
 [tool.poetry.extras]
 server = [

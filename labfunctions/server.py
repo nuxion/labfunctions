@@ -2,12 +2,13 @@ from contextvars import ContextVar
 from importlib import import_module
 from typing import List
 
+from libq.job_store import RedisJobStore
 from sanic import Sanic
 from sanic.response import json
 from sanic_ext import Extend
 
 from labfunctions import defaults
-from labfunctions.control import SchedulerExec
+from labfunctions.control import JobManager, SchedulerExec
 from labfunctions.db.nosync import AsyncSQL
 from labfunctions.events import EventManager
 from labfunctions.io.kvspec import AsyncKVSpec
@@ -104,6 +105,7 @@ def create_app(
         current_app.ctx.scheduler = SchedulerExec(
             _queue_pool, control_queue=settings.CONTROL_QUEUE
         )
+        current_app.ctx.job_manager = JobManager(conn=_queue_pool)
         current_app.ctx.db = _db
         await current_app.ctx.db.init()
 

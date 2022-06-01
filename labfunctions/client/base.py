@@ -244,7 +244,7 @@ class BaseClient:
             self._auth = None
             return False
 
-    def write(self, output="workflows.yaml"):
+    def write(self, output=defaults.LABFILE_NAME):
         self.state.write(output)
 
     def close(self):

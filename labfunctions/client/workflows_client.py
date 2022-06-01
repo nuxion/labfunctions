@@ -65,7 +65,9 @@ class WorkflowsClient(BaseClient):
             wfid=r.json().get("wfid"),
         )
 
-    def workflows_push(self, refresh_workflows=True, update=False) -> WFPushRsp:
+    def workflows_push(
+        self, refresh_workflows=True, update=False, wf_file=None
+    ) -> WFPushRsp:
         _workflows = self.state.snapshot()
         errors = []
         created = []
@@ -100,7 +102,7 @@ class WorkflowsClient(BaseClient):
 
         # self._workflows = _workflows
         if refresh_workflows:
-            self.write()
+            self.write(wf_file)
         return WFPushRsp(created=created, errors=errors)
 
     def workflows_list(self) -> List[WorkflowData]:
@@ -117,15 +119,15 @@ class WorkflowsClient(BaseClient):
 
     def workflows_delete(self, wfid) -> int:
         r = self._http.delete(f"/workflows/{self.projectid}/{wfid}")
-        wd = self.state.find_by_id(wfid)
-        wd.wfid = None
+        # wd = self.state.find_by_id(wfid)
+        # wd.wfid = None
         if r.status_code == 200:
             # self.sync_file()
             pass
         return r.status_code
 
     def workflows_enqueue(self, wfid) -> str:
-        r = self._http.post(f"/workflows/{self.projectid}/queue/{wfid}")
+        r = self._http.post(f"/workflows/{self.projectid}/_run/{wfid}")
         if r.status_code == 202:
             return r.json()["execid"]
         return ""
