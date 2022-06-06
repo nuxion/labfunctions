@@ -51,10 +51,10 @@ lock-dev:
 	poetry export -f requirements.txt --output requirements/requirements_dev.txt --extras server --without-hashes --dev
 
 lock-all:
-	poetry export -f requirements.txt --output requirements/requirements_all.txt --without-hashes --extras server --extras cloud
+	poetry export -f requirements.txt --output requirements/requirements_all.txt --without-hashes --extras server --extras cloud --extras store
 
 lock-client:
-	poetry export -f requirements.txt --output requirements/requirements_client.txt --without-hashes
+	poetry export -f requirements.txt --output requirements/requirements_client.txt --without-hashes --extras store
 	cp requirements/requirements_client.txt labfunctions/conf/templates/requirements_client.txt
 
 lock: lock-all lock-client lock-dev
