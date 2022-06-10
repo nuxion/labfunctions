@@ -62,7 +62,7 @@ class ClusterSpec(BaseModel):
     machine: str
     location: str
     qnames: List[str]
-    policy: ClusterPolicy
+    policy: Optional[ClusterPolicy] = None
     network: str = "default"
 
 

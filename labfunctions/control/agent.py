@@ -64,6 +64,7 @@ def run(conf: AgentConfig):
         id=name,
         heartbeat_secs=conf.heartbeat_check_every,
         metadata=node.dict(),
+        max_jobs=conf.workers_n,
     )
 
     worker.run()
