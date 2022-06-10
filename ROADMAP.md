@@ -9,14 +9,16 @@ Current version: 0.8.0
 **MUST:**
 - [x] workflows.yaml file change to labfile.yaml
 - [ ] GPU scaling
-- [ ] migration rq to libq
+- [x] migration rq to libq
 - [ ] scheudler inside de control plane
 - [ ] cluster autoscaling as a background process
 - [ ] Tests: >= 65%
 - [ ] Fix broken tests
-- [ ] Fix smart_open dependecy for the client
+- [x] Fix smart_open dependecy for the client
 - [ ] Doc: release process
 - [x] Task execution
+- [x] Support python 3.7
+- [x] Support python 3.10
 
 **MAY:**
 - [ ] Watch events logs on demand
