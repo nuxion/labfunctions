@@ -10,20 +10,19 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseSettings
 
-from labfunctions.utils import (
-    execute_cmd_no_block,
-    get_external_ip,
-    get_internal_ip,
-    mkdir_p,
-)
-
-from .base import ProviderSpec
-from .types import (
+from labfunctions.cluster2.base import ProviderSpec
+from labfunctions.cluster2.types import (
     BlockInstance,
     BlockStorage,
     ExecutionMachine,
     MachineInstance,
     MachineRequest,
+)
+from labfunctions.utils import (
+    execute_cmd_no_block,
+    get_external_ip,
+    get_internal_ip,
+    mkdir_p,
 )
 
 

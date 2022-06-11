@@ -11,10 +11,8 @@ from libcloud.compute.types import Provider
 from pydantic import BaseSettings
 
 from labfunctions import defaults
-from labfunctions.hashes import generate_random
-
-from .base import ProviderSpec
-from .types import (
+from labfunctions.cluster2.base import ProviderSpec
+from labfunctions.cluster2.types import (
     BlockInstance,
     BlockStorage,
     ExecMachineResult,
@@ -22,6 +20,7 @@ from .types import (
     MachineInstance,
     MachineRequest,
 )
+from labfunctions.hashes import generate_random
 
 
 class GCConf(BaseSettings):

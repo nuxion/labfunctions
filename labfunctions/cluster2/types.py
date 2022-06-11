@@ -2,17 +2,40 @@ from typing import Any, Dict, List, NewType, Optional, Set, Tuple, Union
 
 from pydantic import BaseModel, BaseSettings
 
-from labfunctions import defaults
-
 ExtraField = NewType("ExtraField", Dict[str, Any])
+AGENT_HOMEDIR = "/home/op"
+USER = "op"
+DOCKER_UID = "1000"
+DOCKER_GID = "997"
+AGENT_DOCKER_IMG = "nuxion/labfunctions"
+
+
+# class ClusterSettings(BaseSettings):
+#     CLUSTER_FILEPATH: Optional[str] = None
+#     SSH_KEY_USER: str = USER
+#     SSH_PUBLIC_KEY_PATH: Optional[str] = None
+#     AGENT_HOMEDIR: str = AGENT_HOMEDIR
+#
+#     class Config:
+#         env_prefix = "CLT_"
+
+
+class ClusterTaskCtx(BaseModel):
+    machine_name: str
+    cluster_file: str
+    ssh_public_key_path: str
+    ssh_key_user: str = USER
+    alias: Optional[str] = None
+    do_deploy: bool = True
+    use_public: bool = True
+    deploy_local: bool = False
 
 
 class ClusterSpec(BaseModel):
     name: str
-    provider: str
-    machine_type: str
-    location: str
-    network: str = "default"
+    providers: Dict[str, str]
+    location: Optional[str] = None
+    network: Optional[str] = None
 
 
 class SSHKey(BaseModel):
@@ -110,6 +133,7 @@ class MachineRequest(BaseModel):
     :param size: node type in the vendor cloud parlance
     :param image: image to be used like debian or custom
     :param location: a general term, cloud providers could use zone, region or both
+    :param provider: provider name to be used
     :param disks: Disks to be attached to the machine creation
     :param gpu: Optional GPU resource
     :param ssh_public_cert: certificate to be added to authorized_keys
@@ -131,6 +155,7 @@ class MachineRequest(BaseModel):
     size: str
     image: str
     location: str  # zone
+    provider: str
     internal_ip: Union[str, None] = "dynamic"
     external_ip: Union[str, None] = "dynamic"
     volumes: List[BlockStorage] = []
@@ -174,12 +199,12 @@ class ExecutionMachine(BaseModel):
     provider: str
     cluster: str = "default"
     qnames: List[str] = []
-    agent_homedir: str = defaults.AGENT_HOMEDIR
+    agent_homedir: str = AGENT_HOMEDIR
     worker_procs: int = 1
     ssh_key: Optional[SSHKey] = None
-    docker_uid: str = defaults.DOCKER_UID
-    docker_gid: str = defaults.DOCKER_GID
-    docker_image: str = defaults.AGENT_DOCKER_IMG
+    docker_uid: str = DOCKER_UID
+    docker_gid: str = DOCKER_GID
+    docker_image: str = AGENT_DOCKER_IMG
     docker_version: str = "latest"
 
 
@@ -188,3 +213,9 @@ class ExecMachineResult(BaseModel):
     private_ips: List[str]
     public_ips: Optional[List[str]] = None
     node: MachineInstance
+
+
+class ClusterFileType(BaseModel):
+    spec: ClusterSpec
+    volumes: Dict[str, BlockStorage]
+    machines: Dict[str, MachineOrm]

@@ -400,7 +400,7 @@ def binary_file_reader(fp: str, chunk_size=1024):
 
 
 def open_publickey(fp) -> str:
-    with open(fp, "r") as f:
+    with open(Path(fp).resolve(), "r") as f:
         data = f.read()
     return data.strip()
 

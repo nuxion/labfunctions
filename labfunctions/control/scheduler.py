@@ -6,6 +6,7 @@ from libq.jobs import Job
 from redis.asyncio import ConnectionPool
 
 from labfunctions import conf, defaults, types
+from labfunctions.cluster2 import ClusterTaskCtx
 from labfunctions.executors import ExecID
 from labfunctions.managers import runtimes_mg, workflows_mg
 from labfunctions.notebooks import create_notebook_ctx
@@ -89,6 +90,7 @@ class SchedulerExec:
     tasks = {
         "notebook": "labfunctions.control.tasks.notebook_dispatcher",
         "build": "labfunctions.control.tasks.build_dispatcher",
+        "create_instance": "labfunctions.control.tasks.create_instance",
     }
 
     def __init__(
@@ -172,6 +174,22 @@ class SchedulerExec:
             )
             return ctx
         return None
+
+    async def enqueue_instance_creation(self, machine_name: str) -> Job:
+        execid = str(ExecID())
+        ctx = ClusterTaskCtx(
+            machine_name=machine_name,
+            cluster_file=self.settings.CLUSTER_FILEPATH,
+            ssh_public_key_path=self.settings.CLUSTER_SSH_PUBLIC_KEY,
+            ssh_key_user=self.settings.CLUSTER_SSH_KEY_USER,
+        )
+        job = await self.control_q.enqueue(
+            self.tasks["create_instance"],
+            execid=execid,
+            params={"data": ctx.dict()},
+            background=True,
+        )
+        return job
 
     async def _get_job(self, execid: str) -> Union[Job, None]:
         job = Job(execid, conn=self.conn)

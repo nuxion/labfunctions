@@ -8,6 +8,7 @@ from sanic.response import json
 from sanic_ext import Extend
 
 from labfunctions import defaults
+from labfunctions.cluster2 import ClusterControl
 from labfunctions.control import JobManager, SchedulerExec
 from labfunctions.db.nosync import AsyncSQL
 from labfunctions.events import EventManager
@@ -96,6 +97,12 @@ def create_app(
         _db = db_func(settings.ASQL)
         _base_model_session_ctx = ContextVar("session")
         _queue_pool = create_redis(settings.QUEUE_REDIS)
+        if settings.CLUSTER_FILEPATH:
+            current_app.ctx.cluster = ClusterControl(
+                settings.CLUSTER_FILEPATH,
+                ssh_user=settings.CLUSTER_SSH_KEY_USER,
+                ssh_key_public_path=settings.CLUSTER_SSH_PUBLIC_KEY,
+            )
 
         current_app.ctx.kv_store = projects_store_func(
             settings.PROJECTS_STORE_CLASS_ASYNC, settings.PROJECTS_STORE_BUCKET
