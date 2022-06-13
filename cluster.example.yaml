@@ -7,6 +7,10 @@ clusters:
     name: default
     provider: "gce"
     machine: "gce-tiny-default"
+  gpu:
+    name: gpu
+    provider: "gce"
+    machine: "gce-small-gpu"
 volumes:
   local:
     name: local
@@ -19,6 +23,13 @@ volumes:
     image: "nbworker-2022-04-08"
     description: to use as boot disk
     location: "us-central1-c"
+    size: 20
+    kind: 'pd-standard'
+    mount: /
+  gce-nvidia:
+    name: gce-nvidia
+    image: "nvidia-docker-2022-04-25"
+    location: "us-east1-c"
     size: 20
     kind: 'pd-standard'
     mount: /
@@ -61,8 +72,22 @@ machines:
       size: "e2-small"
       image: "nbworker-2022-04-08"
       vcpus: 2
-    volumes:
-      - gce-boot-small
+    # volumes:
+    #  - gce-boot-small
+  gce-small-gpu:
+    name: small-gpu
+    desc: "Small GPU Machine for gce"
+    machine: gce-small-gpu
+    provider: gce
+    location: "us-east1-c"
+    machine_type:
+      size: n1-standard-1
+      image: "nvidia-docker-2022-04-25"
+    gpu:
+      name: tesla
+      gpu_type: nvidia-tesla-t4
+      count: 1
+
   local:
     name: local-cpu
     desc: Local machine
