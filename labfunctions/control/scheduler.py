@@ -91,6 +91,7 @@ class SchedulerExec:
         "notebook": "labfunctions.control.tasks.notebook_dispatcher",
         "build": "labfunctions.control.tasks.build_dispatcher",
         "create_instance": "labfunctions.control.tasks.create_instance",
+        "destroy_instance": "labfunctions.control.tasks.destroy_instance",
     }
 
     def __init__(
@@ -104,7 +105,7 @@ class SchedulerExec:
     ):
         self.conn = conn or create_pool()
 
-        self.control_q = Queue(control_queue, conn=self.conn)
+        self.control_q = Queue(control_queue, conn=self.conn, queue_wait_ttl=60 * 15)
         self.build_q = Queue(build_queue, conn=self.conn)
         self.settings: types.ServerSettings = settings or conf.load_server()
         self._build_ts = build_timeout
@@ -175,19 +176,40 @@ class SchedulerExec:
             return ctx
         return None
 
-    async def enqueue_instance_creation(self, machine_name: str) -> Job:
+    async def enqueue_instance_creation(self, cluster_name: str) -> Job:
+        execid = str(ExecID())
+        ctx = ClusterTaskCtx(
+            cluster_file=self.settings.CLUSTER_FILEPATH,
+            ssh_public_key_path=self.settings.CLUSTER_SSH_PUBLIC_KEY,
+            ssh_key_user=self.settings.CLUSTER_SSH_KEY_USER,
+            cluster_name=cluster_name,
+        )
+        job = await self.control_q.enqueue(
+            self.tasks["create_instance"],
+            execid=execid,
+            params={"data": ctx.dict()},
+            timeout="5m",
+            max_retry=1,
+        )
+        return job
+
+    async def enqueue_instance_destruction(
+        self, machine_name: str, *, cluster_name: str
+    ) -> Job:
         execid = str(ExecID())
         ctx = ClusterTaskCtx(
             machine_name=machine_name,
             cluster_file=self.settings.CLUSTER_FILEPATH,
             ssh_public_key_path=self.settings.CLUSTER_SSH_PUBLIC_KEY,
             ssh_key_user=self.settings.CLUSTER_SSH_KEY_USER,
+            cluster_name=cluster_name,
         )
         job = await self.control_q.enqueue(
-            self.tasks["create_instance"],
+            self.tasks["destroy_instance"],
             execid=execid,
             params={"data": ctx.dict()},
-            background=True,
+            timeout="5m",
+            max_retry=1,
         )
         return job
 

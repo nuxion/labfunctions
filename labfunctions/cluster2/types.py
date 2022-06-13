@@ -21,19 +21,31 @@ AGENT_DOCKER_IMG = "nuxion/labfunctions"
 
 
 class ClusterTaskCtx(BaseModel):
-    machine_name: str
+    cluster_name: str
     cluster_file: str
     ssh_public_key_path: str
     ssh_key_user: str = USER
     alias: Optional[str] = None
+    machine_name: Optional[str] = None
     do_deploy: bool = True
     use_public: bool = True
     deploy_local: bool = False
 
 
 class ClusterSpec(BaseModel):
+    """Cluster Specification
+    used to group similar machines
+
+    :param name: name of the cluster
+    :param machine: name of a machine defined as MachineOrm
+    :param provider: which provider should be used: gce, aws, local...
+    :param location: location where the machine should be created
+    :param network: network to be used
+    """
+
     name: str
-    providers: Dict[str, str]
+    machine: str
+    provider: str = "local"
     location: Optional[str] = None
     network: Optional[str] = None
 
@@ -175,6 +187,7 @@ class MachineInstance(BaseModel):
     public_ips: Optional[List[str]] = None
     volumes: List[str] = []
     labels: Optional[Dict[str, Any]] = None
+    cluster: str = "default"
     extra: Optional[ExtraField] = None
 
 
@@ -216,6 +229,7 @@ class ExecMachineResult(BaseModel):
 
 
 class ClusterFileType(BaseModel):
-    spec: ClusterSpec
+    providers: Dict[str, str]
+    clusters: Dict[str, ClusterSpec]
     volumes: Dict[str, BlockStorage]
     machines: Dict[str, MachineOrm]

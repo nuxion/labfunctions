@@ -1,10 +1,12 @@
 ---
-spec:
-  name: default
-  providers:
-    local: "labfunctions.cluster2.providers.local.LocalProvider"
-    gce: "labfunctions.cluster2.providers.gcloud.GCEProvider"
-  
+providers:
+  local: "labfunctions.cluster2.providers.local.LocalProvider"
+  gce: "labfunctions.cluster2.providers.gcloud.GCEProvider"
+clusters:
+  default:
+    name: default
+    provider: "gce"
+    machine: "gce-tiny-default"
 volumes:
   local:
     name: local

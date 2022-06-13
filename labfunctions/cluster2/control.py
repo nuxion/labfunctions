@@ -1,4 +1,7 @@
+import json
 from typing import Dict, List
+
+from redis.asyncio import ConnectionPool
 
 from labfunctions.hashes import generate_random
 from labfunctions.utils import get_class, open_publickey, open_yaml
@@ -7,6 +10,7 @@ from .base import ProviderSpec
 from .types import (
     BlockStorage,
     ClusterFileType,
+    ClusterSpec,
     MachineInstance,
     MachineOrm,
     MachineRequest,
@@ -14,22 +18,21 @@ from .types import (
 )
 
 
-class ClusterFile:
+class ClustersFile:
     def __init__(self, from_file: str):
         self.data: ClusterFileType = ClusterFileType(**open_yaml(from_file))
         self._from_file = from_file
 
     @property
     def providers(self) -> Dict[str, str]:
-        return self.data.spec.providers
+        return self.data.providers
 
     @property
     def path(self):
         return self._from_file
 
-    @property
-    def cluster_name(self) -> str:
-        return self.data.spec.name
+    def get_cluster(self, name: str) -> ClusterSpec:
+        return self.data.clusters[name]
 
     def machines_by_provider(self, provider: str) -> List[MachineOrm]:
         machines = []
@@ -51,17 +54,32 @@ class ClusterFile:
     def list_machines(self) -> List[str]:
         return list(self.data.machines.keys())
 
+    def list_clusters(self) -> List[str]:
+        return list(self.data.clusters.keys())
+
 
 class ClusterControl:
 
     MACHINE_ABC = "0123456789abcdefghijklmnopqrstuvwxyz"
     CLOUD_TAG = "labfunctions"
+    MACHINE_KEY = "lab.mch::"
+    MACHINES_LIST = "lab.machines::"
+    CLUSTERS_LIST = "lab.clusters"
+    # CLUSTER_KEY = "lab.clusters::"
 
-    def __init__(self, cluster_file: str, *, ssh_user: str, ssh_key_public_path: str):
+    def __init__(
+        self,
+        cluster_file: str,
+        *,
+        ssh_user: str,
+        ssh_key_public_path: str,
+        conn: ConnectionPool,
+    ):
         # self.spec = spec
-        self.cluster = ClusterFile(cluster_file)
+        self.cluster = ClustersFile(cluster_file)
         self.ssh_key: SSHKey = self._get_ssh_key(ssh_user, ssh_key_public_path)
         self.pub_key = open_publickey(self.ssh_key.public_path)
+        self.redis = conn
 
     def _get_ssh_key(self, user, public_path) -> SSHKey:
 
@@ -73,11 +91,15 @@ class ClusterControl:
         ssh.private_path = ssh.public_path.split(".pub")[0]
         return ssh
 
-    @property
-    def cluster_name(self) -> str:
-        return self.cluster.cluster_name
+    def get_cluster(self, name: str) -> ClusterSpec:
+        return self.cluster.get_cluster(name)
 
-    def _create_machine_req(self, machine_name: str, alias=None) -> MachineRequest:
+    def machines_list_key(self, cluster_name: str) -> str:
+        return f"{self.MACHINES_LIST}{cluster_name}"
+
+    def _create_machine_req(
+        self, machine_name: str, cluster_name: str, alias=None
+    ) -> MachineRequest:
         machine = self.cluster.get_machine(machine_name)
         id = alias or generate_random(size=6, alphabet=self.MACHINE_ABC)
         name = f"{machine.name}-{id}"
@@ -88,8 +110,7 @@ class ClusterControl:
 
         volumes = [self.cluster.get_volume(vol) for vol in machine.volumes]
 
-        labels = {"cluster": self.cluster_name, "gpu": gpu, "tags": [self.CLOUD_TAG]}
-
+        labels = {"cluster": cluster_name, "gpu": gpu, "tags": [self.CLOUD_TAG]}
         req = MachineRequest(
             name=name,
             ssh_public_cert=self.pub_key,
@@ -97,7 +118,7 @@ class ClusterControl:
             gpu=machine.gpu,
             provider=machine.provider,
             image=type_.image,
-            volumes=machine.volumes,
+            volumes=volumes,
             size=type_.size,
             location=machine.location,
             network=type_.network,
@@ -107,17 +128,19 @@ class ClusterControl:
 
     def create_instance(
         self,
-        machine_name: str,
+        cluster_name: str,
         *,
         alias=None,
+        cluster="default",
         do_deploy=True,
         use_public=False,
         deploy_local=False,
     ) -> MachineInstance:
-        req = self._create_machine_req(machine_name, alias=alias)
+        cluster = self.get_cluster(cluster_name)
+        req = self._create_machine_req(cluster.machine, cluster.name, alias=alias)
         provider = self.cluster.get_provider(req.provider)
 
-        print(f"=> Creating machine: {req.name}")
+        print(f"=> Creating machine: {req.name} for cluster {cluster_name}")
         instance = provider.create_machine(req)
         # ip = instance.private_ips[0]
         # if use_public:
@@ -140,7 +163,7 @@ class ClusterControl:
         # self.register.register_machine(instance)
         return instance
 
-    def destroy_instance(self, machine_name: str, *, provider: str):
+    def destroy_instance(self, machine_name: str, *, cluster_name: str):
         # agent = self.register.get(agent_name)
         # if agent:
         #     self.register.kill_workers_from_agent(agent.name)
@@ -149,7 +172,35 @@ class ClusterControl:
         #     self.register.unregister_machine(agent.machine_id)
         # else:
         #     machine = agent_name
+        print(f"=> Destroying machine: {machine_name} for cluster {cluster_name}")
+        cluster = self.get_cluster(cluster_name)
+        provider = self.cluster.get_provider(cluster.provider)
+        provider.destroy_machine(machine_name)
 
-        # machine = self.cluster.get_machine(machine_name)
-        _provider = self.cluster.get_provider(provider)
-        _provider.destroy_machine(machine_name)
+    async def register_instance(self, machine: MachineInstance, cluster_name: str):
+        """
+        It's register the creation of a machine in two places:
+        as a simple key/value and in a list by cluster
+        """
+        async with self.redis.pipeline() as pipe:
+            machine_list_key = self.machines_list_key(cluster_name)
+            pipe.set(f"{self.MACHINE_KEY}{machine.machine_name}", machine.json())
+            pipe.sadd(self.CLUSTERS_LIST, cluster_name)
+            pipe.sadd(machine_list_key, machine.machine_name)
+            await pipe.execute()
+
+    async def unregister_instance(self, machine_name: str, cluster_name: str):
+        async with self.redis.pipeline() as pipe:
+            machine_list_key = self.machines_list_key(cluster_name)
+            pipe.delete(f"{self.MACHINE_KEY}{machine_name}")
+            pipe.srem(machine_list_key, machine_name)
+            await pipe.execute()
+
+    async def list_instances(self, cluster_name) -> List[str]:
+        machine_list_key = self.machines_list_key(cluster_name)
+        names = await self.redis.sinter(machine_list_key)
+        return list(names)
+
+    async def get_instance(self, machine_name) -> MachineInstance:
+        data = await self.redis.get(f"{self.MACHINE_KEY}{machine_name}")
+        return MachineInstance(**json.loads(data))
