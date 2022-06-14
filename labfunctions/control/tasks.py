@@ -3,7 +3,7 @@ from functools import partial
 from typing import Any, Dict
 
 from labfunctions import client, log, types
-from labfunctions.cluster2 import ClusterControl, ClusterTaskCtx
+from labfunctions.cluster2 import ClusterControl, CreateRequest, DestroyRequest
 from labfunctions.conf import load_server
 from labfunctions.executors import ExecID
 from labfunctions.executors.docker_exec import docker_exec
@@ -40,20 +40,26 @@ def build_dispatcher(data: Dict[str, Any]):
 async def create_instance(data: Dict[str, Any]):
     settings = load_server()
     pool = create_pool(settings.WEB_REDIS)
-    ctx = ClusterTaskCtx(**data)
+    ctx = CreateRequest(**data)
     cluster = ClusterControl(
-        ctx.cluster_file,
-        ssh_user=ctx.ssh_key_user,
-        ssh_key_public_path=ctx.ssh_public_key_path,
+        settings.CLUSTER_FILEPATH,
+        ssh_user=settings.CLUSTER_SSH_KEY_USER,
+        ssh_key_public_path=settings.CLUSTER_SSH_PUBLIC_KEY,
         conn=pool,
     )
-    log.server_logger.info(
-        f"Creating {ctx.machine_name} for cluster {ctx.cluster_name}"
+    log.server_logger.info(f"Creating a machine for cluster {ctx.cluster_name}")
+    create = partial(
+        cluster.create_instance,
+        ctx.cluster_name,
+        agent_token=settings.AGENT_TOKEN,
+        agent_refresh_token=settings.AGENT_REFRESH_TOKEN,
+        do_deploy=ctx.do_deploy,
+        use_public=ctx.use_public,
     )
 
-    instance = await run_async(cluster.create_instance, ctx.cluster_name)
+    instance = await run_async(create)
     await cluster.register_instance(instance, ctx.cluster_name)
-    log.server_logger.debug(f"{ctx.machine_name} Created")
+    log.server_logger.debug(f"{instance.machine_name} Created")
 
     return instance.dict()
 
@@ -61,11 +67,11 @@ async def create_instance(data: Dict[str, Any]):
 async def destroy_instance(data: Dict[str, Any]):
     settings = load_server()
     pool = create_pool(settings.WEB_REDIS)
-    ctx = ClusterTaskCtx(**data)
+    ctx = DestroyRequest(**data)
     cluster = ClusterControl(
-        ctx.cluster_file,
-        ssh_user=ctx.ssh_key_user,
-        ssh_key_public_path=ctx.ssh_public_key_path,
+        settings.CLUSTER_FILEPATH,
+        ssh_user=settings.CLUSTER_SSH_KEY_USER,
+        ssh_key_public_path=settings.CLUSTER_SSH_PUBLIC_KEY,
         conn=pool,
     )
     log.server_logger.info(

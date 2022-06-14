@@ -8,17 +8,10 @@ from sanic.response import json
 from sanic_ext import openapi
 
 from labfunctions import types
+from labfunctions.cluster2.types import CreateRequest, DestroyRequest
 from labfunctions.conf.server_settings import settings
 from labfunctions.defaults import API_VERSION
-from labfunctions.errors.generics import WorkflowRegisterError
-from labfunctions.managers import projects_mg, runtimes_mg, workflows_mg
 from labfunctions.security.web import protected
-from labfunctions.utils import (
-    get_query_param,
-    parse_page_limit,
-    run_async,
-    secure_filename,
-)
 from labfunctions.web.utils import get_cluster, get_scheduler2
 
 clusters_bp = Blueprint("clusters", url_prefix="clusters", version=API_VERSION)
@@ -36,12 +29,13 @@ async def cluster_list(request):
     return json(clusters)
 
 
-@clusters_bp.post("/<cluster_name>")
-@openapi.parameter("cluster_name", str, "path")
-async def cluster_instance_create(request, cluster_name):
+@clusters_bp.post("/")
+@openapi.body({"application/json": CreateRequest})
+async def cluster_instance_create(request):
     scheduler = get_scheduler2(request)
-    job = await scheduler.enqueue_instance_creation(cluster_name=cluster_name)
-    return json(dict(jobid=job.execid))
+    req = CreateRequest(**request.json)
+    job = await scheduler.enqueue_instance_creation(req)
+    return json(dict(jobid=job._id))
 
 
 @clusters_bp.delete("/<cluster_name>/<machine>")
@@ -49,10 +43,10 @@ async def cluster_instance_create(request, cluster_name):
 @openapi.parameter("machine", str, "path")
 async def cluster_instance_destroy(request, cluster_name, machine):
     scheduler = get_scheduler2(request)
-    job = await scheduler.enqueue_instance_destruction(
-        machine, cluster_name=cluster_name
-    )
-    return json(dict(jobid=job.execid))
+    ctx = DestroyRequest(cluster_name=cluster_name, machine_name=machine)
+
+    job = await scheduler.enqueue_instance_destruction(ctx)
+    return json(dict(jobid=job._id))
 
 
 @clusters_bp.get("/<cluster_name>")

@@ -6,8 +6,10 @@ from redis.asyncio import ConnectionPool
 from labfunctions.hashes import generate_random
 from labfunctions.utils import get_class, open_publickey, open_yaml
 
+from . import deploy
 from .base import ProviderSpec
 from .types import (
+    AgentRequest,
     BlockStorage,
     ClusterFileType,
     ClusterSpec,
@@ -130,8 +132,10 @@ class ClusterControl:
         self,
         cluster_name: str,
         *,
+        agent_token=None,
+        agent_refresh_token=None,
+        agent_docker_version="latest",
         alias=None,
-        cluster="default",
         do_deploy=True,
         use_public=False,
         deploy_local=False,
@@ -140,38 +144,28 @@ class ClusterControl:
         req = self._create_machine_req(cluster.machine, cluster.name, alias=alias)
         provider = self.cluster.get_provider(req.provider)
 
-        print(f"=> Creating machine: {req.name} for cluster {cluster_name}")
         instance = provider.create_machine(req)
-        # ip = instance.private_ips[0]
-        # if use_public:
-        #     ip = instance.public_ips[0]
-        # req = deploy.agent_from_settings(
-        #     ip,
-        #     instance.machine_id,
-        #     self.name,
-        #     self.settings,
-        #     qnames=ctx.qnames,
-        #     worker_procs=ctx.worker_procs,
-        #     docker_version=ctx.docker_version,
-        # )
-        # if do_deploy and deploy_local:
-        #     res = deploy.agent_local(req, self.settings.dict())
-        #     print("=> ", res)
-        # elif do_deploy:
-        #     res = deploy.agent(req, self.settings.dict())
-        #     print("=> ", res)
-        # self.register.register_machine(instance)
+
+        if do_deploy:
+            print("=> Doing deploy of the agent")
+            ip = instance.private_ips[0]
+            if use_public:
+                ip = instance.public_ips[0]
+            # req = deploy.agent_from_settings
+            agent_req = AgentRequest(
+                machine_ip=ip,
+                machine_id=instance.machine_name,
+                access_token=agent_token,
+                refresh_token=agent_refresh_token,
+                private_key_path=self.ssh_key.private_path,
+                cluster=cluster_name,
+                docker_version=agent_docker_version,
+            )
+            deploy.agent(req)
+
         return instance
 
     def destroy_instance(self, machine_name: str, *, cluster_name: str):
-        # agent = self.register.get(agent_name)
-        # if agent:
-        #     self.register.kill_workers_from_agent(agent.name)
-        #     machine = self.register.get_machine(agent.machine_id)
-        #     self.register.unregister(agent)
-        #     self.register.unregister_machine(agent.machine_id)
-        # else:
-        #     machine = agent_name
         print(f"=> Destroying machine: {machine_name} for cluster {cluster_name}")
         cluster = self.get_cluster(cluster_name)
         provider = self.cluster.get_provider(cluster.provider)

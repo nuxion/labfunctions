@@ -20,16 +20,19 @@ AGENT_DOCKER_IMG = "nuxion/labfunctions"
 #         env_prefix = "CLT_"
 
 
-class ClusterTaskCtx(BaseModel):
+class CreateRequest(BaseModel):
     cluster_name: str
-    cluster_file: str
-    ssh_public_key_path: str
-    ssh_key_user: str = USER
     alias: Optional[str] = None
-    machine_name: Optional[str] = None
     do_deploy: bool = True
     use_public: bool = True
     deploy_local: bool = False
+    agent_docker_version: str = "latest"
+    agent_docker_image: str = AGENT_DOCKER_IMG
+
+
+class DestroyRequest(BaseModel):
+    cluster_name: str
+    machine_name: str
 
 
 class ClusterSpec(BaseModel):
@@ -233,3 +236,19 @@ class ClusterFileType(BaseModel):
     clusters: Dict[str, ClusterSpec]
     volumes: Dict[str, BlockStorage]
     machines: Dict[str, MachineOrm]
+
+
+class AgentRequest(BaseModel):
+    machine_ip: str
+    machine_id: str
+    private_key_path: str
+    cluster: str
+    access_token: str
+    refresh_token: str
+    qnames: List[str] = ["default"]
+    agent_homedir: str = AGENT_HOMEDIR
+    agent_name: Optional[str] = None
+    advertise_addr: Optional[str] = None
+    docker_image: str = AGENT_DOCKER_IMG
+    docker_version: str = "latest"
+    worker_procs: int = 1

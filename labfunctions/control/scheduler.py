@@ -6,7 +6,7 @@ from libq.jobs import Job
 from redis.asyncio import ConnectionPool
 
 from labfunctions import conf, defaults, types
-from labfunctions.cluster2 import ClusterTaskCtx
+from labfunctions.cluster2 import CreateRequest, DestroyRequest
 from labfunctions.executors import ExecID
 from labfunctions.managers import runtimes_mg, workflows_mg
 from labfunctions.notebooks import create_notebook_ctx
@@ -176,14 +176,8 @@ class SchedulerExec:
             return ctx
         return None
 
-    async def enqueue_instance_creation(self, cluster_name: str) -> Job:
+    async def enqueue_instance_creation(self, ctx: CreateRequest) -> Job:
         execid = str(ExecID())
-        ctx = ClusterTaskCtx(
-            cluster_file=self.settings.CLUSTER_FILEPATH,
-            ssh_public_key_path=self.settings.CLUSTER_SSH_PUBLIC_KEY,
-            ssh_key_user=self.settings.CLUSTER_SSH_KEY_USER,
-            cluster_name=cluster_name,
-        )
         job = await self.control_q.enqueue(
             self.tasks["create_instance"],
             execid=execid,
@@ -193,23 +187,15 @@ class SchedulerExec:
         )
         return job
 
-    async def enqueue_instance_destruction(
-        self, machine_name: str, *, cluster_name: str
-    ) -> Job:
+    async def enqueue_instance_destruction(self, ctx: DestroyRequest) -> Job:
         execid = str(ExecID())
-        ctx = ClusterTaskCtx(
-            machine_name=machine_name,
-            cluster_file=self.settings.CLUSTER_FILEPATH,
-            ssh_public_key_path=self.settings.CLUSTER_SSH_PUBLIC_KEY,
-            ssh_key_user=self.settings.CLUSTER_SSH_KEY_USER,
-            cluster_name=cluster_name,
-        )
+
         job = await self.control_q.enqueue(
             self.tasks["destroy_instance"],
             execid=execid,
             params={"data": ctx.dict()},
             timeout="5m",
-            max_retry=1,
+            max_retry=3,
         )
         return job
 
