@@ -6,6 +6,7 @@ from libq.jobs import Job
 from redis.asyncio import ConnectionPool
 
 from labfunctions import conf, defaults, types
+from labfunctions.cluster2 import CreateRequest, DestroyRequest
 from labfunctions.executors import ExecID
 from labfunctions.managers import runtimes_mg, workflows_mg
 from labfunctions.notebooks import create_notebook_ctx
@@ -89,6 +90,8 @@ class SchedulerExec:
     tasks = {
         "notebook": "labfunctions.control.tasks.notebook_dispatcher",
         "build": "labfunctions.control.tasks.build_dispatcher",
+        "create_instance": "labfunctions.control.tasks.create_instance",
+        "destroy_instance": "labfunctions.control.tasks.destroy_instance",
     }
 
     def __init__(
@@ -102,7 +105,7 @@ class SchedulerExec:
     ):
         self.conn = conn or create_pool()
 
-        self.control_q = Queue(control_queue, conn=self.conn)
+        self.control_q = Queue(control_queue, conn=self.conn, queue_wait_ttl=60 * 15)
         self.build_q = Queue(build_queue, conn=self.conn)
         self.settings: types.ServerSettings = settings or conf.load_server()
         self._build_ts = build_timeout
@@ -172,6 +175,29 @@ class SchedulerExec:
             )
             return ctx
         return None
+
+    async def enqueue_instance_creation(self, ctx: CreateRequest) -> Job:
+        execid = str(ExecID())
+        job = await self.control_q.enqueue(
+            self.tasks["create_instance"],
+            execid=execid,
+            params={"data": ctx.dict()},
+            timeout="5m",
+            max_retry=1,
+        )
+        return job
+
+    async def enqueue_instance_destruction(self, ctx: DestroyRequest) -> Job:
+        execid = str(ExecID())
+
+        job = await self.control_q.enqueue(
+            self.tasks["destroy_instance"],
+            execid=execid,
+            params={"data": ctx.dict()},
+            timeout="5m",
+            max_retry=3,
+        )
+        return job
 
     async def _get_job(self, execid: str) -> Union[Job, None]:
         job = Job(execid, conn=self.conn)

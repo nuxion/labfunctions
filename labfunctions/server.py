@@ -8,6 +8,7 @@ from sanic.response import json
 from sanic_ext import Extend
 
 from labfunctions import defaults
+from labfunctions.cluster2 import ClusterControl
 from labfunctions.control import JobManager, SchedulerExec
 from labfunctions.db.nosync import AsyncSQL
 from labfunctions.events import EventManager
@@ -107,6 +108,14 @@ def create_app(
         )
         current_app.ctx.job_manager = JobManager(conn=_queue_pool)
         current_app.ctx.db = _db
+
+        if settings.CLUSTER_FILEPATH:
+            current_app.ctx.cluster = ClusterControl(
+                settings.CLUSTER_FILEPATH,
+                ssh_user=settings.CLUSTER_SSH_KEY_USER,
+                ssh_key_public_path=settings.CLUSTER_SSH_PUBLIC_KEY,
+                conn=current_app.ctx.web_redis,
+            )
         await current_app.ctx.db.init()
 
     @app.middleware("request")

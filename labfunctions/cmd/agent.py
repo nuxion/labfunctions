@@ -23,7 +23,7 @@ def agentcli():
 
 
 @agentcli.command(name="run")
-@click.option("--workers", "-w", default=1, help="How many workers spawn")
+@click.option("--workers", "-w", default=1, help="How many jobs at the same time")
 @click.option("--redis", "-r", default=settings.QUEUE_REDIS, help="Redis full dsn")
 @click.option(
     "--qnames",

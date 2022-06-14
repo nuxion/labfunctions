@@ -69,6 +69,16 @@ preversion:
 	poetry version prerelease
 	./scripts/update_versions.sh ${API_VERSION}
 
+.PHONY: generate-docker
+generate-docker:
+	lab runtimes generate official-all
+	mv Dockerfile.official-all docker/Dockerfile.all
+	lab runtimes generate official-client 
+	mv Dockerfile.official-client docker/Dockerfile.client
+	lab runtimes generate official-gpu
+	mv Dockerfile.official-gpu docker/Dockerfile.client.gpu
+
+
 minor: 
 	poetry version minor
 	./scripts/update_versions.sh ${API_VERSION}
@@ -111,6 +121,10 @@ docker-client:
 	docker build -t ${DOCKERID}/${PROJECTNAME}:latest-client -f docker/Dockerfile.client .
 	docker tag ${DOCKERID}/${PROJECTNAME}:latest-client ${DOCKERID}/${PROJECTNAME}:${LF_VERSION}-client
 
+.PHONY: docker-client-push
+docker-client-push:
+	docker push ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)-client
+
 .PHONY: docker-client-gpu
 docker-client-gpu:
 	docker build -t ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} -f docker/Dockerfile.client.gpu .
@@ -120,6 +134,10 @@ docker-client-gpu:
 docker-all:
 	docker build -t ${DOCKERID}/${PROJECTNAME} -f docker/Dockerfile.all .
 	docker tag ${DOCKERID}/${PROJECTNAME}:latest ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)
+
+.PHONY: docker-all-push
+docker-all-push:
+	docker push ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)
 
 .PHONY: docker
 docker: docker-client docker-client-gpu docker-all

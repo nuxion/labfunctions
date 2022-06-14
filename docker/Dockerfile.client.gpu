@@ -3,7 +3,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 USER root
 SHELL ["/bin/bash", "-c"]
 ENV LF_PKG=labfunctions
-ENV LF_VERSION=0.8.0a8
+ENV LF_VERSION=0.9.0a4
 # ADD requirements/requirements_client.txt /tmp/requirements.txt
 COPY . /opt/labfunctions
 # add root/local/bin to path to suppress pip warning
@@ -73,8 +73,9 @@ RUN apt-key adv --fetch-keys  http://developer.download.nvidia.com/compute/cuda/
 RUN apt-get update && apt-get install -y python3 python3-pip python3-setuptools
 RUN groupadd app -g 1090 \
     && useradd -m -d /home/app app -u 1089 -g 1090 \
-    && mkdir -p /app/.secrets \
-    && mkdir -p /app/.nb_tmp && chown app:app -R /app \
+    && mkdir -p /secrets && chown app:app /secrets \
+    && mkdir -p /labstore && chown app:app /labstore \
+    && mkdir -p /app && chown -R app:app /app \
     && mkdir -p /data && chown app:app -R /data \
     && mkdir -p /models && chown app:app -R /models \
     && apt-get update -y \
@@ -83,8 +84,8 @@ RUN groupadd app -g 1090 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
-VOLUME /app/.secrets
-VOLUME /app/.nb_tmp
+VOLUME /secrets
+VOLUME /labstore
 VOLUME /data
 VOLUME /models
 USER app

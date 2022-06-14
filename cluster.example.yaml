@@ -2,21 +2,16 @@
 providers:
   local: "labfunctions.cluster2.providers.local.LocalProvider"
   gce: "labfunctions.cluster2.providers.gcloud.GCEProvider"
+clusters:
+  default:
+    name: default
+    provider: "gce"
+    machine: "gce-tiny-default"
+  gpu:
+    name: gpu
+    provider: "gce"
+    machine: "gce-small-gpu"
 volumes:
-  datasets:
-    name: gce-datasets
-    location: "us-central1-c"
-    snapshot: "volume-ext4"
-    size: 10
-    kind: 'pd-standard'
-    mount: /mnt/disk0
-  snapshot-base:
-    name: snapshot-base
-    location: "us-central1-c"
-    size: 2
-    kind: "pd-standard"
-    mount: /mnt/snapshot
-    create_if_not_exist: true
   local:
     name: local
     location: home
@@ -31,7 +26,13 @@ volumes:
     size: 20
     kind: 'pd-standard'
     mount: /
-
+  gce-nvidia:
+    name: gce-nvidia
+    image: "nvidia-docker-2022-04-25"
+    location: "us-east1-c"
+    size: 20
+    kind: 'pd-standard'
+    mount: /
 machines:
   snapshooter:
     name: snap
@@ -71,42 +72,22 @@ machines:
       size: "e2-small"
       image: "nbworker-2022-04-08"
       vcpus: 2
-    volumes:
-      - gce-boot-small
-  gce-medim-cpu:
-    name: gce-medium-cpu
-    desc: Medium cpu machine for gce
-    provider: gce
-    location: "us-central1-c"
-    machine_type:
-      size: "e2-small"
-      image: "nbworker-2022-04-08"
-      vcpus: 2
-    volumes:
-      - gce-boot-small
-
+    # volumes:
+    #  - gce-boot-small
   gce-small-gpu:
-    name: gce-small-gpu
-    desc: It includes a nvidia-tesla-t4
+    name: small-gpu
+    desc: "Small GPU Machine for gce"
+    machine: gce-small-gpu
     provider: gce
-    location: us-east1-c
+    location: "us-east1-c"
     machine_type:
       size: n1-standard-1
-      image: "debian-11-bullseye-v20220406"
-      vcpus: 1
+      image: "nvidia-docker-2022-04-25"
     gpu:
       name: tesla
       gpu_type: nvidia-tesla-t4
       count: 1
-  do-tiny-cpu:
-    name: tiny-cpu
-    desc: Tiny cpu machine for DO
-    provider: do
-    location: "nyc3"
-    machine_type:
-      size: "s-1vcpu-1gb"
-      image: "debian_docker.2021-08-13"
-      vcpus: 1
+
   local:
     name: local-cpu
     desc: Local machine
@@ -120,3 +101,5 @@ machines:
       name: "nvidia"
       gpu_type: "tesla"
       number: 1
+
+
