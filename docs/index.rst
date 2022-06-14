@@ -38,6 +38,7 @@ Development
    :maxdepth: 2
 
    labfunctions/api_reference
+   labfunctions/release
 
 * :ref:`modindex`
 
