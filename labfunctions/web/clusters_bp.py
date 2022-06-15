@@ -58,9 +58,13 @@ async def cluster_agent_deploy(request, cluster_name, machine):
 async def cluster_instance_destroy(request, cluster_name, machine):
     scheduler = get_scheduler2(request)
     ctx = cluster.DestroyRequest(cluster_name=cluster_name, machine_name=machine)
-
-    job = await scheduler.enqueue_instance_destruction(ctx)
-    return json(dict(jobid=job._id))
+    cc = get_cluster(request)
+    machine = await cc.get_instance(machine)
+    if machine:
+        job = await scheduler.enqueue_instance_destruction(ctx)
+        return json(dict(jobid=job._id), 202)
+    else:
+        return json(dict(jobid=None), 200)
 
 
 @clusters_bp.get("/<cluster_name>")

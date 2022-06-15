@@ -1,7 +1,7 @@
 import os
 from typing import Optional, Union
 
-from labfunctions import defaults, secrets, types
+from labfunctions import defaults, log, secrets, types
 from labfunctions.conf import load_client
 from labfunctions.utils import secure_filename
 
@@ -18,7 +18,12 @@ def from_file(
     """
 
     settings = load_client()
-    lab_state = LabState.from_file(filepath)
+    lab_state = None
+    try:
+        lab_state = LabState.from_file(filepath)
+    except (TypeError, FileNotFoundError) as e:
+        log.client_logger.warning(f"Labfile not found for: {filepath}")
+
     lf_service = url_service or settings.WORKFLOW_SERVICE
     # if not creds:
     #    creds = login_cli(url_service, home_dir)

@@ -1,15 +1,8 @@
-import json
-import logging
-from dataclasses import asdict
-from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Union
 
 from labfunctions import cluster, defaults, errors, secrets, types
-from labfunctions.log import client_logger
-from labfunctions.utils import parse_var_line
 
 from .base import BaseClient
-from .utils import get_private_key, store_credentials_disk, store_private_key
 
 
 class ClusterClient(BaseClient):
@@ -45,7 +38,7 @@ class ClusterClient(BaseClient):
 
     def cluster_destroy_instance(self, cluster_name: str, *, machine: str) -> str:
         rsp = self._http.delete(f"/clusters/{cluster_name}/{machine}")
-        if rsp.status_code != 202:
+        if rsp.status_code != 202 and rsp.status_code != 200:
             raise errors.ClusterAPIError(f"Error destroying instance. {rsp.text}")
 
         return rsp.json()["jobid"]

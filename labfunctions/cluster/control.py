@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from redis.asyncio import ConnectionPool
 
@@ -172,6 +172,8 @@ class ClusterControl:
         names = await self.redis.sinter(machine_list_key)
         return list(names)
 
-    async def get_instance(self, machine_name) -> MachineInstance:
+    async def get_instance(self, machine_name) -> Union[MachineInstance, None]:
         data = await self.redis.get(f"{self.MACHINE_KEY}{machine_name}")
-        return MachineInstance(**json.loads(data))
+        if data:
+            return MachineInstance(**json.loads(data))
+        return None
