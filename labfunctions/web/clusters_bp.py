@@ -7,13 +7,7 @@ from sanic import Blueprint, Sanic
 from sanic.response import json
 from sanic_ext import openapi
 
-from labfunctions import types
-from labfunctions.cluster2 import (
-    CreateRequest,
-    DeployAgentRequest,
-    DeployAgentTask,
-    DestroyRequest,
-)
+from labfunctions import cluster, types
 from labfunctions.conf.server_settings import settings
 from labfunctions.defaults import API_VERSION
 from labfunctions.security.web import protected
@@ -28,18 +22,18 @@ async def cluster_list(request):
     """
     List clusters in the config file
     """
-    cluster = get_cluster(request)
-    _clusters = cluster.cluster.list_clusters()
-    clusters = [cluster.get_cluster(c).dict() for c in _clusters]
+    cc = get_cluster(request)
+    _clusters = cc.cluster.list_clusters()
+    clusters = [cc.get_cluster(c).dict() for c in _clusters]
     return json(clusters)
 
 
 @clusters_bp.post("/")
-@openapi.body({"application/json": CreateRequest})
+@openapi.body({"application/json": cluster.CreateRequest})
 async def cluster_instance_create(request):
     """Create a machine"""
     scheduler = get_scheduler2(request)
-    req = CreateRequest(**request.json)
+    req = cluster.CreateRequest(**request.json)
     job = await scheduler.enqueue_instance_creation(req)
     return json(dict(jobid=job._id))
 
@@ -47,11 +41,11 @@ async def cluster_instance_create(request):
 @clusters_bp.post("/<cluster_name>/<machine>/_agent")
 @openapi.parameter("cluster_name", str, "path")
 @openapi.parameter("machine", str, "path")
-@openapi.body({"application/json": DeployAgentRequest})
+@openapi.body({"application/json": cluster.DeployAgentRequest})
 async def cluster_agent_deploy(request, cluster_name, machine):
     scheduler = get_scheduler2(request)
-    req = DeployAgentRequest(**request.json)
-    task = DeployAgentTask(
+    req = cluster.DeployAgentRequest(**request.json)
+    task = cluster.DeployAgentTask(
         machine_name=machine, cluster_name=cluster_name, **req.dict()
     )
     job = await scheduler.enqueue_deploy_agent(task)
@@ -63,7 +57,7 @@ async def cluster_agent_deploy(request, cluster_name, machine):
 @openapi.parameter("machine", str, "path")
 async def cluster_instance_destroy(request, cluster_name, machine):
     scheduler = get_scheduler2(request)
-    ctx = DestroyRequest(cluster_name=cluster_name, machine_name=machine)
+    ctx = cluster.DestroyRequest(cluster_name=cluster_name, machine_name=machine)
 
     job = await scheduler.enqueue_instance_destruction(ctx)
     return json(dict(jobid=job._id))

@@ -11,8 +11,8 @@ from libcloud.compute.types import Provider
 from pydantic import BaseSettings
 
 from labfunctions import defaults
-from labfunctions.cluster2.base import ProviderSpec
-from labfunctions.cluster2.types import (
+from labfunctions.cluster.base import ProviderSpec
+from labfunctions.cluster.types import (
     BlockInstance,
     BlockStorage,
     ExecMachineResult,

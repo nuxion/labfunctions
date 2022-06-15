@@ -2,15 +2,7 @@ from datetime import datetime
 from functools import partial
 from typing import Any, Dict
 
-from labfunctions import client, log, types
-from labfunctions.cluster2 import (
-    ClusterControl,
-    CreateRequest,
-    DeployAgentTask,
-    DestroyRequest,
-    deploy,
-)
-from labfunctions.cluster2.types import AgentRequest, SSHResult
+from labfunctions import client, cluster, log, types
 from labfunctions.conf import load_server
 from labfunctions.executors import ExecID
 from labfunctions.executors.docker_exec import docker_exec
@@ -47,8 +39,8 @@ def build_dispatcher(data: Dict[str, Any]):
 async def create_instance(data: Dict[str, Any]):
     settings = load_server()
     pool = create_pool(settings.WEB_REDIS)
-    ctx = CreateRequest(**data)
-    cluster = ClusterControl(
+    ctx = cluster.CreateRequest(**data)
+    cc = cluster.ClusterControl(
         settings.CLUSTER_FILEPATH,
         ssh_user=settings.CLUSTER_SSH_KEY_USER,
         ssh_key_public_path=settings.CLUSTER_SSH_PUBLIC_KEY,
@@ -57,7 +49,7 @@ async def create_instance(data: Dict[str, Any]):
     log.server_logger.info(f"Creating a machine for cluster {ctx.cluster_name}")
 
     create = partial(
-        cluster.create_instance,
+        cc.create_instance,
         ctx.cluster_name,
         agent_token=settings.AGENT_TOKEN,
         agent_refresh_token=settings.AGENT_REFRESH_TOKEN,
@@ -65,7 +57,7 @@ async def create_instance(data: Dict[str, Any]):
     )
 
     instance = await run_async(create)
-    await cluster.register_instance(instance, ctx.cluster_name)
+    await cc.register_instance(instance, ctx.cluster_name)
     log.server_logger.debug(f"{instance.machine_name} Created")
 
     return instance.dict()
@@ -74,8 +66,8 @@ async def create_instance(data: Dict[str, Any]):
 async def destroy_instance(data: Dict[str, Any]):
     settings = load_server()
     pool = create_pool(settings.WEB_REDIS)
-    ctx = DestroyRequest(**data)
-    cluster = ClusterControl(
+    ctx = cluster.DestroyRequest(**data)
+    cc = cluster.ClusterControl(
         settings.CLUSTER_FILEPATH,
         ssh_user=settings.CLUSTER_SSH_KEY_USER,
         ssh_key_public_path=settings.CLUSTER_SSH_PUBLIC_KEY,
@@ -86,35 +78,35 @@ async def destroy_instance(data: Dict[str, Any]):
     )
 
     destroy = partial(
-        cluster.destroy_instance, ctx.machine_name, cluster_name=ctx.cluster_name
+        cc.destroy_instance, ctx.machine_name, cluster_name=ctx.cluster_name
     )
 
     await run_async(destroy)
-    await cluster.unregister_instance(ctx.machine_name, ctx.cluster_name)
+    await cc.unregister_instance(ctx.machine_name, ctx.cluster_name)
     log.server_logger.debug(f"{ctx.machine_name} destroyed")
 
 
 async def deploy_agent(data: Dict[str, Any]):
     settings = load_server()
-    ctx = DeployAgentTask(**data)
+    ctx = cluster.DeployAgentTask(**data)
     pool = create_pool(settings.WEB_REDIS)
-    cluster = ClusterControl(
+    cc = cluster.ClusterControl(
         settings.CLUSTER_FILEPATH,
         ssh_user=settings.CLUSTER_SSH_KEY_USER,
         ssh_key_public_path=settings.CLUSTER_SSH_PUBLIC_KEY,
         conn=pool,
     )
-    instance = await cluster.get_instance(ctx.machine_name)
+    instance = await cc.get_instance(ctx.machine_name)
     ip = instance.private_ips[0]
     if ctx.use_public:
         ip = instance.public_ips[0]
 
-    agent_req = AgentRequest(
+    agent_req = cluster.types.AgentRequest(
         machine_ip=ip,
         machine_id=instance.machine_id,
         access_token=settings.AGENT_TOKEN,
         refresh_token=settings.AGENT_REFRESH_TOKEN,
-        private_key_path=cluster.ssh_key.private_path,
+        private_key_path=cc.ssh_key.private_path,
         cluster=ctx.cluster_name,
         docker_image=ctx.agent_docker_image,
         docker_version=ctx.agent_docker_version,
@@ -125,8 +117,8 @@ async def deploy_agent(data: Dict[str, Any]):
     )
     log.server_logger.info(f"Deploying agent into {ctx.machine_name}")
     # await run_async(deploy.agent, agent_req)
-    res = await deploy.agent_async(agent_req)
-    response = SSHResult(
+    res = await cluster.deploy.agent_async(agent_req)
+    response = cluster.types.SSHResult(
         command=res.command,
         return_code=res.returncode,
         stderror=res.stderr,

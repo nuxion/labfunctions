@@ -6,8 +6,8 @@ from asyncssh.process import SSHCompletedProcess
 from tenacity import retry, stop_after_attempt, wait_random
 
 from labfunctions import defaults
-from labfunctions.cluster2 import ssh
-from labfunctions.cluster2.types import AgentRequest
+from labfunctions.cluster import ssh
+from labfunctions.cluster.types import AgentRequest
 from labfunctions.conf.jtemplates import render_to_file
 from labfunctions.types import ServerSettings
 from labfunctions.utils import execute_cmd_no_block, get_version, run_sync
