@@ -25,7 +25,7 @@ from labfunctions.types import (
 )
 from labfunctions.utils import parse_var_line
 
-from .base import BaseClient
+from .cluster_client import ClusterClient
 from .history_client import HistoryClient
 from .projects_client import ProjectsClient
 from .utils import (
@@ -61,7 +61,7 @@ def open_notebook(fp) -> Dict[str, Any]:
 console = Console()
 
 
-class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, BaseClient):
+class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, ClusterClient):
     """Is to be used as cli client because it has side effects on local disk"""
 
     def __init__(self, *args, **kwargs):

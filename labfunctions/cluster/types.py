@@ -27,9 +27,9 @@ class DeployAgentTask(BaseModel):
     machine_name: str
     cluster_name: str = "default"
     qnames: List[str] = ["cpu"]
-    agent_docker_version: str = "latest"
     use_public: bool = True
-    agent_docker_image: str = AGENT_DOCKER_IMG
+    docker_version: str = "latest"
+    docker_image: str = AGENT_DOCKER_IMG
     worker_procs: int = 2
 
 

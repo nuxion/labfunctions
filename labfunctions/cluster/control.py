@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from redis.asyncio import ConnectionPool
 
@@ -132,36 +132,13 @@ class ClusterControl:
     def create_instance(
         self,
         cluster_name: str,
-        *,
-        agent_token=None,
-        agent_refresh_token=None,
         alias=None,
-        deploy_agent: DeployAgentRequest = None,
     ) -> MachineInstance:
         cluster = self.get_cluster(cluster_name)
         req = self._create_machine_req(cluster.machine, cluster.name, alias=alias)
         provider = self.cluster.get_provider(req.provider)
 
         instance = provider.create_machine(req)
-
-        if deploy_agent:
-            print("=> Doing deploy of the agent")
-            ip = instance.private_ips[0]
-            if deploy_agent.use_public:
-                ip = instance.public_ips[0]
-            # req = deploy.agent_from_settings
-            agent_req = AgentRequest(
-                machine_ip=ip,
-                machine_id=instance.machine_name,
-                access_token=agent_token,
-                refresh_token=agent_refresh_token,
-                private_key_path=self.ssh_key.private_path,
-                cluster=cluster_name,
-                docker_version=deploy_agent.docker_version,
-                docker_image=deploy_agent.docker_image,
-                qnames=deploy_agent.qnames,
-            )
-            deploy.agent(agent_req)
 
         return instance
 
@@ -195,6 +172,8 @@ class ClusterControl:
         names = await self.redis.sinter(machine_list_key)
         return list(names)
 
-    async def get_instance(self, machine_name) -> MachineInstance:
+    async def get_instance(self, machine_name) -> Union[MachineInstance, None]:
         data = await self.redis.get(f"{self.MACHINE_KEY}{machine_name}")
-        return MachineInstance(**json.loads(data))
+        if data:
+            return MachineInstance(**json.loads(data))
+        return None

@@ -170,7 +170,7 @@ class BaseClient:
     #        ctx = context.create_dummy_ctx(self.projectid, execid)
     #    return ctx
 
-    def _auth_init(self) -> AuthFlow:
+    def _auth_init(self):
         self._auth = AuthFlow(
             self._creds.access_token,
             self._creds.refresh_token,
