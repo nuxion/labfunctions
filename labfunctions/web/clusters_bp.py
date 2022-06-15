@@ -18,7 +18,7 @@ clusters_bp = Blueprint("clusters", url_prefix="clusters", version=API_VERSION)
 
 @clusters_bp.get("/get-clusters-spec")
 @protected()
-async def cluster_list(request):
+async def cluster_get_spec(request):
     """
     List clusters in the config file
     """
@@ -35,7 +35,7 @@ async def cluster_instance_create(request):
     scheduler = get_scheduler2(request)
     req = cluster.CreateRequest(**request.json)
     job = await scheduler.enqueue_instance_creation(req)
-    return json(dict(jobid=job._id))
+    return json(dict(jobid=job._id), 202)
 
 
 @clusters_bp.post("/<cluster_name>/<machine>/_agent")

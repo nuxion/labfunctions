@@ -81,8 +81,6 @@ server = [
 	"psycopg2-binary",
 	"asyncpg", 
 	"alembic",
-	"rq-scheduler",
-	"rq",
 ]
 cloud = [
         "apache-libcloud",

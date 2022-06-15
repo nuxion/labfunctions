@@ -8,11 +8,10 @@ from rich import print_json
 from rich.prompt import Confirm
 from rich.table import Table
 
-from labfunctions import defaults
-from labfunctions.cluster import create_cluster_control
+from labfunctions import cluster, defaults
 from labfunctions.conf.server_settings import settings
-from labfunctions.control_plane.register import AgentRegister
-from labfunctions.errors.cluster import ClusterSpecNotFound
+
+# from labfunctions.errors.cluster import ClusterSpecNotFound
 from labfunctions.utils import format_seconds
 
 from .utils import console, progress
@@ -42,11 +41,18 @@ def clustercli():
 )
 @click.option("--cluster", "-C", default=None, help="Cluster where it will run")
 @click.option("--use-public", "-P", is_flag=True, default=False, help="Use public ip")
-@click.option("--deploy-local", "-L", is_flag=True, default=False, help="Run locally")
+# @click.option("--deploy-local", "-L", is_flag=True, default=False, help="Run locally")
+@click.option(
+    "--do-deploy",
+    "-d",
+    is_flag=True,
+    default=True,
+    help="Do deploy a of the agent into the instance",
+)
 def create_machinecli(from_file, cluster, deploy, use_public, deploy_local):
     """It will create a new machine in a provider choosen, inside of a cluster"""
     try:
-        cc = create_cluster_control(from_file, settings.RQ_REDIS, cluster)
+        cc = ClusterControl()
     except ClusterSpecNotFound as e:
         console.print(f"[bold red]{e}[/]")
         sys.exit(-1)

@@ -20,3 +20,8 @@ class ProjectCreateError(Exception):
     def __init__(self, projectid):
         msg = f"Project creation error for projectid or name: {projectid}"
         super().__init__(msg)
+
+
+class ClusterAPIError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
