@@ -8,7 +8,12 @@ from sanic.response import json
 from sanic_ext import openapi
 
 from labfunctions import types
-from labfunctions.cluster2.types import CreateRequest, DestroyRequest
+from labfunctions.cluster2 import (
+    CreateRequest,
+    DeployAgentRequest,
+    DeployAgentTask,
+    DestroyRequest,
+)
 from labfunctions.conf.server_settings import settings
 from labfunctions.defaults import API_VERSION
 from labfunctions.security.web import protected
@@ -32,9 +37,24 @@ async def cluster_list(request):
 @clusters_bp.post("/")
 @openapi.body({"application/json": CreateRequest})
 async def cluster_instance_create(request):
+    """Create a machine"""
     scheduler = get_scheduler2(request)
     req = CreateRequest(**request.json)
     job = await scheduler.enqueue_instance_creation(req)
+    return json(dict(jobid=job._id))
+
+
+@clusters_bp.post("/<cluster_name>/<machine>/_agent")
+@openapi.parameter("cluster_name", str, "path")
+@openapi.parameter("machine", str, "path")
+@openapi.body({"application/json": DeployAgentRequest})
+async def cluster_agent_deploy(request, cluster_name, machine):
+    scheduler = get_scheduler2(request)
+    req = DeployAgentRequest(**request.json)
+    task = DeployAgentTask(
+        machine_name=machine, cluster_name=cluster_name, **req.dict()
+    )
+    job = await scheduler.enqueue_deploy_agent(task)
     return json(dict(jobid=job._id))
 
 

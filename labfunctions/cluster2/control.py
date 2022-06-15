@@ -13,6 +13,7 @@ from .types import (
     BlockStorage,
     ClusterFileType,
     ClusterSpec,
+    DeployAgentRequest,
     MachineInstance,
     MachineOrm,
     MachineRequest,
@@ -134,11 +135,8 @@ class ClusterControl:
         *,
         agent_token=None,
         agent_refresh_token=None,
-        agent_docker_version="latest",
         alias=None,
-        do_deploy=True,
-        use_public=False,
-        deploy_local=False,
+        deploy_agent: DeployAgentRequest = None,
     ) -> MachineInstance:
         cluster = self.get_cluster(cluster_name)
         req = self._create_machine_req(cluster.machine, cluster.name, alias=alias)
@@ -146,10 +144,10 @@ class ClusterControl:
 
         instance = provider.create_machine(req)
 
-        if do_deploy:
+        if deploy_agent:
             print("=> Doing deploy of the agent")
             ip = instance.private_ips[0]
-            if use_public:
+            if deploy_agent.use_public:
                 ip = instance.public_ips[0]
             # req = deploy.agent_from_settings
             agent_req = AgentRequest(
@@ -159,9 +157,11 @@ class ClusterControl:
                 refresh_token=agent_refresh_token,
                 private_key_path=self.ssh_key.private_path,
                 cluster=cluster_name,
-                docker_version=agent_docker_version,
+                docker_version=deploy_agent.docker_version,
+                docker_image=deploy_agent.docker_image,
+                qnames=deploy_agent.qnames,
             )
-            deploy.agent(req)
+            deploy.agent(agent_req)
 
         return instance
 

@@ -6,7 +6,12 @@ from libq.jobs import Job
 from redis.asyncio import ConnectionPool
 
 from labfunctions import conf, defaults, types
-from labfunctions.cluster2 import CreateRequest, DestroyRequest
+from labfunctions.cluster2 import (
+    CreateRequest,
+    DeployAgentRequest,
+    DeployAgentTask,
+    DestroyRequest,
+)
 from labfunctions.executors import ExecID
 from labfunctions.managers import runtimes_mg, workflows_mg
 from labfunctions.notebooks import create_notebook_ctx
@@ -92,6 +97,7 @@ class SchedulerExec:
         "build": "labfunctions.control.tasks.build_dispatcher",
         "create_instance": "labfunctions.control.tasks.create_instance",
         "destroy_instance": "labfunctions.control.tasks.destroy_instance",
+        "deploy_agent": "labfunctions.control.tasks.deploy_agent",
     }
 
     def __init__(
@@ -194,6 +200,18 @@ class SchedulerExec:
             self.tasks["destroy_instance"],
             execid=execid,
             params={"data": ctx.dict()},
+            timeout="5m",
+            max_retry=3,
+        )
+        return job
+
+    async def enqueue_deploy_agent(self, data: DeployAgentTask) -> Job:
+        execid = str(ExecID())
+
+        job = await self.control_q.enqueue(
+            self.tasks["deploy_agent"],
+            execid=execid,
+            params={"data": data.dict()},
             timeout="5m",
             max_retry=3,
         )

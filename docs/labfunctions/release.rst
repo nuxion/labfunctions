@@ -76,6 +76,7 @@ Regenerate all together:
 After this, each docker image should be built and published:
 
 .. code-block:: bash
+
                 make docker-client
                 make docker-client-push
  
