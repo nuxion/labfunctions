@@ -10,29 +10,33 @@ DOCKER_GID = "997"
 AGENT_DOCKER_IMG = "nuxion/labfunctions"
 
 
-# class ClusterSettings(BaseSettings):
-#     CLUSTER_FILEPATH: Optional[str] = None
-#     SSH_KEY_USER: str = USER
-#     SSH_PUBLIC_KEY_PATH: Optional[str] = None
-#     AGENT_HOMEDIR: str = AGENT_HOMEDIR
-#
-#     class Config:
-#         env_prefix = "CLT_"
+class DestroyRequest(BaseModel):
+    cluster_name: str
+    machine_name: str
+
+
+class DeployAgentRequest(BaseModel):
+    qnames: List[str] = ["cpu"]
+    use_public: bool = True
+    docker_image: str = AGENT_DOCKER_IMG
+    docker_version: str = "latest"
+    worker_procs: int = 2
+
+
+class DeployAgentTask(BaseModel):
+    machine_name: str
+    cluster_name: str = "default"
+    qnames: List[str] = ["cpu"]
+    agent_docker_version: str = "latest"
+    use_public: bool = True
+    agent_docker_image: str = AGENT_DOCKER_IMG
+    worker_procs: int = 2
 
 
 class CreateRequest(BaseModel):
     cluster_name: str
     alias: Optional[str] = None
-    do_deploy: bool = True
-    use_public: bool = True
-    deploy_local: bool = False
-    agent_docker_version: str = "latest"
-    agent_docker_image: str = AGENT_DOCKER_IMG
-
-
-class DestroyRequest(BaseModel):
-    cluster_name: str
-    machine_name: str
+    agent: Optional[DeployAgentRequest] = None
 
 
 class ClusterSpec(BaseModel):
@@ -187,7 +191,7 @@ class MachineInstance(BaseModel):
     machine_name: str
     location: str
     private_ips: List[str]
-    public_ips: Optional[List[str]] = None
+    public_ips: List[str] = []
     volumes: List[str] = []
     labels: Optional[Dict[str, Any]] = None
     cluster: str = "default"
@@ -245,10 +249,21 @@ class AgentRequest(BaseModel):
     cluster: str
     access_token: str
     refresh_token: str
-    qnames: List[str] = ["default"]
+    web_redis: str
+    queue_redis: str
+    control_queue: str
+    workflow_service: str
+    qnames: List[str] = ["cpu"]
     agent_homedir: str = AGENT_HOMEDIR
     agent_name: Optional[str] = None
     advertise_addr: Optional[str] = None
     docker_image: str = AGENT_DOCKER_IMG
     docker_version: str = "latest"
-    worker_procs: int = 1
+    worker_procs: int = 2
+
+
+class SSHResult(BaseModel):
+    command: str
+    return_code: int
+    stderror: str = ""
+    stdout: str = ""

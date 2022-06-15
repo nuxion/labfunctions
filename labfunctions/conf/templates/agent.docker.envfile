@@ -1,8 +1,10 @@
-LF_WORKFLOW_SERVICE={{ data.WORKFLOW_SERVICE }}
+LF_WORKFLOW_SERVICE={{ data.workflow_service}}
 LF_SQL=dummy
 LF_ASQL=dummy
-LF_WEB_REDIS=dummy
-LF_RQ_REDIS={{ data.RQ_REDIS }}
-LF_RQ_CONTROL_QUEUE={{ data.RQ_CONTROl_QUEUE }}
-LF_AGENT_HEARTBEAT_CHECK={{ data.AGENT_HEARTBEAT_CHECK }}
-LF_AGENT_HEARTBEAT_TTL={{ data.AGENT_HEARTBEAT_TTL }}
+LF_WEB_REDIS={{ data.web_redis }}
+LF_QUEUE_REDIS={{ data.queue_redis }}
+LF_CONTROL_QUEUE={{ data.control_queue }}
+LF_AGENT_TOKEN={{ data.access_token }}
+LF_AGENT_REFRESH_TOKEN={{ data.refresh_token }}
+LF_JWT_PUBLIC=dummy.pub.pem
+LF_JWT_PRIVATE=dummy.priv.pem

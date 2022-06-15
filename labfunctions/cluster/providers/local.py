@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseSettings
 
-from labfunctions.cluster2.base import ProviderSpec
-from labfunctions.cluster2.types import (
+from labfunctions.cluster.base import ProviderSpec
+from labfunctions.cluster.types import (
     BlockInstance,
     BlockStorage,
     ExecutionMachine,

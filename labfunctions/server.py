@@ -8,7 +8,7 @@ from sanic.response import json
 from sanic_ext import Extend
 
 from labfunctions import defaults
-from labfunctions.cluster2 import ClusterControl
+from labfunctions.cluster import ClusterControl
 from labfunctions.control import JobManager, SchedulerExec
 from labfunctions.db.nosync import AsyncSQL
 from labfunctions.events import EventManager

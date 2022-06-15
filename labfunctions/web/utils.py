@@ -1,7 +1,7 @@
 from sanic import Blueprint, Request, Sanic
 
 from labfunctions import defaults
-from labfunctions.cluster2 import ClusterControl
+from labfunctions.cluster import ClusterControl
 from labfunctions.conf.server_settings import settings
 from labfunctions.control import JobManager, SchedulerExec
 from labfunctions.io.kvspec import AsyncKVSpec

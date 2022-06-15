@@ -1,207 +1,200 @@
-from copy import deepcopy
-from typing import Any, Dict, List, Optional, Set
+import json
+from typing import Dict, List
 
-import redis
-from rq import Queue
+from redis.asyncio import ConnectionPool
 
-from labfunctions.control_plane.register import AgentRegister
-from labfunctions.types import ServerSettings
-from labfunctions.types.agent import AgentNode
-from labfunctions.types.cluster import (
-    ClusterDiff,
-    ClusterFile,
-    ClusterPolicy,
-    ClusterSpec,
-    ClusterState,
-    ScaleIdle,
-    ScaleItems,
-)
-from labfunctions.types.machine import (
-    ExecMachineResult,
-    ExecutionMachine,
-    MachineInstance,
-)
-from labfunctions.utils import open_yaml
+from labfunctions.hashes import generate_random
+from labfunctions.utils import get_class, open_publickey, open_yaml
 
 from . import deploy
 from .base import ProviderSpec
-from .context import machine_from_settings
-from .inventory import Inventory
+from .types import (
+    AgentRequest,
+    BlockStorage,
+    ClusterFileType,
+    ClusterSpec,
+    DeployAgentRequest,
+    MachineInstance,
+    MachineOrm,
+    MachineRequest,
+    SSHKey,
+)
 
 
-def apply_scale_items(state: ClusterState, scale: ScaleItems) -> ClusterState:
-    new_state = deepcopy(state)
-    if state.queue_items[scale.qname] >= scale.items_gt:
-        new_state.agents_n += scale.increase_by
-    elif state.queue_items[scale.qname] <= scale.items_lt:
-        new_state.agents_n -= scale.decrease_by
-        new_state.agents.pop()
+class ClustersFile:
+    def __init__(self, from_file: str):
+        self.data: ClusterFileType = ClusterFileType(**open_yaml(from_file))
+        self._from_file = from_file
 
-    return new_state
+    @property
+    def providers(self) -> Dict[str, str]:
+        return self.data.providers
 
+    @property
+    def path(self):
+        return self._from_file
 
-def apply_idle(state: ClusterState, idle: ScaleIdle) -> ClusterState:
-    new_state = deepcopy(state)
-    shutdown_agents = set()
-    for agt in state.agents:
-        if state.idle_by_agent[agt] >= idle.idle_time_gt:
-            shutdown_agents.add(agt)
-    agents = state.agents - shutdown_agents
+    def get_cluster(self, name: str) -> ClusterSpec:
+        return self.data.clusters[name]
 
-    new_state.agents = agents
-    new_state.agents_n = len(agents)
-    return new_state
+    def machines_by_provider(self, provider: str) -> List[MachineOrm]:
+        machines = []
+        for k, m in self.data.machines.items():
+            if m.provider == provider:
+                machines.append(m)
+        return machines
 
+    def get_provider(self, name: str, *args, **kwargs) -> ProviderSpec:
+        prov: ProviderSpec = get_class(self.providers[name])(*args, **kwargs)
+        return prov
 
-def apply_minmax(state: ClusterState, policy: ClusterPolicy) -> ClusterState:
-    new_state = deepcopy(state)
-    if state.agents_n < policy.min_nodes:
-        new_state.agents_n = policy.min_nodes
-    elif state.agents_n > policy.max_nodes:
-        new_state.agents_n = policy.max_nodes
+    def get_machine(self, name: str) -> MachineOrm:
+        return self.data.machines[name]
 
-    return new_state
+    def get_volume(self, name: str) -> BlockStorage:
+        return self.data.volumes[name]
+
+    def list_machines(self) -> List[str]:
+        return list(self.data.machines.keys())
+
+    def list_clusters(self) -> List[str]:
+        return list(self.data.clusters.keys())
 
 
 class ClusterControl:
 
-    POLICIES = {
-        "items": apply_scale_items,
-        "idle": apply_idle,
-        # "minmax": apply_minmax
-    }
+    MACHINE_ABC = "0123456789abcdefghijklmnopqrstuvwxyz"
+    CLOUD_TAG = "labfunctions"
+    MACHINE_KEY = "lab.mch::"
+    MACHINES_LIST = "lab.machines::"
+    CLUSTERS_LIST = "lab.clusters"
+    # CLUSTER_KEY = "lab.clusters::"
 
     def __init__(
-        self, register: AgentRegister, spec: ClusterSpec, inventory: Inventory
+        self,
+        cluster_file: str,
+        *,
+        ssh_user: str,
+        ssh_key_public_path: str,
+        conn: ConnectionPool,
     ):
-        self.name = spec.name
-        self.spec = spec
-        self.inventory = inventory
-        self.register = register
-        self.state = self.build_state()
-        self.provider = self.get_provider()
+        # self.spec = spec
+        self.cluster = ClustersFile(cluster_file)
+        self.ssh_key: SSHKey = self._get_ssh_key(ssh_user, ssh_key_public_path)
+        self.pub_key = open_publickey(self.ssh_key.public_path)
+        self.redis = conn
 
-    @property
-    def cluster_name(self):
-        return self.name
+    def _get_ssh_key(self, user, public_path) -> SSHKey:
 
-    def get_provider(self) -> ProviderSpec:
-        return self.inventory.get_provider(self.spec.provider)
-
-    def refresh(self):
-        self.state = self.build_state()
-
-    def build_state(self) -> ClusterState:
-        agents = self.register.list_agents(self.name)
-        # agents_obj = {self.register.get(a) for a in agents}
-        agents_n = len(agents)
-        queues_obj: List[Queue] = [self.register.get_queue(q) for q in self.spec.qnames]
-        queue_items = {q.name: len(q) for q in queues_obj}
-
-        idle_by_agent = self.register.idle_agents(agents, queues_obj)
-
-        return ClusterState(
-            agents_n=agents_n,
-            agents=set(agents),
-            queue_items=queue_items,
-            idle_by_agent=idle_by_agent,
+        ssh = SSHKey(
+            user=user,
+            public_path=public_path,
         )
 
-    @property
-    def policy(self) -> ClusterPolicy:
-        return self.spec.policy
+        ssh.private_path = ssh.public_path.split(".pub")[0]
+        return ssh
 
-    def apply_policies(self):
-        new_state = self.state.copy()
-        for scale in self.policy.strategies:
-            new_state = self.POLICIES[scale.name](new_state, scale)
+    def get_cluster(self, name: str) -> ClusterSpec:
+        return self.cluster.get_cluster(name)
 
-        new_state = apply_minmax(new_state, self.policy)
+    def machines_list_key(self, cluster_name: str) -> str:
+        return f"{self.MACHINES_LIST}{cluster_name}"
 
-        return new_state
+    def _create_machine_req(
+        self, machine_name: str, cluster_name: str, alias=None
+    ) -> MachineRequest:
+        machine = self.cluster.get_machine(machine_name)
+        id = alias or generate_random(size=6, alphabet=self.MACHINE_ABC)
+        name = f"{machine.name}-{id}"
+        type_ = machine.machine_type
+        gpu = "no"
+        if machine.gpu:
+            gpu = "yes"
 
-    def difference(self, new_state: ClusterState) -> ClusterDiff:
+        volumes = [self.cluster.get_volume(vol) for vol in machine.volumes]
 
-        to_delete = self.state.agents - new_state.agents
-
-        to_create = 0
-        if new_state.agents_n > self.state.agents_n:
-            to_create = new_state.agents_n - self.state.agents_n
-
-        if len(new_state.agents) < self.policy.min_nodes:
-            to_create = self.policy.min_nodes - len(new_state.agents)
-
-        return ClusterDiff(to_create=to_create, to_delete=list(to_delete))
+        labels = {"cluster": cluster_name, "gpu": gpu, "tags": [self.CLOUD_TAG]}
+        req = MachineRequest(
+            name=name,
+            ssh_public_cert=self.pub_key,
+            ssh_user=self.ssh_key.user,
+            gpu=machine.gpu,
+            provider=machine.provider,
+            image=type_.image,
+            volumes=volumes,
+            size=type_.size,
+            location=machine.location,
+            network=type_.network,
+            labels=labels,
+        )
+        return req
 
     def create_instance(
         self,
-        settings: ServerSettings,
-        do_deploy=True,
-        use_public=False,
-        deploy_local=False,
+        cluster_name: str,
+        *,
+        agent_token=None,
+        agent_refresh_token=None,
+        alias=None,
+        deploy_agent: DeployAgentRequest = None,
     ) -> MachineInstance:
-        ctx = machine_from_settings(
-            self.spec.machine,
-            cluster=self.name,
-            qnames=self.spec.qnames,
-            network=self.spec.network,
-            location=self.spec.location,
-            settings=settings,
-            inventory=self.inventory,
-        )
-        print(f"=> Creating machine: {ctx.machine.name}")
-        instance = self.provider.create_machine(ctx.machine)
-        ip = instance.private_ips[0]
-        if use_public:
-            ip = instance.public_ips[0]
-        req = deploy.agent_from_settings(
-            ip,
-            instance.machine_id,
-            self.name,
-            settings,
-            qnames=ctx.qnames,
-            worker_procs=ctx.worker_procs,
-            docker_version=ctx.docker_version,
-        )
-        if do_deploy and deploy_local:
-            res = deploy.agent_local(req, settings.dict())
-            print("=> ", res)
-        elif do_deploy:
-            res = deploy.agent(req, settings.dict())
-            print("=> ", res)
-        self.register.register_machine(instance)
+        cluster = self.get_cluster(cluster_name)
+        req = self._create_machine_req(cluster.machine, cluster.name, alias=alias)
+        provider = self.cluster.get_provider(req.provider)
+
+        instance = provider.create_machine(req)
+
+        if deploy_agent:
+            print("=> Doing deploy of the agent")
+            ip = instance.private_ips[0]
+            if deploy_agent.use_public:
+                ip = instance.public_ips[0]
+            # req = deploy.agent_from_settings
+            agent_req = AgentRequest(
+                machine_ip=ip,
+                machine_id=instance.machine_name,
+                access_token=agent_token,
+                refresh_token=agent_refresh_token,
+                private_key_path=self.ssh_key.private_path,
+                cluster=cluster_name,
+                docker_version=deploy_agent.docker_version,
+                docker_image=deploy_agent.docker_image,
+                qnames=deploy_agent.qnames,
+            )
+            deploy.agent(agent_req)
+
         return instance
 
-    def destroy_instance(self, agent_name: str):
-        agent = self.register.get(agent_name)
-        if agent:
-            self.register.kill_workers_from_agent(agent.name)
-            machine = self.register.get_machine(agent.machine_id)
-            self.register.unregister(agent)
-            self.register.unregister_machine(agent.machine_id)
-        else:
-            machine = agent_name
-        self.provider.destroy_machine(machine)
+    def destroy_instance(self, machine_name: str, *, cluster_name: str):
+        print(f"=> Destroying machine: {machine_name} for cluster {cluster_name}")
+        cluster = self.get_cluster(cluster_name)
+        provider = self.cluster.get_provider(cluster.provider)
+        provider.destroy_machine(machine_name)
 
-    def scale(
-        self,
-        settings: ServerSettings,
-        use_public=False,
-        deploy_local=False,
-        do_deploy=True,
-    ):
-        new_state = self.apply_policies()
-        diff = self.difference(new_state)
+    async def register_instance(self, machine: MachineInstance, cluster_name: str):
+        """
+        It's register the creation of a machine in two places:
+        as a simple key/value and in a list by cluster
+        """
+        async with self.redis.pipeline() as pipe:
+            machine_list_key = self.machines_list_key(cluster_name)
+            pipe.set(f"{self.MACHINE_KEY}{machine.machine_name}", machine.json())
+            pipe.sadd(self.CLUSTERS_LIST, cluster_name)
+            pipe.sadd(machine_list_key, machine.machine_name)
+            await pipe.execute()
 
-        print(f"=> To create: {diff.to_create}")
-        for _ in range(diff.to_create):
-            self.create_instance(
-                settings,
-                use_public=use_public,
-                deploy_local=deploy_local,
-                do_deploy=do_deploy,
-            )
+    async def unregister_instance(self, machine_name: str, cluster_name: str):
+        async with self.redis.pipeline() as pipe:
+            machine_list_key = self.machines_list_key(cluster_name)
+            pipe.delete(f"{self.MACHINE_KEY}{machine_name}")
+            pipe.srem(machine_list_key, machine_name)
+            await pipe.execute()
 
-        for agt in diff.to_delete:
-            print(f"=> Deleting agent {agt}")
-            self.destroy_instance(agt)
+    async def list_instances(self, cluster_name) -> List[str]:
+        machine_list_key = self.machines_list_key(cluster_name)
+        names = await self.redis.sinter(machine_list_key)
+        return list(names)
+
+    async def get_instance(self, machine_name) -> MachineInstance:
+        data = await self.redis.get(f"{self.MACHINE_KEY}{machine_name}")
+        return MachineInstance(**json.loads(data))

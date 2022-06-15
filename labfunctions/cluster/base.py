@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
-from labfunctions.types.machine import (
+from .types import (
     BlockInstance,
     BlockStorage,
     ExecMachineResult,
@@ -12,6 +12,8 @@ from labfunctions.types.machine import (
 
 
 class ProviderSpec(ABC):
+    """Interface definition of a cloud provider"""
+
     @abstractmethod
     def create_machine(self, node: MachineRequest) -> MachineInstance:
         pass
