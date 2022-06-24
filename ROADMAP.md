@@ -8,14 +8,14 @@ Current version: 0.8.0
 
 **MUST:**
 - [x] workflows.yaml file change to labfile.yaml
-- [ ] GPU scaling
+- [x] GPU scaling
 - [x] migration rq to libq
-- [ ] scheudler inside de control plane
 - [ ] cluster autoscaling as a background process
 - [ ] Tests: >= 65%
 - [ ] Fix broken tests
+- [x] Cluster client and Cluster API for creation, destruction and listing of agents and machines
 - [x] Fix smart_open dependecy for the client
-- [ ] Doc: release process
+- [x] Doc: release process
 - [x] Task execution
 - [x] Support python 3.7
 - [x] Support python 3.10
@@ -23,7 +23,7 @@ Current version: 0.8.0
 **MAY:**
 - [ ] Watch events logs on demand
 - [-] Timeouts default for server, tasks and clients
-- [ ] refactor of cluster package
+- [x] refactor of cluster package
 
 **Details**
 

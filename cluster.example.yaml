@@ -11,6 +11,10 @@ clusters:
     name: gpu
     provider: "gce"
     machine: "gce-small-gpu"
+  gpu-ubuntu:
+    name: gpu-ub
+    provider: "gce"
+    machine: "gce-small-gpu-ubuntu"
 volumes:
   local:
     name: local
@@ -29,6 +33,13 @@ volumes:
   gce-nvidia:
     name: gce-nvidia
     image: "nvidia-docker-2022-04-25"
+    location: "us-east1-c"
+    size: 20
+    kind: 'pd-standard'
+    mount: /
+  gce-ubuntu:
+    name: gce-ubuntu
+    image: "ubuntu-2004-focal-v20220615"
     location: "us-east1-c"
     size: 20
     kind: 'pd-standard'
@@ -88,7 +99,21 @@ machines:
       name: tesla
       gpu_type: nvidia-tesla-t4
       count: 1
-
+  gce-small-gpu-ubuntu:
+    name: small-gpu-ubuntu
+    desc: "Small GPU Machine for gce with ubuntu"
+    machine: gce-small-gpu-ubuntu
+    provider: gce
+    location: "us-east1-c"
+    machine_type:
+      size: n1-standard-1
+      image: "ubuntu-2004-focal-v20220615"
+    gpu:
+      name: tesla
+      gpu_type: nvidia-tesla-t4
+      count: 1
+    volumes:
+      - gce-ubuntu
   local:
     name: local-cpu
     desc: Local machine

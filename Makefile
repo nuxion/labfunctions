@@ -130,6 +130,10 @@ docker-client-gpu:
 	docker build -t ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} -f docker/Dockerfile.client.gpu .
 	docker tag ${DOCKERID}/${PROJECTNAME}:latest-client-cuda${CUDA} ${DOCKERID}/${PROJECTNAME}:${LF_VERSION}-client-cuda${CUDA}
 
+.PHONY: docker-client-push
+docker-client-gpu-push:
+	docker push ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)-client-cuda${CUDA}
+
 .PHONY: docker-all
 docker-all:
 	docker build -t ${DOCKERID}/${PROJECTNAME} -f docker/Dockerfile.all .
