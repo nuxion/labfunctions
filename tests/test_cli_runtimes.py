@@ -23,3 +23,14 @@ def test_cli_runtimes_generate(mocker: MockerFixture, redis):
         ["--from-file", "tests/runtimes_test.yaml"],
     )
     assert result.exit_code == 0
+
+def test_cli_runtimes_generate_with_custom_templates(mocker: MockerFixture, redis):
+    runner = CliRunner()
+    spy = mocker.patch(
+        "labfunctions.cmd.runtimes.runtimes.generate_dockerfile", return_value=None
+    )
+    result = runner.invoke(
+        runtimes.generate,
+        ["--from-file", "tests/runtimes_test.yaml", "--templates-dir", "custom_templates"],
+    )
+    assert result.exit_code == 0

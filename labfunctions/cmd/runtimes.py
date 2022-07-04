@@ -237,12 +237,18 @@ def listcli(from_file, url_service):
     default="runtimes.yaml",
     help="yaml file with the runtime configuration",
 )
+@click.option(
+    "--templates-dir",
+    "-t",
+    default=None,
+    help="Path to folder containing Dockerfile template files.",
+)
 @click.argument("name", default="default")
-def generate(from_file, name):
+def generate(from_file, templates_dir, name):
     """Render  Dockerfile.[name] based on runtimes.yaml"""
     root = Path(os.getcwd())
     spec = runtimes.get_spec_from_file(name, from_file)
-    runtimes.generate_dockerfile(root, spec)
+    runtimes.generate_dockerfile(root, spec, templates_dir)
     console.print(f"[green]Dockerfile generated as Dockerfile.{name}[/]")
 
 

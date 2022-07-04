@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
+from click import BadParameter
 
 from labfunctions import defaults
 from labfunctions.conf.jtemplates import get_package_dir, render_to_file
@@ -7,11 +9,12 @@ from labfunctions.types.runtimes import DockerSpec, RuntimeData, RuntimeSpec
 from labfunctions.utils import execute_cmd, open_yaml
 
 
-def generate_dockerfile(dst_root: Path, runtime: RuntimeSpec):
+def generate_dockerfile(dst_root: Path, runtime: RuntimeSpec, templates_dir: Optional[Path]=None):
     render_to_file(
         runtime.container.base_template,
         str((dst_root / f"Dockerfile.{runtime.name}").resolve()),
         data=runtime.container.dict(),
+        templates_dir=templates_dir,
     )
 
 
