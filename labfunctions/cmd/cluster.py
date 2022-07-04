@@ -70,7 +70,7 @@ def create_instancecli(
             use_public=use_public,
             docker_image=di,
             docker_version=dv,
-            worker_proces=5,
+            worker_procs=5,
         ),
     )
     jobid = nbclient.cluster_create_instance(req)

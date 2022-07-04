@@ -51,10 +51,10 @@ lock-dev:
 	poetry export -f requirements.txt --output requirements/requirements_dev.txt --extras server --without-hashes --dev
 
 lock-all:
-	poetry export -f requirements.txt --output requirements/requirements_all.txt --without-hashes --extras server --extras cloud --extras store
+	poetry export -f requirements.txt --output requirements/requirements_all.txt --without-hashes --extras server --extras cloud --extras stores
 
 lock-client:
-	poetry export -f requirements.txt --output requirements/requirements_client.txt --without-hashes --extras store
+	poetry export -f requirements.txt --output requirements/requirements_client.txt --without-hashes --extras stores
 	cp requirements/requirements_client.txt labfunctions/conf/templates/requirements_client.txt
 
 lock: lock-all lock-client lock-dev
@@ -77,6 +77,8 @@ generate-docker:
 	mv Dockerfile.official-client docker/Dockerfile.client
 	lab runtimes generate official-gpu
 	mv Dockerfile.official-gpu docker/Dockerfile.client.gpu
+	python3 scripts/docker_compose.py 127.0.0.1
+	cp docker/docker-compose.yaml docker-compose.yaml
 
 
 minor: 

@@ -12,4 +12,4 @@ __api_version__ = "${API_VERSION}"
 EOT
 
 sed -i "s/pkg_version:.*/pkg_version: ${PKG_VERSION}/g" runtimes.yaml
-
+sed -i "s/VERSION=.*/VERSION=${POETRY_VERSION}/g" scripts/runcli.sh

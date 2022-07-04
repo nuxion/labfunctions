@@ -140,6 +140,7 @@ class WorkflowsClient(BaseClient):
         machine=None,
         runtime=None,
         version=None,
+        gpu_support=False,
     ) -> ExecutionNBTask:
 
         task = NBTask(
@@ -149,6 +150,7 @@ class WorkflowsClient(BaseClient):
             machine=machine,
             runtime=runtime,
             version=version,
+            gpu_support=gpu_support,
         )
         rsp = self._http.post(
             f"/workflows/{self.projectid}/notebooks/_run", json=task.dict()

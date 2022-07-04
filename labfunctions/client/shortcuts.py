@@ -42,7 +42,7 @@ def from_file(
 
 
 def from_env(
-    settings: Optional[types.ClientSettings] = None, projectid=None
+    settings: Optional[types.ClientSettings] = None, projectid=None, url_service=None
 ) -> NBClient:
     """Creates a client using the settings module and environment variables"""
     settings = settings or load_client()
@@ -53,8 +53,9 @@ def from_env(
         pd.projectid = projectid
 
     lab_state = LabState(pd)
+    wf_service = url_service or settings.WORKFLOW_SERVICE
     c = NBClient(
-        url_service=settings.WORKFLOW_SERVICE,
+        url_service=wf_service,
         lab_state=lab_state,
         base_path=os.getenv(defaults.BASE_PATH_ENV),
     )

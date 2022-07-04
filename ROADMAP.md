@@ -24,6 +24,7 @@ Current version: 0.8.0
 - [ ] Watch events logs on demand
 - [-] Timeouts default for server, tasks and clients
 - [x] refactor of cluster package
+- [x] packer images for agent (default, gpu/nvidia)
 
 **Details**
 

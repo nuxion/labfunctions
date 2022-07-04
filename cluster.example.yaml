@@ -6,7 +6,7 @@ clusters:
   default:
     name: default
     provider: "gce"
-    machine: "gce-tiny-default"
+    machine: "gce-small-default"
   gpu:
     name: gpu
     provider: "gce"
@@ -30,18 +30,25 @@ volumes:
     size: 20
     kind: 'pd-standard'
     mount: /
-  gce-nvidia:
-    name: gce-nvidia
-    image: "nvidia-docker-2022-04-25"
-    location: "us-east1-c"
-    size: 20
-    kind: 'pd-standard'
-    mount: /
   gce-ubuntu:
     name: gce-ubuntu
     image: "ubuntu-2004-focal-v20220615"
     location: "us-east1-c"
     size: 20
+    kind: 'pd-standard'
+    mount: /
+  gce-agent-gpu:
+    name: gce-agent-gpu
+    image: "lab-nvidia-2022-06-30"
+    location: "us-east1-c"
+    size: 40
+    kind: 'pd-standard'
+    mount: /
+  gce-agent-cpu:
+    name: gce-agent-cpu
+    image: "lab-agent-2022-06-30"
+    location: "us-east1-c"
+    size: 40
     kind: 'pd-standard'
     mount: /
 machines:
@@ -63,29 +70,19 @@ machines:
     location: "us-central1-c"
     machine_type:
       size: "e2-micro"
-      # image: "debian-11-bullseye-v20220406" # default from gce
-      image: "nbworker-2022-04-08"
-      vcpus: 1
-  gce-tiny-cpu:
-    name: tiny-cpu
-    desc: Tiny cpu machine for gce
-    provider: gce
-    location: "us-central1-c"
-    machine_type:
-      size: "e2-micro"
-      image: "nbworker-2022-04-08"
+      image: "debian-11-bullseye-v20220406" # default from gce
+      #image: "lab-agent-2022-06-30"
       vcpus: 1
   gce-small-cpu:
     name: gce-small-cpu
     desc: Small cpu machine for gce
     provider: gce
-    location: "us-central1-c"
+    location: "us-east1-c"
     machine_type:
       size: "e2-small"
-      image: "nbworker-2022-04-08"
-      vcpus: 2
-    # volumes:
-    #  - gce-boot-small
+      image: "lab-agent-2022-06-30"
+    volumes:
+      - gce-agent-cpu
   gce-small-gpu:
     name: small-gpu
     desc: "Small GPU Machine for gce"
@@ -94,11 +91,13 @@ machines:
     location: "us-east1-c"
     machine_type:
       size: n1-standard-1
-      image: "nvidia-docker-2022-04-25"
+      image: "lab-nvidia-2022-06-30"
     gpu:
       name: tesla
       gpu_type: nvidia-tesla-t4
       count: 1
+    volumes:
+      - gce-agent-gpu
   gce-small-gpu-ubuntu:
     name: small-gpu-ubuntu
     desc: "Small GPU Machine for gce with ubuntu"

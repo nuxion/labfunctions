@@ -175,6 +175,7 @@ def local(from_file, url_service, local, wfid):
 @click.option("--cluster", "-c", default="default", help="Cluster where it should run")
 @click.option("--version", "-v", default=None, help="Runtime version to run")
 @click.option("--local", "-L", default=False, is_flag=True, help="Execute locally")
+@click.option("--gpu", "-g", default=False, is_flag=True, help="Requires GPU support")
 @click.option(
     "--watch",
     "-w",
@@ -193,6 +194,7 @@ def notebook(
     version,
     local,
     notebook,
+    gpu,
     watch,
 ):
     """On demand execution of a notebook file, with custom parameters"""
@@ -209,13 +211,14 @@ def notebook(
             machine=machine,
             runtime=runtime,
             version=version,
+            gpu_support=gpu,
         )
         # print_json(rsp.json())
         if watch:
             watcher(c, rsp.execid, stats=False)
         print_json(data=rsp.dict())
     else:
-        ctx = create_dummy_ctx(c.projectid, notebook, params_dict)
+        ctx = create_dummy_ctx(c.projectid, notebook, params_dict, gpu_support=gpu)
         os.environ[defaults.EXECUTIONTASK_VAR] = ctx.json()
         os.environ["LF_LOCAL"] = "yes"
         result = local_exec_env()

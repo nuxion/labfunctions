@@ -25,25 +25,27 @@ services:
     image: registry:2
     ports:
       - {{ data.ip }}:5000:5000
-  fileserver:
-    image: nuxion/fileserver
-    volumes:
-      - ./fileserver.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - 4444:4444
-    networks:
-      - lab
-  control-plane:
+  # fileserver:
+  #   image: nuxion/fileserver
+  #   volumes:
+  #     - ./fileserver.conf:/etc/nginx/nginx.conf:ro
+  #   ports:
+  #     - 4444:4444
+  #   networks:
+  #     - lab
+  control:
     image: nuxion/labfunctions:{{ data.version }}
     volumes:
       - labsecrets:/secrets
       - labstore:/labstore
+      - ${PWD}/cluster.example.yaml:/app/cluster.example.yaml
+      - ${PWD}/.ssh/:/app/ssh
     restart: unless-stopped
     env_file: .env.docker
     environment:
       LF_SERVER: "yes"
     command: >
-      lab web --apps workflows,history,projects,events,runtimes -A --workers 1 -L -I
+      lab web --apps workflows,history,projects,runtimes,clusters -A --workers 1 -L -I
     ports:
       - {{ data.ip }}:8000:8000
     networks:
@@ -59,6 +61,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - labsecrets:/secrets
       - labstore:/labstore
+      - ${PWD}/.ssh/:/app/ssh
+    user: 1089:991
     networks:
       - lab
 networks:

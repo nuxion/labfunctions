@@ -47,7 +47,7 @@ services:
     command: >
       lab web --apps workflows,history,projects,runtimes,clusters -A --workers 1 -L -I
     ports:
-      - 127.0.0.1:8000:8000
+      - 192.168.88.150:8000:8000
     networks:
       - lab
   agent:

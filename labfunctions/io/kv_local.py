@@ -18,11 +18,10 @@ class KVLocal(GenericKVSpec):
     def __init__(self, bucket: str, client_opts: Dict[str, Any] = {}):
         self._opts = client_opts
         self._bucket = bucket
-        self._root = client_opts.get("root", "/tmp/labstore")
-        mkdir_p(f"{self._root}/{self._bucket}")
+        mkdir_p(self._bucket)
 
     def uri(self, key):
-        return f"{self._root}/{self._bucket}/{key}"
+        return f"{self._bucket}/{key}"
 
     def put(self, key: str, bdata: bytes):
         # obj = io.BytesIO(bdata)
@@ -74,11 +73,10 @@ class AsyncKVLocal(AsyncKVSpec):
     def __init__(self, bucket: str, client_opts: Dict[str, Any] = {}):
         self._opts = client_opts
         self._bucket = bucket
-        self._root = client_opts.get("root", "/tmp/labstore")
-        mkdir_p(f"{self._root}/{self._bucket}")
+        mkdir_p(self._bucket)
 
     def uri(self, key):
-        return f"{self._root}/{self._bucket}/{key}"
+        return f"{self._bucket}/{key}"
 
     async def put(self, key: str, bdata: bytes):
         uri = self.uri(key)

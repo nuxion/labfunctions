@@ -3,7 +3,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 USER root
 SHELL ["/bin/bash", "-c"]
 ENV LF_PKG=labfunctions
-ENV LF_VERSION=0.9.0a4
+ENV LF_VERSION=0.9.0a11
 # ADD requirements/requirements_client.txt /tmp/requirements.txt
 COPY . /opt/labfunctions
 # add root/local/bin to path to suppress pip warning

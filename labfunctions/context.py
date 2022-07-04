@@ -18,10 +18,14 @@ def _dummy_wfid():
 
 
 def create_dummy_ctx(
-    projectid: str, nb_name: str, params: Dict[str, Any] = {}, execid=None
+    projectid: str,
+    nb_name: str,
+    params: Dict[str, Any] = {},
+    execid=None,
+    gpu_support=False,
 ) -> ExecutionNBTask:
     dummy_id = execid or _dummy_wfid()
-    task = NBTask(nb_name=nb_name, params=params)
+    task = NBTask(nb_name=nb_name, params=params, gpu_support=gpu_support)
 
     ctx = create_notebook_ctx(projectid, task, execid=dummy_id)
     return ctx

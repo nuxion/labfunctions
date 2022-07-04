@@ -480,3 +480,4 @@ docker/.env.client.docker
 project_test/*
 flycheck_*.py
 db.sqlite
+.ssh/
