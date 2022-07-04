@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 
-from labfunctions import client, defaults, secrets
+from labfunctions import client, defaults, log, secrets
 
 # from labfunctions.executors import context
 # from labfunctions.conf.server_settings import settings
@@ -27,6 +27,7 @@ def docker_exec(ctx: ExecutionNBTask) -> ExecutionResult:
     nbclient = client.from_env()
     print("NB Addr: ", nbclient._addr)
     runner = NBTaskDocker(nbclient)
+    log.server_logger.debug(f"Ctx: {ctx}")
     result = runner.run(ctx)
     if result.error and not os.getenv("DEBUG"):
         runner.register(result)

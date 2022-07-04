@@ -30,7 +30,7 @@ LOGCONFIG = dict(  # no cov
             "level": LOGLEVEL,
             "handlers": ["error_console"],
             "propagate": True,
-            "qualname": "nbwork.error",
+            "qualname": "lab.error",
         },
         defaults.CLIENT_LOG: {
             "level": LOGLEVEL,

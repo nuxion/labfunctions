@@ -58,10 +58,7 @@ async def _deploy_agent(
 
 def notebook_dispatcher(data: Dict[str, Any]):
     ctx = types.ExecutionNBTask(**data)
-    if ctx.gpu_support:
-        pass
-    else:
-        result = docker_exec(ctx)
+    result = docker_exec(ctx)
     return result.dict()
 
 

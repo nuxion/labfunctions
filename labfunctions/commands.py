@@ -144,6 +144,7 @@ class DockerCommand:
         logs = ""
         status_code = -1
         try:
+            log.server_logger.debug(f"image: {image}, cmd: {cmd}, gpu: {require_gpu}")
             container = self.docker.containers.run(
                 image,
                 cmd,
@@ -170,6 +171,9 @@ class DockerCommand:
             logs = str(e)
             log.error_logger.error(str(e))
             status_code = -3
+
+        for line in logs:
+            log.server_logger.debug(line)
         return DockerRunResult(msg=logs, status=status_code)
 
     def build(

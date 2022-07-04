@@ -119,7 +119,7 @@ def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
     # logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
     logging.config.dictConfig(cfg.LOGCONFIG)
     log = logging.getLogger("labfunctions.client")
-    log.debug("Using {cfg.SETTINGS_MODULE} as config module")
+    log.debug(f"Using {cfg.SETTINGS_MODULE} as config module")
 
     return cfg
 
@@ -151,6 +151,6 @@ def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
     os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
     logging.config.dictConfig(cfg.LOGCONFIG)
     log = logging.getLogger("labfunctions.server")
-    log.debug("Using {cfg.SETTINGS_MODULE} as config module")
+    log.debug(f"Using {cfg.SETTINGS_MODULE} as config module")
 
     return cfg
