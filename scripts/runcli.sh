@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.9.0-alpha.11
+VERSION=0.9.0-alpha.12
 
 if [ -f ".env.docker" ]; then
     CMD_PARAMS="--rm -it -e LF_SERVER=yes \
