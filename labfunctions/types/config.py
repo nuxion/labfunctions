@@ -27,7 +27,7 @@ class SecuritySettings(BaseSettings):
     JWT_SECRET: Optional[str] = None
     JWT_ISS: Optional[str] = None
     JWT_AUD: Optional[str] = None
-    REFRESH_TOKEN_TTL: int = 3600 * 168  # 7 days
+    REFRESH_TOKEN_TTL: Optional[int] = None  # 3600 * 168 -> 7 days
     TOKEN_STORE_URL: Optional[str] = None
     AUTH_SALT: str = "changeit"
     AUTH_ALLOW_REFRESH: bool = True

@@ -54,5 +54,5 @@ class AuthSpec(ABC):
         pass
 
     @abstractmethod
-    async def store_refresh_token(self, username: str) -> str:
+    async def store_refresh_token(self, username: str, ttl=None) -> str:
         pass

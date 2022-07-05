@@ -72,6 +72,18 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, ClusterClient):
         super().login(u, p)
         store_credentials_disk(self.creds, self.homedir)
 
+    def verify(self):
+        try:
+            rsp = self._http.get(f"/auth/verify")
+            if rsp.status_code == 200:
+                self.creds = self._creds_from_auth()
+                store_credentials_disk(self.creds, self.homedir)
+                return True
+        except errors.AuthValidationFailed:
+            self._creds = None
+            self._auth = None
+            return False
+
     def logincli(self):
         creds = get_credentials_disk(self.homedir)
         if creds:

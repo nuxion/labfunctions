@@ -58,6 +58,7 @@ class AuthFlow(httpx.Auth):
         if not tkn:
             raise errors.AuthValidationFailed()
         self.access_token = tkn
+        self.refresh_token = data.get("refresh_token")
 
 
 class BaseClient:
@@ -200,10 +201,13 @@ class BaseClient:
         return None
 
     @property
-    def creds(self) -> types.TokenCreds:
+    def creds(self) -> Union[types.TokenCreds, None]:
+        if not self._auth:
+            return None
+
         return types.TokenCreds(
-            access_token=self._auth.access_token,
-            refresh_token=self._auth.refresh_token,
+            access_token=self._http.auth.access_token,
+            refresh_token=self._http.auth.refresh_token,
         )
 
     @creds.setter
@@ -220,7 +224,8 @@ class BaseClient:
         rt = os.getenv(defaults.AGENT_REFRESH_ENV)
         if at and rt:
             self.creds = types.TokenCreds(access_token=at, refresh_token=rt)
-        self.creds = get_credentials_disk(self.homedir)
+        else:
+            self.creds = get_credentials_disk(self.homedir)
 
     def login(self, u: str, p: str):
         rsp = httpx.post(
@@ -234,10 +239,16 @@ class BaseClient:
         else:
             raise errors.client.LoginError(self._addr, u)
 
+    def _creds_from_auth(self) -> types.TokenCreds:
+        at = self._http.auth.access_token
+        rt = self._http.auth.refresh_token
+        return types.TokenCreds(access_token=at, refresh_token=rt)
+
     def verify(self):
         try:
             rsp = self._http.get(f"/auth/verify")
             if rsp.status_code == 200:
+                self.creds = self._creds_from_auth()
                 return True
         except errors.AuthValidationFailed:
             self._creds = None

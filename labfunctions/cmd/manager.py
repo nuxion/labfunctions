@@ -141,9 +141,10 @@ def users(sql, superuser, scopes, username, action):
 @click.option("--scopes", default="agent:r:w", help="agent scopes")
 @click.option("--username", "-u", default=None, help="Agent username")
 @click.option("--admin", "-A", default=False, is_flag=True, help="Agent as admin")
-@click.option("--exp", "-e", default=30, help="Expire time")
+@click.option("--exp", "-e", default=30, help="Expire time in secs of the access token")
+@click.option("--refresh", "-r", default=None, help="Expire time of the refresh token")
 @click.argument("action", type=click.Choice(["create", "get-token", "delete", "list"]))
-def agent(sql, scopes, username, action, admin, exp):
+def agent(sql, scopes, username, action, admin, exp, refresh):
     db = SQL(sql)
     store = RedisTokenStore(settings.WEB_REDIS)
     auth = auth_from_settings(settings.SECURITY, store=store)
@@ -154,7 +155,7 @@ def agent(sql, scopes, username, action, admin, exp):
             um = run_sync(
                 projects_mg.create_agent, session, scopes=scopes, is_admin=admin
             )
-            jwt = run_sync(users_mg.get_jwt_token, auth, um, exp)
+            jwt = run_sync(users_mg.get_jwt_token, auth, um, exp, refresh)
             session.commit()
             print_json(
                 data={
@@ -173,7 +174,7 @@ def agent(sql, scopes, username, action, admin, exp):
             if not um:
                 console.print("[bold red]Username not found[/]")
                 return
-            jwt = run_sync(users_mg.get_jwt_token, auth, um, exp)
+            jwt = run_sync(users_mg.get_jwt_token, auth, um, exp, refresh)
             print_json(
                 data={
                     "username": um.username,

@@ -227,13 +227,15 @@ async def authenticate(request: Request, *args, **kwargs):
         return user
 
 
-async def get_jwt_token(auth: AuthSpec, user: UserModel, exp=30) -> JWTResponse:
+async def get_jwt_token(
+    auth: AuthSpec, user: UserModel, exp=30, refresh_exp=3600 * 168
+) -> JWTResponse:
     access_token = auth.encode(
         {"usr": user.username, "scopes": user.scopes.split(",")},
         exp=get_delta(exp),
     )
     username = str(user.username)
-    rftkn = await auth.store_refresh_token(username)
+    rftkn = await auth.store_refresh_token(username, ttl=refresh_exp)
     return JWTResponse(access_token=access_token, refresh_token=rftkn)
 
 

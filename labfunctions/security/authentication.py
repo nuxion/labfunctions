@@ -51,6 +51,8 @@ class Auth(AuthSpec):
         _payload = deepcopy(payload)
         if not exp:
             exp = get_delta(self.conf.exp_min)
+        else:
+            exp = get_delta(exp)
         _iss = iss or self.conf.issuer
         if _iss:
             _payload.update({"iss": _iss})
@@ -131,9 +133,9 @@ class Auth(AuthSpec):
         return decoded
 
     async def store_refresh_token(self, username: str, ttl=None) -> str:
-        ttl = ttl or self.conf.ttl_refresh_token
         refresh = self.store.generate()
-        await self.store.put(f"{username}.{refresh}", username, ttl=ttl)
+        _ttl = ttl or self.conf.ttl_refresh_token
+        await self.store.put(f"{username}.{refresh}", username, ttl=_ttl)
 
         return refresh
 
@@ -171,5 +173,6 @@ def auth_from_settings(
         issuer=settings.JWT_ISS,
         audience=settings.JWT_AUD,
         requires_claims=settings.JWT_REQUIRES_CLAIMS,
+        ttl_refresh_token=settings.REFRESH_TOKEN_TTL,
     )
     return AuthClass(conf, store=store)

@@ -22,5 +22,6 @@ def generate_token(n=24, *args, **kwargs):
 
 def get_delta(delta_min: int) -> int:
     """Returns a timestamp addding a delta_min value to the utc now date."""
-    delta = datetime.utcnow() + timedelta(minutes=delta_min)
+    # delta = datetime.utcnow() + timedelta(minutes=delta_min)
+    delta = datetime.now() + timedelta(minutes=delta_min)
     return int(delta.timestamp())

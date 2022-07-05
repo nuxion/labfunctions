@@ -18,7 +18,7 @@ class RedisTokenStore(TokenStoreSpec):
         self.ns = namespace
 
     async def put(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
-        await self.redis.set(f"{self.ns}:{key}", value)
+        await self.redis.set(f"{self.ns}:{key}", value, ex=ttl)
         return True
 
     async def get(self, key: str) -> str:
