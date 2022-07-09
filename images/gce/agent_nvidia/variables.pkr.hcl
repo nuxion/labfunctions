@@ -26,8 +26,7 @@ variable "docker_lab_image" {
   default = "nuxion/labfunctions"
 }
 
-
-
-
-
-
+variable "docker_mirror" {
+  type = string
+  default = ""
+}

@@ -1,20 +1,15 @@
 .EXPORT_ALL_VARIABLES:
-# VERSION := $(shell git describe --tags)
-# BUILD := $(shell git rev-parse --short HEAD)
-# PROJECTNAME := $(shell basename "$(PWD)")
-PROJECTNAME := nyc1
+DOCKER_VERSION:=0.9.0-alpha.11
+IMG_VERSION:=090-alpha11
 
-# LDFLAGS=-ldflags "-X=main.Version=$(VERSION) -X=main.Build=$(BUILD)"
-# STDERR := /tmp/.$(PROJECTNAME)-stderr.txt
-#
 .PHONY: init
 init:
 	packer init .
 
 .PHONY: validate
 validate:
-	packer validate .
+	packer validate -var "docker_lab_version=${DOCKER_VERSION}" -var "img_version=${IMG_VERSION}" .
 
 .PHONY: build
 build: validate
-	packer build .
+	packer build -var "docker_lab_version=${DOCKER_VERSION}" -var "img_version=${IMG_VERSION}" .

@@ -182,7 +182,7 @@ class SchedulerExec:
             self.tasks["create_instance"],
             execid=execid,
             params={"data": ctx.dict()},
-            timeout="5m",
+            timeout=ctx.timeout,
             max_retry=1,
         )
         return job
@@ -223,10 +223,20 @@ class SchedulerExec:
         job = await self._get_job(execid)
         if not job:
             return None
+        r = None
+        e = None
+        if job.result:
+            r = job.result.func_result
+            e = job.result.elapsed
 
         return types.TaskStatus(
             execid=execid,
+            func_name=job._payload.func_name,
             status=job.status,
             queue=job._payload.queue,
             retries=job._payload.retries,
+            created_ts=job._payload.created_ts,
+            started_ts=job._payload.started_ts,
+            elapsed_secs=e,
+            result=r,
         )

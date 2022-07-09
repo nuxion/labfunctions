@@ -21,6 +21,12 @@ class DeployAgentRequest(BaseModel):
     docker_image: str = AGENT_DOCKER_IMG
     docker_version: str = "latest"
     worker_procs: int = 2
+    user_agent: Optional[str] = None
+
+
+class RequestAgentToken(BaseModel):
+    user_agent: str
+    exp: int = 60 * 24
 
 
 class DeployAgentTask(BaseModel):
@@ -34,9 +40,22 @@ class DeployAgentTask(BaseModel):
 
 
 class CreateRequest(BaseModel):
+    """
+    Main entity for instances creation in a defined cluster
+
+    :param cluster_name: related to cluster spec file
+    :param alias: change the default name of a machine
+    :param agent: agent deploy options, if none any change will be deployed
+    :param timeout: timeot for the task to complete as 5h, 5m, 5s ...
+    :param max_retry: take care of this, because actions are not transactionals
+    if some step fails, it could result in multiple instances created.
+    """
+
     cluster_name: str
     alias: Optional[str] = None
     agent: Optional[DeployAgentRequest] = None
+    timeout: str = "10m"
+    max_retry: int = 1
 
 
 class ClusterSpec(BaseModel):
@@ -259,6 +278,8 @@ class AgentRequest(BaseModel):
     advertise_addr: Optional[str] = None
     docker_image: str = AGENT_DOCKER_IMG
     docker_version: str = "latest"
+    docker_uid: int = 1089
+    docker_gid: int = 997
     worker_procs: int = 2
 
 

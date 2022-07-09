@@ -6,7 +6,7 @@ clusters:
   default:
     name: default
     provider: "gce"
-    machine: "gce-small-default"
+    machine: "gce-small-cpu"
   gpu:
     name: gpu
     provider: "gce"
@@ -46,7 +46,7 @@ volumes:
     mount: /
   gce-agent-cpu:
     name: gce-agent-cpu
-    image: "lab-agent-2022-06-30"
+    image: lab-agent-090-alpha11
     location: "us-east1-c"
     size: 40
     kind: 'pd-standard'
@@ -71,7 +71,6 @@ machines:
     machine_type:
       size: "e2-micro"
       image: "debian-11-bullseye-v20220406" # default from gce
-      #image: "lab-agent-2022-06-30"
       vcpus: 1
   gce-small-cpu:
     name: gce-small-cpu
@@ -80,7 +79,7 @@ machines:
     location: "us-east1-c"
     machine_type:
       size: "e2-small"
-      image: "lab-agent-2022-06-30"
+      image: lab-agent-090-alpha11
     volumes:
       - gce-agent-cpu
   gce-small-gpu:
@@ -91,7 +90,7 @@ machines:
     location: "us-east1-c"
     machine_type:
       size: n1-standard-1
-      image: "lab-nvidia-2022-06-30"
+      image: lab-nvidia-090-alpha11
     gpu:
       name: tesla
       gpu_type: nvidia-tesla-t4

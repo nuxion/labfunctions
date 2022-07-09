@@ -1,8 +1,9 @@
+# import asyncio
 from datetime import datetime
 from functools import partial
 from typing import Any, Dict
 
-from tenacity import retry, stop_after_attempt, wait_random
+from tenacity import RetryError, retry, stop_after_attempt, wait_random
 
 from labfunctions import client, cluster, log, types
 from labfunctions.conf import load_server
@@ -13,7 +14,7 @@ from labfunctions.runtimes.builder import builder_exec
 from labfunctions.utils import get_version, run_async, today_string
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_random(min=1, max=3))
+@retry(stop=stop_after_attempt(5), wait=wait_random(min=10, max=20))
 async def _deploy_agent(
     ctx: cluster.DeployAgentTask,
     *,
@@ -36,6 +37,8 @@ async def _deploy_agent(
         cluster=ctx.cluster_name,
         docker_image=ctx.docker_image,
         docker_version=ctx.docker_version,
+        docker_uid=settings.DOCKER_UID,
+        docker_gid=settings.DOCKER_GID,
         web_redis=settings.WEB_REDIS,
         queue_redis=settings.QUEUE_REDIS,
         control_queue=settings.CONTROL_QUEUE,
@@ -107,6 +110,7 @@ async def create_instance(data: Dict[str, Any]):
     log.server_logger.debug(f"{instance.machine_name} Created")
     if ctx.agent:
         log.server_logger.info(f"Deploying agent into {instance.machine_name}")
+        # asyncio.sleep(20)
         agent_ctx = cluster.DeployAgentTask(
             machine_name=instance.machine_name,
             cluster_name=ctx.cluster_name,
@@ -158,7 +162,6 @@ async def deploy_agent(data: Dict[str, Any]):
         conn=pool,
     )
     instance = await cc.get_instance(ctx.machine_name)
-    ip = instance.private_ips[0]
     log.server_logger.info(f"Deploying agent into {ctx.machine_name}")
     response = await _deploy_agent(
         ctx,

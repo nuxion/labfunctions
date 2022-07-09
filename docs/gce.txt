@@ -1,0 +1,31 @@
+# Google cloud
+
+## Services accounts 
+https://cloud.google.com/iam/docs/creating-managing-service-account-keys
+
+1. Create a service account:
+
+```
+gcloud iam service-accounts create SA_NAME
+```
+
+2. Creates a keys
+
+    KEY_FILE: The path to a new output file for the private key—for example, ~/sa-private-key.json.
+    SA_NAME: The name of the service account to create a key for.
+    PROJECT_ID: Your Google Cloud project ID.
+
+
+```
+gcloud iam service-accounts keys create KEY_FILE.json --iam-account=SA_NAME@PROJECT_ID.iam.gserviceac
+count.com
+```
+
+
+## images
+
+```
+gcloud compute images list
+gcloud compute images delete IMAGE_NAME
+```
+

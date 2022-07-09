@@ -89,7 +89,7 @@ class HistoryClient(BaseClient):
         return False
 
     def task_status(self, execid: str) -> Union[types.TaskStatus, None]:
-        rsp = self._http.get(f"/history/{self.projectid}/task/{execid}")
+        rsp = self._http.get(f"/history/task/{execid}")
         if rsp.status_code == 200:
             return types.TaskStatus(**rsp.json())
         return None

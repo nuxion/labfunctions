@@ -169,4 +169,9 @@ class TaskStatus(BaseModel):
     execid: str
     status: str
     queue: str
+    func_name: str
     retries: int
+    created_ts: int
+    started_ts: Optional[float] = None
+    elapsed_secs: Optional[float] = None
+    result: Optional[Dict[str, Any]] = None

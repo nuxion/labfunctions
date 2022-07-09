@@ -18,3 +18,10 @@ make build
 
 Check for each provider whichs variables should be provided. 
 
+## Docker mirror
+
+Because docker registry is rate limited, the project has the option to add a mirror
+in each machine. 
+
+see for more information: https://docs.docker.com/registry/recipes/mirror/
+

@@ -40,6 +40,8 @@ def _prepare_docker_cmd(
     env_file: str,
     docker_image: str,
     docker_version="latest",
+    docker_uid=1089,
+    docker_gid=997,
     workers_n=1,
 ):
 
@@ -50,6 +52,7 @@ def _prepare_docker_cmd(
     cmd = (
         f"docker run -d -v /var/run/docker.sock:/var/run/docker.sock "
         f"-e LF_SERVER=true  --env-file={env_file} "
+        f"--user {docker_uid}:{docker_gid} "
         f"{docker_image}:{docker_version} "
         f"{lab_agent_cmd}"
     )
@@ -85,6 +88,8 @@ def agent(req: AgentRequest) -> SSHCompletedProcess:
         env_file=agent_env_file,
         docker_image=req.docker_image,
         docker_version=req.docker_version,
+        docker_uid=req.docker_uid,
+        docker_gid=req.docker_gid,
         workers_n=req.worker_procs,
     )
     result = run_sync(ssh.run_cmd, req.machine_ip, cmd, keys=[req.private_key_path])
@@ -118,6 +123,8 @@ async def agent_async(req: AgentRequest) -> SSHCompletedProcess:
         env_file=agent_env_file,
         docker_image=req.docker_image,
         docker_version=req.docker_version,
+        docker_uid=req.docker_uid,
+        docker_gid=req.docker_gid,
         workers_n=req.worker_procs,
     )
     result = await ssh.run_cmd(req.machine_ip, cmd, keys=[req.private_key_path])

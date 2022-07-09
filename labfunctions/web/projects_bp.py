@@ -111,6 +111,21 @@ async def project_delete(request, projectid):
     return json(dict(msg="deleted"))
 
 
+@projects_bp.post("/agent/<agentname>")
+@protected()
+async def generic_get_agent_token(request, agentname):
+    """get a token for a user agent of any project"""
+    session = request.ctx.session
+    _auth = get_auth(request)
+    exp = settings.AGENT_TOKEN_EXP
+    async with session.begin():
+        um = users_mg.get_user(session, agentname)
+        jwt = await users_mg.get_jwt_token(_auth, um, exp=exp)
+        agt_jwt = types.user.AgentJWTResponse(agent_name=um.username, creds=jwt)
+
+    return json(agt_jwt)
+
+
 @projects_bp.post("/<projectid:str>/agent")
 @openapi.parameter("projectid", str, "path")
 @protected()

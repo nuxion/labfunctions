@@ -65,9 +65,9 @@ asyncssh = "^2.10.0"
 tenacity = "^8.0.1"
 redis = "^4.3.1"
 hiredis = "^2.0.0"
-libq = "^0.7.2"
 pytz = "^2022.1"
 papermill = "^2.3.4"
+libq = "^0.7.4"
 
 [tool.poetry.extras]
 server = [

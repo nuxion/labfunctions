@@ -1,0 +1,33 @@
+# Docker Registry API
+
+
+## catalog
+
+```
+curl -X GET https://myregistry:5000/v2/_catalog
+```
+## list tags
+
+```
+curl -X GET http://10.142.0.12:5000/v2/nuxion/labfunctions/tags/list
+```
+
+
+## list manifests
+
+```
+curl -I -H "Accept: application/vnd.docker.distribution.manifest.v2+json" http://10.142.0.12:5000/v2/nuxion/labfunctions/manifests/0.9.0-alpha.11
+```
+https://github.com/andrey-pohilko/registry-cli/blob/a52692cd59eb4a23779a688493268d180b2057bb/registry.py#L190
+
+
+## delete
+
+```
+curl -X DELETE https://registry:5000/v2/<repo>/manifests/sha256:$hash
+
+docker exec docker-registry /bin/registry \
+  garbage-collect /path/to/config.yml
+```
+
+

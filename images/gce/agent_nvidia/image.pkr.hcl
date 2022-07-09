@@ -14,7 +14,8 @@ source "googlecompute" "nvidia_docker" {
   zone              = var.zone
   disk_size         = 20
   disk_type         = var.disk_type
-  image_name        = "lab-nvidia-${legacy_isotime("2006-01-02")}"
+  # image_name        = "lab-nvidia-${legacy_isotime("2006-01-02")}"
+  image_name        = "lab-nvidia-${var.img_version}"
   image_description = "Labfunctions agent with NVIDIA/GPU support"
   machine_type      = "n1-standard-1"
   accelerator_type  = "projects/${var.project_id}/zones/${var.zone}/acceleratorTypes/nvidia-tesla-t4"
@@ -24,13 +25,21 @@ source "googlecompute" "nvidia_docker" {
 
 build {
   sources = ["sources.googlecompute.nvidia_docker"]
+  provisioner "file" {
+    source = "../scripts/docker_mirror.py"
+    destination = "/tmp/docker_mirror.py"
+  }
   provisioner "shell" {
     inline = [
       "curl -Ls https://raw.githubusercontent.com/nuxion/cloudscripts/1442b4a3cbf027e64b9b58e453fb06c480fe3414/install.sh | sh",
       "sudo cscli -i nvidia-docker",
       "sudo usermod -aG docker `echo $USER`",
       "sudo usermod -aG op `echo $USER`",
-      "sudo docker pull ${var.docker_lab_image}:${var.docker_lab_version}"
+      "sudo python3 /tmp/docker_mirror.py ${var.docker_mirror}",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl restart docker",
+      "sudo docker pull ${var.docker_lab_image}:${var.docker_lab_version}",
+      "sudo docker tag ${var.docker_lab_image}:${var.docker_lab_version} ${var.docker_lab_image}:latest"
     ]
   }
 }

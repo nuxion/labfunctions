@@ -17,7 +17,7 @@ clusters_bp = Blueprint("clusters", url_prefix="clusters", version=API_VERSION)
 
 
 @clusters_bp.get("/get-clusters-spec")
-@protected()
+@protected(scopes=["agent:rw", "admin:r:w"], require_all=False)
 async def cluster_get_spec(request):
     """
     List clusters in the config file
@@ -30,7 +30,7 @@ async def cluster_get_spec(request):
 
 @clusters_bp.post("/")
 @openapi.body({"application/json": cluster.CreateRequest})
-@protected()
+@protected(scopes=["agent:rw", "admin:r:w"], require_all=False)
 async def cluster_instance_create(request):
     """Create a machine"""
     scheduler = get_scheduler2(request)
@@ -43,10 +43,11 @@ async def cluster_instance_create(request):
 @openapi.parameter("cluster_name", str, "path")
 @openapi.parameter("machine", str, "path")
 @openapi.body({"application/json": cluster.DeployAgentRequest})
-@protected()
+@protected(scopes=["agent:rw", "admin:r:w"], require_all=False)
 async def cluster_agent_deploy(request, cluster_name, machine):
     scheduler = get_scheduler2(request)
     req = cluster.DeployAgentRequest(**request.json)
+
     task = cluster.DeployAgentTask(
         machine_name=machine, cluster_name=cluster_name, **req.dict()
     )
@@ -57,7 +58,7 @@ async def cluster_agent_deploy(request, cluster_name, machine):
 @clusters_bp.delete("/<cluster_name>/<machine>")
 @openapi.parameter("cluster_name", str, "path")
 @openapi.parameter("machine", str, "path")
-@protected()
+@protected(scopes=["agent:rw", "admin:r:w"], require_all=False)
 async def cluster_instance_destroy(request, cluster_name, machine):
     scheduler = get_scheduler2(request)
     ctx = cluster.DestroyRequest(cluster_name=cluster_name, machine_name=machine)
@@ -72,7 +73,7 @@ async def cluster_instance_destroy(request, cluster_name, machine):
 
 @clusters_bp.get("/<cluster_name>")
 @openapi.parameter("cluster_name", str, "path")
-@protected()
+@protected(scopes=["agent:rw", "admin:r:w"], require_all=False)
 async def cluster_instances_list(request, cluster_name):
     cc = get_cluster(request)
     instances = await cc.list_instances(cluster_name)

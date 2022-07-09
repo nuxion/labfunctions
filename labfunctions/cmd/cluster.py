@@ -53,9 +53,10 @@ def clustercli():
 @click.option(
     "--cluster-name", "-C", default="default", help="Cluster where it should run"
 )
+@click.option("--timeout", "-t", default="15m", help="Timeout of the task to complete")
 @click.option("--use-public", "-P", is_flag=True, default=False, help="Use public ip")
 def create_instancecli(
-    from_file, cluster_name, deploy, use_public, qnames, agent_image
+    from_file, cluster_name, deploy, use_public, qnames, agent_image, timeout
 ):
     """It will create a new instance in the cluster choosen"""
     nbclient = client.from_file(from_file, url_service=URL)
@@ -72,13 +73,14 @@ def create_instancecli(
             docker_version=dv,
             worker_procs=5,
         ),
+        timeout=timeout,
     )
     jobid = nbclient.cluster_create_instance(req)
     console.print(f"Create instance task sent with id [magenta]{jobid}[/]")
 
 
 @clustercli.command(name="destroy-instance")
-@click.option("--cluster", "-C", default=None, help="Cluster where it will run")
+@click.option("--cluster", "-C", default="default", help="Cluster where it will run")
 @click.argument("machine")
 def destroy_instance(machine, cluster):
     """Destroy a instance by name"""
@@ -94,7 +96,9 @@ def destroy_instance(machine, cluster):
 
 
 @clustercli.command(name="list-instances")
-@click.option("--cluster-name", "-C", default=None, help="list instances from cluster")
+@click.option(
+    "--cluster-name", "-C", default="default", help="list instances from cluster"
+)
 def list_instances(cluster_name):
     """List instances in a cluster"""
     table = Table()
