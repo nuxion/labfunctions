@@ -39,7 +39,7 @@ def prepare_runtime(runtime: Optional[RuntimeData] = None, gpu_support=False) ->
     else:
         _runtime = f"{runtime.docker_name}:{runtime.version}"
         if runtime.registry:
-            _runtime = f"{runtime.registry}/{runtime}"
+            _runtime = f"{runtime.registry}/{runtime.docker_name}:{runtime.version}"
     return _runtime
 
 

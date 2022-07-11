@@ -32,11 +32,8 @@ build {
       "sudo cscli -i docker",
       "sudo usermod -aG docker `echo $USER`",
       "sudo usermod -aG op `echo $USER`",
-      "sudo python3 /tmp/docker_mirror.py ${var.docker_mirror}",
-      "sudo systemctl daemon-reload",
-      "sudo systemctl restart docker",
-      "sudo docker pull ${var.docker_lab_image}:${var.docker_lab_version}",
-      "sudo docker tag ${var.docker_lab_image}:${var.docker_lab_version} ${var.docker_lab_image}:latest"
+      "curl -Ls https://raw.githubusercontent.com/labfunctions/labfunctions/040da254bb59be6240f6aa840b87473b3f4a846a/scripts/setup_agent.py -o /tmp/setup_agent.py",
+      "sudo python3 /tmp/setup_agent.py --registry ${var.docker_registry} --mirror ${var.docker_mirror} --image ${var.docker_lab_image} --version ${var.docker_lab_version} --insecure",
     ]
   }
 }
