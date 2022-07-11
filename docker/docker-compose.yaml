@@ -34,7 +34,7 @@ services:
   #   networks:
   #     - lab
   control:
-    image: nuxion/labfunctions:0.9.0-alpha.12
+    image: nuxion/labfunctions:0.9.0-alpha.13
     volumes:
       - labsecrets:/secrets
       - labstore:/labstore
@@ -51,7 +51,7 @@ services:
     networks:
       - lab
   agent:
-    image: nuxion/labfunctions:0.9.0-alpha.12
+    image: nuxion/labfunctions:0.9.0-alpha.13
     env_file: .env.docker
     environment:
       LF_SERVER: true
