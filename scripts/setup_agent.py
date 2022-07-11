@@ -149,7 +149,7 @@ def configure_docker(args):
         daemon = {"registry-mirrors": [args.mirror]}
 
         print_out("Configuring mirror as ", args.mirror)
-    elif args.insecure == "yes" and args.registry:
+    if args.insecure == "yes" and args.registry:
         daemon.update({"insecure-registries": [args.registry]})
         print_out("Configuring  insecure registry ", args.registry)
 

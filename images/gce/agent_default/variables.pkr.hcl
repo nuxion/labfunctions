@@ -34,3 +34,13 @@ variable "docker_mirror" {
   type = string
   default = ""
 }
+
+variable "docker_registry" {
+  type = string
+  default = ""
+}
+
+variable "docker_registry_insecure" {
+  type = string
+  default = "yes"
+}

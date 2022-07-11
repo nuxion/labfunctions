@@ -280,6 +280,7 @@ class AgentRequest(BaseModel):
     docker_version: str = "latest"
     docker_uid: int = 1089
     docker_gid: int = 997
+    docker_registry: Optional[str] = None
     worker_procs: int = 2
 
 

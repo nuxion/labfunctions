@@ -4,6 +4,16 @@ This file is used only as kind of backlog or/and draft for ideas.
 
 Current version: 0.8.0
 
+## Next version 0.10.0
+
+- [ ] Admin endpoint for projects, space used, registry, and so forth
+- [ ] Fix rebuild of runtime in the current mode doesn't update registry value in the db
+
+**MAY:**
+- [ ] plugin system for cli ?
+- [ ] allow user for custom tagging current images
+
+
 ## Next version 0.9.0
 
 **MUST:**
@@ -18,10 +28,10 @@ Current version: 0.8.0
 - [x] Fix smart_open dependecy for the client
 - [x] Doc: release process
 - [x] Task execution
-- [x] Support python 3.7
 - [x] Support python 3.10
 - [x] scopes implementation for cluster endpoints
 - [ ] Fix lab manager db upgrade command
+- [ ] Manage agent credentials state on temporal disk
 
 
 **MAY:**

@@ -225,8 +225,14 @@ def listcli(from_file, url_service):
     table.add_column("runtime_name", style="cyan", justify="center")
     table.add_column("docker_name", style="cyan", justify="center")
     table.add_column("version", style="cyan", justify="center")
+    table.add_column("registry", style="cyan", justify="center")
     for runtime in runtimes:
-        table.add_row(str(runtime.runtime_name), runtime.docker_name, runtime.version)
+        table.add_row(
+            str(runtime.runtime_name),
+            runtime.docker_name,
+            runtime.version,
+            runtime.registry,
+        )
     console.print(table)
 
 

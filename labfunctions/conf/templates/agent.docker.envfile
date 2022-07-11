@@ -8,3 +8,4 @@ LF_AGENT_TOKEN={{ data.access_token }}
 LF_AGENT_REFRESH_TOKEN={{ data.refresh_token }}
 LF_JWT_PUBLIC=dummy.pub.pem
 LF_JWT_PRIVATE=dummy.priv.pem
+LF_DOCKER_REGISTRY={{ data.docker_registry }}
