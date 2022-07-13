@@ -23,12 +23,12 @@ runtimes:
       build_packages: build-essential 
       base_template: Dockerfile.internal
       extra:
-        pkg_version: 0.9.0a13
+        pkg_version: 0.9.0a14
   official-gpu:
     description: Official client with GPU support
     container:
       maintainer: Xavier Petit <nuxion@gmail.com>
-      image: nvidia/cuda:11.6.0-runtime-ubuntu20.04
+      image: nvidia/cuda:11.5.0-runtime-ubuntu20.04
       user:
           uid: 1089
           gid: 1090
@@ -36,9 +36,10 @@ runtimes:
       final_packages: python3-pip python3-setuptools
       base_template: Dockerfile.internal
       gpu:
-        cuda: 11.6
+        cuda: 11.5
+        cudnn: 8.3.1.22-1+cuda11.5
       extra:
-        pkg_version: 0.9.0a13
+        pkg_version: 0.9.0a14
   official-all:
     description: Official server for labfunctions
     container:
@@ -50,7 +51,7 @@ runtimes:
       build_packages: build-essential 
       base_template: Dockerfile.internal
       extra:
-        pkg_version: 0.9.0a13
+        pkg_version: 0.9.0a14
         requirements: requirements/requirements_all.txt
   gpu:
     container:

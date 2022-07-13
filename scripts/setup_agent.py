@@ -162,6 +162,8 @@ def configure_docker(args):
 
 def pull_image(args):
     fullimage = "{}:{}".format(args.image, args.version)
+    rawimage = "{}:{}".format(args.image, args.version)
+    rawlast = "{}:latest".format(args.image)
     fulllast = "{}:latest".format(args.image)
     if args.registry:
         fullimage = "{}/{}:{}".format(args.registry, args.image, args.version)
@@ -170,6 +172,9 @@ def pull_image(args):
     print_out("Pulling {}".format(fullimage))
     run("docker pull {}".format(fullimage))
     run("docker tag {} {}".format(fullimage, fulllast))
+    if args.registry:
+        run("docker tag {} {}".format(fullimage, rawimage))
+        run("docker tag {} {}".format(fullimage, rawlast))
 
     print_out("Test docker agent image")
     run("docker run --rm {} lab version".format(fullimage))

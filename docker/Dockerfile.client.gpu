@@ -1,9 +1,9 @@
-FROM nvidia/cuda:11.6.0-runtime-ubuntu20.04 as builder
+FROM nvidia/cuda:11.5.0-runtime-ubuntu20.04 as builder
 ENV DEBIAN_FRONTEND=noninteractive
 USER root
 SHELL ["/bin/bash", "-c"]
 ENV LF_PKG=labfunctions
-ENV LF_VERSION=0.9.0a13
+ENV LF_VERSION=0.9.0a14
 # ADD requirements/requirements_client.txt /tmp/requirements.txt
 COPY . /opt/labfunctions
 # add root/local/bin to path to suppress pip warning
@@ -14,8 +14,8 @@ WORKDIR /opt/labfunctions
 ## For the GPU version, part of the code is based on the official image for tensorflow:
 ## https://hub.docker.com/layers/tensorflow/tensorflow/tensorflow/latest-gpu-jupyter/images/sha256-56677a6a426e87cba3dc5ae8eb82cffb6c76af7dd3683fe9caaba28dcd2a8958?context=explore
 
-ENV CUDA=11.6
-ENV CUDNN=8.4.0.27-1+cuda11.6
+ENV CUDA=11.5
+ENV CUDNN=8.3.1.22-1+cuda11.5
 ENV CUDNN_MAJOR_VERSION=8
 # Nvidia performs unplanned gpg keys udpates see
 # https://forums.developer.nvidia.com/t/gpg-error-http-developer-download-nvidia-com-compute-cuda-repos-ubuntu1804-x86-64/212904/6
@@ -43,7 +43,7 @@ RUN echo "Starting build stage" \
     && pip install --user dist/${LF_PKG}-${LF_VERSION}.tar.gz \
     && echo "Finish build stage"
 
-FROM nvidia/cuda:11.6.0-runtime-ubuntu20.04 as app
+FROM nvidia/cuda:11.5.0-runtime-ubuntu20.04 as app
 MAINTAINER Xavier Petit <nuxion@gmail.com>
 USER root
 SHELL ["/bin/bash", "-c"]
@@ -52,8 +52,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ## For the GPU version, part of the code is based on the official image for tensorflow:
 ## https://hub.docker.com/layers/tensorflow/tensorflow/tensorflow/latest-gpu-jupyter/images/sha256-56677a6a426e87cba3dc5ae8eb82cffb6c76af7dd3683fe9caaba28dcd2a8958?context=explore
 
-ENV CUDA=11.6
-ENV CUDNN=8.4.0.27-1+cuda11.6
+ENV CUDA=11.5
+ENV CUDNN=8.3.1.22-1+cuda11.5
 ENV CUDNN_MAJOR_VERSION=8
 # Nvidia performs unplanned gpg keys udpates see
 # https://forums.developer.nvidia.com/t/gpg-error-http-developer-download-nvidia-com-compute-cuda-repos-ubuntu1804-x86-64/212904/6

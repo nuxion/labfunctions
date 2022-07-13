@@ -6,6 +6,10 @@ variable "docker_lab_version" {
   type = string
 }
 
+variable "img_version" {
+  type = string
+}
+
 variable "zone" {
 	type = string
 	default = "us-east1-c"
@@ -29,4 +33,14 @@ variable "docker_lab_image" {
 variable "docker_mirror" {
   type = string
   default = ""
+}
+
+variable "docker_registry" {
+  type = string
+  default = ""
+}
+
+variable "docker_registry_insecure" {
+  type = string
+  default = "yes"
 }

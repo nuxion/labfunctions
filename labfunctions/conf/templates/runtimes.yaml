@@ -10,7 +10,8 @@ runtimes:
       maintainer: maintener-0
       image: {{ data.docker_gpu }}
       gpu:
-        cuda: 11.6
+        cuda: 11.5
+        cudnn: 8.3.1.22-1+cuda11.5
   tensor-gpu:
     container:
       maintainer: maintener-0
@@ -19,4 +20,6 @@ runtimes:
       final_packages: python3-pip 
       base_template: Dockerfile.generic.gpu
       gpu:
-        cuda: 11.6
+        cuda: 11.5
+        cudnn: 8.3.1.22-1+cuda11.5
+

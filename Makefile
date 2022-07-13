@@ -16,7 +16,7 @@ endef
 export USAGE
 .EXPORT_ALL_VARIABLES:
 GIT_TAG := $(shell git describe --tags)
-CUDA=11.6
+CUDA=11.5
 # from poetry pyproject.toml
 LF_VERSION :=$(shell python3 scripts/get_version.py)
 FULLPY_PKG := $(shell python3 scripts/get_package_name.py)

@@ -131,15 +131,20 @@ class DockerCommand:
         env_data: Dict[str, Any] = {},
         remove: bool = True,
         require_gpu: bool = False,
+        gpu_count: int = -1,
         network_mode: str = "bridge",
         ports=None,
         resources=DockerResources(),
         volumes: List[DockerVolume] = [],
     ) -> DockerRunResult:
 
-        runtime = None
+        # runtime = None
+        device_requests = []
         if require_gpu:
-            runtime = "nvidia"
+            # runtime = "nvidia"
+            device_requests = [
+                docker.types.DeviceRequest(count=gpu_count, capabilities=[["gpu"]])
+            ]
 
         logs = ""
         status_code = -1
@@ -148,10 +153,11 @@ class DockerCommand:
             container = self.docker.containers.run(
                 image,
                 cmd,
-                runtime=runtime,
+                # runtime=runtime,
                 detach=True,
                 environment=env_data,
                 network_mode=network_mode,
+                device_requests=device_requests,
                 ports=ports,
                 **resources.dict(),
             )

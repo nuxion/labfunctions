@@ -12,6 +12,7 @@ Current version: 0.8.0
 **MAY:**
 - [ ] plugin system for cli ?
 - [ ] allow user for custom tagging current images
+- [ ] Import or change a project in a existing lab functions repo
 
 
 ## Next version 0.9.0
