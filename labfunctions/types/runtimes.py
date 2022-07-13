@@ -23,7 +23,7 @@ class DockerSpec(BaseModel):
     image: str
     maintainer: str
     build_packages: Optional[str] = None
-    final_packages: Optional[str] = None
+    runtimes_packages: Optional[str] = None
     user: DockerAppUser = DockerAppUser()
     base_template: str = "Dockerfile.default"
     requirements: str = "requirements.txt"

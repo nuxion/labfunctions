@@ -17,7 +17,7 @@ runtimes:
       maintainer: maintener-0
       image: tensorflow/tensorflow:latest-gpu 
       build_packages: build-essential libopenblas-dev git python3-pip 
-      final_packages: python3-pip 
+      runtime_packages: python3-pip 
       base_template: Dockerfile.generic.gpu
       gpu:
         cuda: 11.5

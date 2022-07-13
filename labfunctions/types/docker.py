@@ -41,7 +41,7 @@ class DockerfileImage(BaseModel):
     image: str
     user: Dict[str, int] = {"uid": 1089, "gid": 1090}
     build_packages: str = "build-essential libopenblas-dev git"
-    final_packages: Optional[str] = None
+    runtime_packages: Optional[str] = None
 
 
 class RuntimeVersionOrm(BaseModel):

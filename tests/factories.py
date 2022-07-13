@@ -314,7 +314,7 @@ class DockerSpecFactory(factory.Factory):
     image = factory.Sequence(lambda n: "img-%d" % n)
     maintainer = factory.Sequence(lambda n: "maintener-%d" % n)
     build_packages = factory.Sequence(lambda n: "pkg-%d" % n)
-    final_packages = factory.Sequence(lambda n: "pkg-%d" % n)
+    runtime_packages = factory.Sequence(lambda n: "pkg-%d" % n)
 
 
 class RuntimeSpecFactory(factory.Factory):

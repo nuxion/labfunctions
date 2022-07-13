@@ -71,10 +71,10 @@ RUN groupadd app -g {{ data.user.gid }} \
     && mkdir /models && chown app:app /models \
     && mkdir -p /secrets && chown app:app /secrets \
     && mkdir -p /labstore && chown app:app /labstore \
-    {% if data.final_packages -%}
+    {% if data.runtime_packages -%}
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
-    {{ data.final_packages }} \
+    {{ data.runtime_packages }} \
     {%- endif %}
     && apt-get clean &&  rm -rf /var/lib/apt/lists/*
 COPY --from=builder --chown=app:app /root/.local /home/app/.local/
