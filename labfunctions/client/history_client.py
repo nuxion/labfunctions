@@ -9,7 +9,6 @@ from labfunctions.log import client_logger
 from labfunctions.utils import parse_var_line
 
 from .base import BaseClient
-from .utils import get_private_key, store_credentials_disk, store_private_key
 
 
 class HistoryClient(BaseClient):

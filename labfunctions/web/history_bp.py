@@ -165,7 +165,7 @@ async def history_get_output(request, projectid):
 
 
 @history_bp.get("/task/<execid:str>")
-@openapi.parameter("projectid", str, "path")
+@openapi.parameter("execid", str, "path")
 @openapi.response(200, "project")
 @openapi.response(404, "not found")
 @protected()

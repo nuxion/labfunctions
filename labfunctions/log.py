@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from logging import NullHandler
 
 from labfunctions import defaults
 
@@ -13,6 +14,9 @@ class Colors(str, Enum):  # no cov
     YELLOW = "\033[01;33m"
     RED = "\033[01;31m"
 
+
+# logging.getLogger(__name__).addHandler(NullHandler())
+# logging.getLogger(defaults.CLIENT_LOG).addHandler(NullHandler())
 
 server_logger = logging.getLogger(defaults.SERVER_LOG)  # no cov
 """

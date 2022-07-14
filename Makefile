@@ -141,6 +141,10 @@ docker-all:
 	docker build -t ${DOCKERID}/${PROJECTNAME} -f docker/Dockerfile.all .
 	docker tag ${DOCKERID}/${PROJECTNAME}:latest ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)
 
+.PHONY: docker-dev
+docker-dev:
+	docker build -t nuxion/labdev -f Dockerfile.3.8-slim .
+
 .PHONY: docker-all-push
 docker-all-push:
 	docker push ${DOCKERID}/${PROJECTNAME}:$(LF_VERSION)

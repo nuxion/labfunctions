@@ -9,7 +9,7 @@ import jwt
 
 from labfunctions import defaults, errors, log, types
 from labfunctions.client.labstate import LabState
-from labfunctions.client.utils import get_credentials_disk
+from labfunctions.client.utils import get_credentials_disk, store_credentials_disk
 from labfunctions.events import EventManager
 from labfunctions.hashes import generate_random
 from labfunctions.utils import mkdir_p, open_yaml, write_yaml
@@ -24,10 +24,11 @@ class AuthFlow(httpx.Auth):
     requires_request_body = True
     requires_response_body = True
 
-    def __init__(self, access_token, refresh_token, refresh_url):
+    def __init__(self, access_token, refresh_token, refresh_url, homedir=None):
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.refresh_url = refresh_url
+        self._homedir = homedir
 
     def auth_flow(self, request):
         request.headers["Authorization"] = f"Bearer {self.access_token}"
@@ -59,6 +60,15 @@ class AuthFlow(httpx.Auth):
             raise errors.AuthValidationFailed()
         self.access_token = tkn
         self.refresh_token = data.get("refresh_token")
+        if self._homedir:
+            store_credentials_disk(self.creds, self._homedir)
+
+    @property
+    def creds(self):
+        return types.TokenCreds(
+            access_token=self.access_token,
+            refresh_token=self.refresh_token,
+        )
 
 
 class BaseClient:
@@ -128,54 +138,47 @@ class BaseClient:
             self._home.chmod(0o700)
         return self._home
 
-    def info(self) -> Dict[str, Any]:
-        workflows = None
-        if self.state.workflows:
+    def info(self) -> types.client.ClientInfo:
+        workflows = []
+        filepath = None
+        if self.state and self.state.workflows:
             workflows = list(self.state.workflows.keys())
+            filepath = self.state.filepath
+        pid = self.projectid
 
-        return {
-            "projectid": self.projectid,
-            "project_name": self.project_name,
-            "workflows_service": self._addr,
-            "homedir": str(self.homedir),
-            "working_area": str(self.working_area),
-            "file": self.state.filepath,
-            "workflows": workflows,
-            "user": self.user,
-            "base_path": self.base_path,
-        }
+        return types.client.ClientInfo(
+            projectid=pid,
+            project_name=self.project_name,
+            workflows_service=self._addr,
+            homedir=str(self.homedir),
+            labfile=filepath,
+            workflows=workflows,
+            user=self.user,
+            base_path=self.base_path,
+        )
 
     @property
     def http(self) -> httpx.Client:
         return self._http
 
     @property
-    def projectid(self) -> str:
+    def projectid(self) -> Union[str, None]:
         if self.state:
             return self.state.projectid
-        else:
-            raise errors.client.WorkflowStateNotSetError(__name__)
+        return None
 
     @property
-    def project_name(self) -> str:
+    def project_name(self) -> Union[str, None]:
         if self.state:
             return self.state.project_name
-        else:
-            raise errors.client.WorkflowStateNotSetError(__name__)
-
-    # def get_context(self, execid=None) -> ExecutionNBTask:
-    #    _env = os.getenv(defaults.EXECUTIONTASK_VAR)
-    #    if _env:
-    #        ctx = ExecutionNBTask(**json.loads(_env))
-    #    else:
-    #        ctx = context.create_dummy_ctx(self.projectid, execid)
-    #    return ctx
+        return None
 
     def _auth_init(self):
         self._auth = AuthFlow(
             self._creds.access_token,
             self._creds.refresh_token,
             f"{self._addr}/{self._version}/{defaults.REFRESH_TOKEN_PATH}",
+            homedir=self.homedir,
         )
 
     def _http_init(self) -> httpx.Client:
@@ -191,13 +194,15 @@ class BaseClient:
         )
 
     @property
-    def user(self) -> Union[str, None]:
+    def user(self) -> Union[types.client.UserInfo, None]:
         if self._creds:
             decoded = jwt.decode(
                 self._creds.access_token, options={"verify_signature": False}
             )
 
-            return decoded["usr"]
+            return types.client.UserInfo(
+                username=decoded["usr"], scopes=decoded["scopes"]
+            )
         return None
 
     @property
@@ -205,10 +210,7 @@ class BaseClient:
         if not self._auth:
             return None
 
-        return types.TokenCreds(
-            access_token=self._http.auth.access_token,
-            refresh_token=self._http.auth.refresh_token,
-        )
+        return self._auth.creds
 
     @creds.setter
     def creds(self, creds: types.TokenCreds):
@@ -218,16 +220,30 @@ class BaseClient:
         """
         self._creds = creds
         self._http = self._http_init()
+        # if self._creds:
+        #    store_credentials_disk(self.creds, self.homedir)
 
-    def load_creds(self):
-        at = os.getenv(defaults.AGENT_TOKEN_ENV)
-        rt = os.getenv(defaults.AGENT_REFRESH_ENV)
-        if at and rt:
-            self.creds = types.TokenCreds(access_token=at, refresh_token=rt)
+    def load_creds(self) -> types.TokenCreds:
+        """first it will try to load creds from homedir
+        if fails, then it will look at environement variables
+        if it founds the credentials then store locally
+        """
+        creds = get_credentials_disk(self.homedir)
+        if creds:
+            self.creds = creds
         else:
-            self.creds = get_credentials_disk(self.homedir)
+            at = os.getenv(defaults.AGENT_TOKEN_ENV)
+            rt = os.getenv(defaults.AGENT_REFRESH_ENV)
+            if at and rt:
+                creds = types.TokenCreds(access_token=at, refresh_token=rt)
+                self.creds = creds
+                store_credentials_disk(self.creds, self.homedir)
+            else:
+                raise errors.CredentialsNotFound(self.homedir, defaults.AGENT_TOKEN_ENV)
 
-    def login(self, u: str, p: str):
+        return creds
+
+    def login(self, u: str, p: str, store_creds=True):
         rsp = httpx.post(
             f"{self._addr}/{self._version}/auth/login",
             json=dict(username=u, password=p),
@@ -235,22 +251,18 @@ class BaseClient:
         )
         if rsp.status_code == 200:
             self.creds = types.TokenCreds(**rsp.json())
-            # self._http = self.http_init()
+            if store_creds:
+                store_credentials_disk(self.creds, self.homedir)
+
         else:
             raise errors.client.LoginError(self._addr, u)
 
-    def _creds_from_auth(self) -> types.TokenCreds:
-        at = self._http.auth.access_token
-        rt = self._http.auth.refresh_token
-        return types.TokenCreds(access_token=at, refresh_token=rt)
-
     def verify(self):
-        try:
-            rsp = self._http.get(f"/auth/verify")
-            if rsp.status_code == 200:
-                self.creds = self._creds_from_auth()
-                return True
-        except errors.AuthValidationFailed:
+        rsp = self._http.get(f"/auth/verify")
+        if rsp.status_code == 200:
+            self.creds = self._auth.creds
+            return True
+        else:
             self._creds = None
             self._auth = None
             return False

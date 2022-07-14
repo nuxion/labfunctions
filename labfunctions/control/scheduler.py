@@ -13,7 +13,7 @@ from labfunctions.runtimes.context import create_build_ctx
 
 
 async def create_task_ctx(
-    session, projectid: str, task: types.NBTask, prefix=None
+    session, projectid: str, task: types.NBTask, prefix="nb"
 ) -> types.ExecutionNBTask:
     execid = str(ExecID(prefix=prefix))
     runtime = None
@@ -164,7 +164,7 @@ class SchedulerExec:
     async def enqueue_workflow(
         self, session, *, projectid: str, wfid: str
     ) -> Union[types.ExecutionNBTask, None]:
-        execid = str(ExecID())
+        execid = f"wf{str(ExecID())}"
         runtime = None
         wd: types.WorkflowDataWeb = await workflows_mg.get_by_wfid_prj(
             session, projectid, wfid
@@ -177,7 +177,7 @@ class SchedulerExec:
         return None
 
     async def enqueue_instance_creation(self, ctx: cluster.CreateRequest) -> Job:
-        execid = str(ExecID())
+        execid = f"cls{str(ExecID())}"
         job = await self.control_q.enqueue(
             self.tasks["create_instance"],
             execid=execid,
@@ -188,7 +188,7 @@ class SchedulerExec:
         return job
 
     async def enqueue_instance_destruction(self, ctx: cluster.DestroyRequest) -> Job:
-        execid = str(ExecID())
+        execid = f"cls{str(ExecID())}"
 
         job = await self.control_q.enqueue(
             self.tasks["destroy_instance"],

@@ -41,12 +41,14 @@ def zip_git_stash(
 
     secrets_file = get_secrets_filepath(working_area)
 
-    filename = f"{runtime_name}.stash.zip"
-
-    output_file = f"{str(working_area)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
     stash_id = execute_cmd("git stash create")
     if not stash_id:
         return None
+
+    version = f"stash-{stash_id[-4:]}"
+    filename = f"{runtime_name}.{version}.zip"
+    output_file = f"{str(working_area)}/{defaults.CLIENT_TMP_FOLDER}/{filename}"
+
     cmd = (
         f"git archive --prefix={prefix_folder} "
         f"--add-file {secrets_file} "
@@ -60,7 +62,7 @@ def zip_git_stash(
         filename=filename,
         current=False,
         stash=True,
-        version="stash",
+        version=version,
         runtime_name=runtime_name,
     )
 

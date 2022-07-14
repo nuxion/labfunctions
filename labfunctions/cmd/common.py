@@ -44,7 +44,10 @@ def login(url_service, relogin):
     # click.echo(f"\nLogin to NB Workflows services {url_service}\n")
     c = client.diskclient.DiskClient(url_service)
     if relogin:
-        Path(f"{c.homedir}/{defaults.CLIENT_CREDS_FILE}").unlink()
+        try:
+            Path(f"{c.homedir}/{defaults.CLIENT_CREDS_FILE}").unlink()
+        except FileNotFoundError:
+            pass
     try:
         c.logincli()
         console.print("[bold green]Successfully logged")
@@ -131,17 +134,9 @@ def startproject(url_service, create_dirs, base_path):
 def info(url_service, from_file):
     """General info and status of the client"""
     # click.echo(f"\nLogin to NB Workflows services {url_service}\n")
-    import os
 
-    current = ""
-    if Path(from_file).is_file():
-        c = client.from_file()
-    else:
-        settings = load_client()
-        url_service = settings.WORKFLOW_SERVICE
-        c = client.from_env(settings)
-
-    print_json(data=c.info())
+    c = client.from_file(from_file, url_service)
+    print_json(data=c.info().dict())
 
 
 @click.group("config")

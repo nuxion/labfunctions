@@ -10,12 +10,6 @@ from pathlib import Path
 from labfunctions import defaults
 from labfunctions.types import ClientSettings, ServerSettings
 
-# from labfunctions.types.config import SecuritySettings
-
-# from labfunctions.utils import define_base_path
-# from logging import NullHandler
-
-# Server defaults
 GLOBAL_MODULE = "labfunctions.conf.global_settings"
 ENVIRONMENT_VARIABLE = "LF_SETTINGS_MODULE"
 DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
@@ -24,6 +18,7 @@ DEFAULT_MODULE = os.environ.get(ENVIRONMENT_VARIABLE, GLOBAL_MODULE)
 GLOBAL_CLIENT = "labfunctions.conf.global_client"
 CLIENT_VARIABLE = "LF_CLIENT_MODULE"
 DEFAULT_CLIENT_MOD = os.environ.get(CLIENT_VARIABLE, "lab_app.settings")
+loggers = {}
 
 
 def _get_level(level):
@@ -79,6 +74,7 @@ def define_url_service(settings_dict) -> str:
 
 def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
     # sys.path.append(os.getcwd())
+    global loggers
     module_loaded = settings_module
     base_path = define_base_path()
 
@@ -117,10 +113,8 @@ def load_client(settings_module=DEFAULT_CLIENT_MOD) -> ClientSettings:
     # os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
 
     # logging.basicConfig(format=cfg.LOGFORMAT, level=_level)
+    # logging.
     logging.config.dictConfig(cfg.LOGCONFIG)
-    log = logging.getLogger("labfunctions.client")
-    log.debug(f"Using {cfg.SETTINGS_MODULE} as config module")
-
     return cfg
 
 
@@ -150,7 +144,5 @@ def load_server(settings_module=DEFAULT_MODULE) -> ServerSettings:
 
     os.environ[defaults.BASE_PATH_ENV] = cfg.BASE_PATH
     logging.config.dictConfig(cfg.LOGCONFIG)
-    log = logging.getLogger("labfunctions.server")
-    log.debug(f"Using {cfg.SETTINGS_MODULE} as config module")
 
     return cfg

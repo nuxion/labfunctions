@@ -1,6 +1,6 @@
 # Roadmap
 
-This file is used only as kind of backlog or/and draft for ideas. 
+This file is used only as a kind of backlog or/and draft for ideas. 
 
 Current version: 0.8.0
 
@@ -8,11 +8,15 @@ Current version: 0.8.0
 
 - [ ] Admin endpoint for projects, space used, registry, and so forth
 - [ ] Fix rebuild of runtime in the current mode doesn't update registry value in the db
+- [ ] Client unification between DiskClient and NBClient
+- [ ] Remove project information from labfile?
+- [ ] More login options like allow/disallow refresh token
 
 **MAY:**
 - [ ] plugin system for cli ?
 - [ ] allow user for custom tagging current images
 - [ ] Import or change a project in a existing lab functions repo
+- [ ] Registration endpoint?
 
 
 ## Next version 0.9.0
@@ -32,17 +36,18 @@ Current version: 0.8.0
 - [x] Support python 3.10
 - [x] scopes implementation for cluster endpoints
 - [ ] Fix lab manager db upgrade command
-- [ ] Manage agent credentials state on temporal disk
+- [-] Manage agent credentials state on temporal disk
 
 
 **MAY:**
 - [ ] Project delete task
 - [ ] Watch events logs on demand
-- [ ] Better info context for cli and lib
+- [x] Better info context for cli and lib
 - [-] Timeouts default for server, tasks and clients
 - [x] refactor of cluster package
 - [x] packer images for agent (default, gpu/nvidia)
 - [ ] agent client should keep credentials in a internal cache
+- [ ] The agent should pull first the docker-image for the notebook execution (maybe if the tag is current)
 
 **Details**
 

@@ -4,6 +4,7 @@ import click
 from rich.console import Console
 
 from labfunctions.cmd.common import configcli, info, login, startproject
+from labfunctions.cmd.utils import ConfigCli
 
 
 def load_client_cli(cli):
@@ -56,7 +57,8 @@ def init_cli():
         ver = get_version("__version__.py")
         console.print(f"[bold magenta]{ver}[/bold magenta]")
 
-    if os.environ.get("LF_SERVER", False):
+    cliconf = ConfigCli()
+    if os.environ.get("LF_SERVER", False) or cliconf.get("server_mode") == "yes":
         load_server_cli(cli)
 
         if os.environ.get("DEBUG", False):
@@ -64,6 +66,11 @@ def init_cli():
             load_client_cli(cli)
     else:
         load_client_cli(cli)
+
+    if cliconf.data.cluster == "yes":
+        from labfunctions.cmd.cluster import clustercli
+
+        cli.add_command(clustercli)
 
     cli.add_command(startproject)
     cli.add_command(login)

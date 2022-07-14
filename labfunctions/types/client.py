@@ -39,3 +39,19 @@ class ScheduleListRsp:
 class WorkflowRsp:
     enabled: bool
     task: NBTask
+
+
+class UserInfo(BaseModel):
+    username: str
+    scopes: List[str]
+
+
+class ClientInfo(BaseModel):
+    workflows_service: str
+    homedir: str
+    user: UserInfo
+    base_path: str
+    labfile: Optional[str] = None
+    projectid: Optional[str] = None
+    project_name: Optional[str] = None
+    workflows: List[str]

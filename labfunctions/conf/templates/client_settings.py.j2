@@ -20,7 +20,7 @@ LOGCONFIG = dict(  # no cov
     loggers={
         defaults.CLIENT_LOG: {
             "level": LOGLEVEL,
-            "handlers": ["console", "error_console"],
+            "handlers": ["console"],
         },
     },
     handlers={
@@ -37,7 +37,7 @@ LOGCONFIG = dict(  # no cov
     },
     formatters={
         "generic": {
-            "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+            "format": "[%(levelname)s] %(message)s",
             "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
             "class": "logging.Formatter",
         },

@@ -28,12 +28,7 @@ from labfunctions.utils import parse_var_line
 from .cluster_client import ClusterClient
 from .history_client import HistoryClient
 from .projects_client import ProjectsClient
-from .utils import (
-    get_credentials_disk,
-    get_private_key,
-    store_credentials_disk,
-    store_private_key,
-)
+from .utils import get_credentials_disk, get_private_key, store_credentials_disk
 from .workflows_client import WorkflowsClient
 
 
@@ -68,21 +63,21 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, ClusterClient):
         super(DiskClient, self).__init__(*args, **kwargs)
         self.console = Console()
 
-    def login(self, u: str, p: str):
-        super().login(u, p)
-        store_credentials_disk(self.creds, self.homedir)
+    # def login(self, u: str, p: str):
+    #     super().login(u, p)
+    #     store_credentials_disk(self.creds, self.homedir)
 
-    def verify(self):
-        try:
-            rsp = self._http.get(f"/auth/verify")
-            if rsp.status_code == 200:
-                self.creds = self._creds_from_auth()
-                store_credentials_disk(self.creds, self.homedir)
-                return True
-        except errors.AuthValidationFailed:
-            self._creds = None
-            self._auth = None
-            return False
+    # # def verify(self):
+    #     try:
+    #         rsp = self._http.get(f"/auth/verify")
+    #         if rsp.status_code == 200:
+    #             self.creds = self._creds_from_auth()
+    #             store_credentials_disk(self.creds, self.homedir)
+    #             return True
+    #     except errors.AuthValidationFailed:
+    #         self._creds = None
+    #         self._auth = None
+    #         return False
 
     def logincli(self):
         creds = get_credentials_disk(self.homedir)
@@ -97,29 +92,11 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, ClusterClient):
         p = getpass.getpass("Password: ")
         self.login(u, p)
 
-    # def projects_private_key(self) -> str:
-    #     """Gets private key to be shared to the docker container of a
-    #     workflow task
-    #     """
-    #     try:
-    #         r = self._http.get(f"/projects/{self.projectid}/_private_key")
-    #     except httpx.ConnectError:
-    #         raise errors.PrivateKeyNotFound(self.projectid)
-
-    #     key = None
-    #     if r.status_code == 200:
-    #         key = r.json().get("private_key")
-    #     if not key:
-    #         raise errors.PrivateKeyNotFound(self.projectid)
-
-    #     store_private_key(key, self.working_area)
-    #     return key
-
     def get_private_key(self) -> str:
         """shortcut for getting a private key locally
         TODO: separate command line cli from a general client and an agent client
         a command line cli has filesystem side effects and a agent client not"""
-        key = get_private_key(self.working_area)
+        key = get_private_key(self.working_area, projectid=self.projectid)
         if not key:
             return self.projects_private_key()
         return key
@@ -150,8 +127,3 @@ class DiskClient(WorkflowsClient, ProjectsClient, HistoryClient, ClusterClient):
 
         self.state.add_workflow(wd)
         self.write()
-
-    # def info(self):
-    #    self.console.print(f"[bold]Project ID: [magenta]{self.projectid}[/][/]")
-    #    self.console.print(f"[bold]Project Name: [blue]{self.project_name}[/][/]")
-    # self.console.print(table)

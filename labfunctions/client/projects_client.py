@@ -47,7 +47,9 @@ class ProjectsClient(BaseClient):
             pd = types.ProjectData(**r.json())
             pc = types.projects.ProjectCreated(pd=pd, private_key=pkey)
             if store_key:
-                store_private_key(pkey, self.working_area)
+                store_private_key(
+                    pkey, projectid=pd.projectid, working_area=self.working_area
+                )
             return pc
         if r.status_code != 200:
             raise ProjectCreateError(name)
@@ -154,7 +156,9 @@ class ProjectsClient(BaseClient):
             if not key:
                 raise errors.PrivateKeyNotFound(self.projectid)
             if store_key:
-                store_private_key(key, projectid)
+                store_private_key(
+                    key, projectid=projectid, working_area=self.working_area
+                )
             return key
         raise errors.PrivateKeyNotFound(projectid)
         return None

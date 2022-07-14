@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "labfunctions"
-version = "0.9.0-alpha.14"
+version = "0.9.0-alpha.15"
 description = "Schedule parameterized notebooks programmatically using cli or a REST API"
 authors = ["nuxion <nuxion@gmail.com>"]
 packages = [

@@ -56,15 +56,15 @@ def del_credentials_disk(homedir: Union[Path, str]):
         creds.unlink()
 
 
-def store_private_key(key, working_area: Union[Path, str]):
+def store_private_key(key, *, projectid: str, working_area: Union[Path, str]):
     wa = Path(working_area)
     wa.mkdir(parents=True, exist_ok=True)
-    with open(wa / "private_key", "w", encoding="utf-8") as f:
+    with open(wa / projectid / "private_key", "w", encoding="utf-8") as f:
         f.write(key)
     Path(wa / "private_key").chmod(0o600)
 
 
-def get_private_key(working_area: Union[Path, str]) -> str:
+def get_private_key(working_area: Union[Path, str], *, projectid: str) -> str:
     wa = Path(working_area)
     try:
         with open(Path(wa / "private_key"), "r", encoding="utf-8") as f:

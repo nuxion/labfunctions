@@ -25,7 +25,6 @@ from labfunctions.types.workflows import WFCreateRsp, WFPushRsp
 from labfunctions.utils import parse_var_line
 
 from .base import BaseClient
-from .utils import get_private_key, store_credentials_disk, store_private_key
 
 
 class WorkflowsClient(BaseClient):

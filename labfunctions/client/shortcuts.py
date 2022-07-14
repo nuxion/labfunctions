@@ -16,7 +16,6 @@ def from_file(
     """intialize a py:class:`labfunctions.client.diskclient.DiskClient`
     using data from local like workflows.yaml.
     """
-
     settings = load_client()
     lab_state = None
     try:
@@ -33,6 +32,9 @@ def from_file(
         base_path=settings.BASE_PATH,
     )
     dc.load_creds()
+    is_ok = dc.verify()
+    # if not is_ok:
+
     # if not os.environ.get("DEBUG"):
     #    try:
     #        dc.logincli()

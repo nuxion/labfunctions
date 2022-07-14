@@ -19,11 +19,11 @@ PROJECT_NAME = ""
 LOGLEVEL = "WARNING"
 LOGCONFIG = dict(  # no cov
     version=1,
-    disable_existing_loggers=False,
+    disable_existing_loggers=True,
     loggers={
         defaults.CLIENT_LOG: {
             "level": LOGLEVEL,
-            "handlers": ["console", "error_console"],
+            "handlers": ["console"],
         },
     },
     handlers={
@@ -40,7 +40,8 @@ LOGCONFIG = dict(  # no cov
     },
     formatters={
         "generic": {
-            "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+            # "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+            "format": "[%(levelname)s] %(message)s",
             "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
             "class": "logging.Formatter",
         },

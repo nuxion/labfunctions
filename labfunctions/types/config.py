@@ -16,6 +16,9 @@ class ConfigCliType(BaseModel):
 
     url_service: str = SERVICE_URL
     lab_file: Optional[str] = LABFILE_NAME
+    lab_file_path: Optional[str] = None
+    cluster: Optional[str] = "no"
+    server_mode: Optional[str] = None
 
 
 class SecuritySettings(BaseSettings):

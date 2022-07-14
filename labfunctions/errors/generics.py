@@ -48,3 +48,10 @@ class PrivateKeyNotFound(Exception):
 
 class AuthValidationFailed(Exception):
     pass
+
+
+class CredentialsNotFound(Exception):
+    def __init__(self, path, tkn_env):
+        super().__init__(
+            f"Credentials not found neitgher in {path} nor variables {tkn_env}"
+        )
