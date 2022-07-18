@@ -52,6 +52,7 @@ async def cluster_agent_deploy(request, cluster_name, machine):
         machine_name=machine, cluster_name=cluster_name, **req.dict()
     )
     job = await scheduler.enqueue_deploy_agent(task)
+    # TODO: change by execid
     return json(dict(jobid=job._id))
 
 

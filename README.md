@@ -9,50 +9,52 @@
 [![codecov](https://codecov.io/gh/nuxion/labfunctions/branch/main/graph/badge.svg?token=F025Y1BF9U)](https://codecov.io/gh/nuxion/labfunctions)
 
 
-## :books: Description 
+## Description 
 
-LabFunctions empowers different data roles to put notebooks into production, simplifying the time required to do so. It enables people to go from a data exploration instance to an entirely project deployed in production, using the same notebooks files made by a data scientist, analyst or whatever role working with data in an iterative way.
+LabFunctions is a library and a service that allows you to run parametrized notebooks on demand.
 
-LabFunctions is a library and a service that allows you to run parametrized notebooks in a distributed way.  
+It was thought to empower different data roles to put notebooks into production whatever they do, this notebooks could be models, ETL process, crawlers, etc. This way of working should allow going backward and foreward in the process of building data products. 
 
-A Notebook could be launched remotly on demand, or could be scheduled by intervals or using cron syntax.
+Although this tool allow different workflows in a data project, we propose this one as an example:
+![Workflow](./docs/img/schemas-workflow.jpg)
 
-Internally it uses [Sanic](https://sanicframework.org) as web server, [papermill](https://papermill.readthedocs.io/en/latest/) as notebook executor, an [RQ](https://python-rq.org/)
-for task distributions and coordination. 
+## Philosophy
 
-:tada: Demo :tada: 
+LabFunctions isn't a complete MLOps solution. 
 
-:floppy_disk: [Example project](
-https://github.com/nuxion/nbwf-demo2)
+We try hard to expose the right APIs to the user for the part of scheduling notebooks with reproducibility in mind.
 
-
-## :telescope: Philosophy
-
-LabFunctions it insn't a complete MLOps solution.
-
-We try hard to simply and expose the right APIs to the user for the part of scheduling notebooks with reproducibility in mind.
-
-We also try to give the user the same freedom that lego tiles can gives, but we are opinated in the sense that all code, artifact, dependency and environment should be declareted
-
-With this point of view, then: 
-
-1) Git is neccesary :wink:
-2) Docker is necessary for environment reproducibility. 
-3) Although you can push not versioned code,  versioning is almost enforced, and is always a good practice in software development
-
-The idea comes from a [Netflix post](https://netflixtechblog.com/notebook-innovation-591ee3221233) which suggest using notebooks like an interface or a some kind of DSL to orchestrate different workloads like Spark and so on. But it also could be used to run entire process: like training a model, crawlings sites, performing etls, and so on. 
-
-The benefits of this approach is that notebooks runned could be stored and inspected for good or for bad. If something fails, is easy to run in a classical way: cell by cell. 
-
-The last point to clarify and it could challange the common sense or the way that we are used to use Jupyter's Notebooks, is that each notebook is more like a function definition with inputs and outputs, so a notebook potentially could be used for different purposes, hence the name of **workflow**, and indeed this idea is common in the data space. Then a workflow will be a notebook with params defined to be used anytime that a user wants, altering or not the parameters sent. 
+Whenever possible we try to use well established open source tools, projects and libraries to resolve common problems. Moreover we force some good practices like code versioning, and the use of containers to run wokrloads 
 
 
-## :nut_and_bolt: Features
+The idea comes from a [Netflix post](https://netflixtechblog.com/notebook-innovation-591ee3221233) which suggest using notebooks like an interface or a some kind of DSL to orchestrate different workloads like Spark and so on. But it also could be used to run entire process as we said before.
 
-- Define a notebook like a function, and execute it on demand or scheduling it
-- Automatic Dockerfile generation. A project should share a unique environment but could use different versions of the same environment
-- Execution History, Notifications to Slack or Discord.
-- Cluster creation applying scaling policies by idle time or/and enqueued items
+The benefits of this approach is that notebooks runned could be stored and inspected for good or for bad executions. If something fails, is easy to run in a classical way: cell by cell in a local pc or in a remote server. 
+
+## Status
+
+> ⚠️ Although the project is considered stable 
+> please keep in mind that LabFunctions is still under active development
+> and therefore full backward compatibility is not guaranteed before reaching v1.0.0., APIS could change.
+
+
+## Features
+
+Some features can be used standalone, and others depend on each other.
+
+| Feature             | Status |  Note   |
+| --------------------| ------ | ------- |
+| Notebook execution  | Stable |  - |
+| Workflow scheduling | Beta   | This allow to schedule: every hour, every day, etc |
+| Build Runtimes      | Beta   | Build OCI compliance continers (Docker) and store it. | 
+| Runtimes templates  | Stable | Genereate Dockerfile based on templates
+| Create and destroy servers | Alpha | Create and delete Machines in different cloud providers |
+| GPU Support | Beta | Allows to run workloads that requires GPU 
+| Execution History | Alpha | Track notebooks & workflows executions |
+| Google Cloud support | Beta | Support google store and google cloud as provider |
+| Secrets managment | Alpha | Encrypt and manager private data in a project | 
+| Project Managment | Alpha | Match each git repostiroy to a project |
+
 
 ## Cluster options
 
@@ -65,71 +67,6 @@ Instances inside a cluster could be created manually or automatically
 See a simple demo of a gpu cluster creation
 
 [https://www.youtube.com/watch?v=-R7lJ4dGI9s](https://www.youtube.com/watch?v=-R7lJ4dGI9s)
-
-
-## Installation
-
-### Server
-
-### Docker-compose
-
-The project provides a [docker-compose.yaml](./docker-compose.yaml) file as en example. 
-
-:construction: Note :construction:
-
-Because **NB Workflows** will spawn docker instance for each workload, the installation inside docker containers could be tricky. 
-The most difficult part is the configuration of the worker that needs access to the [docker socket](https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-socket-option).
-
-A [Dockerfile](./Dockerfile) is provided for customization of uid and guid witch should match with the local environment. A second alternative is expose the docker daemon through HTTP, if that is the case a `DOCKER_HOST` env could be used, see [docker client sdk](https://docker-py.readthedocs.io/en/stable/client.html)
-
-
-```
-git clone https://github.com/nuxion/labfunctions
-cd labfunctions
-```
-
-The next step is intializing the database and creating a user (*please review the script first*):
-
-```
-docker-compose postgres up -d 
-./scripts/initdb_docker.sh
-```
-Now you can start everything else:
-```
-docker-compose up -d 
-```
-
-### Without docker
-
-```
-pip install nb-workflows[server]==0.6.0
-```
-
-first terminal:
-
-```
-export NB_SERVER=True
-nb manager db upgrade
-nb manager users create
-nb web --apps workflows,history,projects,events,runtimes
-```
-
-second terminal:
-
-```
-nb rqworker -w 1 -q control,mch.default
-```
-
-Before all that, redis postgresql and the [nginx in webdav mode](./fileserver.conf) should be configurated
-
-### Client
-
-Client: 
-
-```
-pip install nb-workflows==0.6.0
-nb startporject .
-```
 
 
 ## :earth_americas: Roadmap
