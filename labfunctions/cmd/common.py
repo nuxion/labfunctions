@@ -50,7 +50,7 @@ def login(url_service, relogin):
             pass
     try:
         c.logincli()
-        console.print("[bold green]Successfully logged")
+        console.print(f"[bold green]Successfully logged into {url_service}")
     except ConnectError:
         console.print(
             f"[bold red]Error trying to connect to [magenta]{url_service}[/magenta][/]"

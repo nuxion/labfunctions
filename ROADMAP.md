@@ -35,7 +35,7 @@ Current version: 0.8.0
 - [x] Task execution
 - [x] Support python 3.10
 - [x] scopes implementation for cluster endpoints
-- [ ] Fix lab manager db upgrade command
+- [x] Fix lab manager db upgrade command
 - [-] Manage agent credentials state on temporal disk
 
 
