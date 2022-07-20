@@ -1,12 +1,12 @@
 # LabFunctions
 
-[![labfunctions](https://github.com/nuxion/labfunctions/actions/workflows/main.yaml/badge.svg)](https://github.com/nuxion/labfunctions/actions/workflows/main.yaml)
+[![labfunctions](https://github.com/labfunctions/labfunctions/actions/workflows/main.yaml/badge.svg)](https://github.com/labfunctions/labfunctions/actions/workflows/main.yaml)
 [![readthedocs](https://readthedocs.org/projects/labfunctions/badge/?version=latest)](https://labfunctions.readthedocs.io/en/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/labfunctions)](https://pypi.org/project/labfunctions/)
 [![PyPI - Format](https://img.shields.io/pypi/format/labfunctions)](https://pypi.org/project/labfunctions/)
 [![PyPI - Status](https://img.shields.io/pypi/status/labfunctions)](https://pypi.org/project/labfunctions/)
-[![Docker last](https://img.shields.io/docker/v/nuxion/labfunctions/0.7.0)](https://hub.docker.com/r/nuxion/labfunctions/tags)
-[![codecov](https://codecov.io/gh/nuxion/labfunctions/branch/main/graph/badge.svg?token=F025Y1BF9U)](https://codecov.io/gh/nuxion/labfunctions)
+[![Docker last](https://img.shields.io/docker/v/labfunctions/labfunctions/0.7.0)](https://hub.docker.com/r/labfunctions/labfunctions/tags)
+[![codecov](https://codecov.io/gh/labfunctions/labfunctions/branch/main/graph/badge.svg?token=F025Y1BF9U)](https://codecov.io/gh/labfunctions/labfunctions)
 
 
 ## Description 
@@ -89,13 +89,18 @@ See [Roadmap](/ROADMAP.md) *draft*
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at the [issues
-page](https://github.com/nuxion/labfunctions). This project is intended to be
+page](https://github.com/labfunctions/labfunctions). This project is intended to be
 a safe, welcoming space for collaboration, and contributors are expected to
 adhere to the [Contributor Covenant](http://contributor-covenant.org) code of
 conduct.
+
+Please refer to [this
+document](https://github.com/dymaxionlabs/toolkit#dymaxion-labs-toolkit-charter)
+for more details about our current governance model and formal committers
+group.
 
 
 ## License
 
 This project is licensed under Apache 2.0. Refer to
-[LICENSE.txt](https://github.com/nuxion/labfunctions/blob/main/LICENSE).
+[LICENSE.txt](https://github.com/labfunctions/labfunctions/blob/main/LICENSE).
