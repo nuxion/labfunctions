@@ -2,14 +2,21 @@ import asyncio
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, Generator, Union
+from typing import Any, AsyncGenerator, Dict, Generator, List, Union
 
 import aiofiles
 from smart_open import open as sopen
 
-from labfunctions.utils import mkdir_p
+from labfunctions.utils import mkdir_p, run_async
 
 from .kvspec import AsyncKVSpec, GenericKVSpec, KeyReadError, KeyWriteError
+
+
+def delete_file_or_dir(fpath):
+    try:
+        Path(fpath).unlink()
+    except IsADirectoryError:
+        Path(fpath).rmdir()
 
 
 class KVLocal(GenericKVSpec):
@@ -65,6 +72,12 @@ class KVLocal(GenericKVSpec):
                 yield chunk
         except Exception as e:
             raise KeyReadError(self._bucket, key, str(e))
+
+    def list(self) -> List[str]:
+        return os.listdir(self._bucket)
+
+    def delete(self, key: str):
+        delete_file_or_dir(f"{self._bucket}/{key}")
 
 
 class AsyncKVLocal(AsyncKVSpec):
@@ -123,3 +136,10 @@ class AsyncKVLocal(AsyncKVSpec):
 
         except Exception as e:
             raise KeyReadError(self._bucket, key, str(e))
+
+    async def list(self) -> List[str]:
+        rsp = await run_async(os.listdir, self._bucket)
+        return rsp
+
+    async def delete(self, key: str):
+        await run_async(delete_file_or_dir, f"{self._bucket}/{key}")

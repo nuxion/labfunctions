@@ -1,7 +1,7 @@
 import io
 import os
 from datetime import datetime, timedelta
-from typing import Any, AsyncGenerator, Dict, Generator, Union
+from typing import Any, AsyncGenerator, Dict, Generator, List, Union
 
 from google.cloud.storage import Client
 from smart_open import open
@@ -40,6 +40,14 @@ class KVGS(GenericKVSpec):
                     f.write(_data)
                 except StopIteration:
                     data = False
+
+    def list(self) -> List[str]:
+        # TODO: define a type for objects that include size, name, path etc...
+        blobs = [b.name for b in self.bucket.list_blobs()]
+        return blobs
+
+    def delete(self, key: str):
+        self.bucket.delete_blob(key)
 
     def put_stream(self, key: str, generator: Generator[bytes, None, None]) -> bool:
         rsp = True
@@ -87,3 +95,10 @@ class AsyncKVGS(AsyncKVSpec):
 
     async def get_stream(self, key: str) -> AsyncGenerator[bytes, None]:
         yield await run_async(self.client.get_stream, key)
+
+    async def list(self) -> List[str]:
+        rsp = await run_async(self.client.list)
+        return rsp
+
+    async def delete(self, key: str):
+        await run_async(self.client.delete, key)

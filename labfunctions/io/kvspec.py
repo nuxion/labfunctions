@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Dict, Generator, Union
+from typing import Any, AsyncGenerator, Dict, Generator, List, Union
 
 from labfunctions.utils import get_class
 
@@ -37,6 +37,14 @@ class GenericKVSpec(ABC):
 
     @abstractmethod
     def put_stream(self, key: str, generator: Generator[bytes, None, None]) -> bool:
+        pass
+
+    @abstractmethod
+    def delete(self, key: str):
+        pass
+
+    @abstractmethod
+    def list(self) -> List[str]:
         pass
 
     @abstractmethod
@@ -81,6 +89,14 @@ class AsyncKVSpec(ABC):
 
     @abstractmethod
     async def get(self, key: str) -> Union[bytes, str, None]:
+        pass
+
+    @abstractmethod
+    async def list(self) -> List[str]:
+        pass
+
+    @abstractmethod
+    def delete(self, key: str):
         pass
 
     @abstractmethod
