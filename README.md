@@ -18,18 +18,15 @@ It was thought to empower different data roles to put notebooks into production 
 Although this tool allow different workflows in a data project, we propose this one as an example:
 ![Workflow](./docs/img/schemas-workflow.jpg)
 
-## Philosophy
+## History
 
-LabFunctions isn't a complete MLOps solution. 
+Labfunctions was initially developed by [Xavier Petit](https://www.linkedin.com/in/xavier-petit-de-meurville-90200b41/) in the context of the needs of [algorinfo.com](https://algorinfo.com) and inspired by the following posts:  [Netflix](https://netflixtechblog.com/notebook-innovation-591ee3221233) and [Maintainable and collaborative pipelines](https://blog.jupyter.org/ploomber-maintainable-and-collaborative-pipelines-in-jupyter-acb3ad2101a7), during the second half of 2021. 
 
-We try hard to expose the right APIs to the user for the part of scheduling notebooks with reproducibility in mind.
+The common cycle of work before the idea of labfunctions was to start exploring and prototyping models and processes in Jupyter Notebooks and then migrate those notebooks to packages and modules in python, finally the code was deployed as containers into production. 
 
-Whenever possible we try to use well established open source tools, projects and libraries to resolve common problems. Moreover we force some good practices like code versioning, and the use of containers to run wokrloads 
+At that time the problem to solve was to reduce the step required from notebooks to production, then labfunctions emerge first as a module in the context of [dataproc](https://github.com/algorinfo/dataproc) using Sanic, RQ and Papermill as main libraries to orchestrate and execute notebooks as workflows.  
 
-
-The idea comes from a [Netflix post](https://netflixtechblog.com/notebook-innovation-591ee3221233) which suggest using notebooks like an interface or a some kind of DSL to orchestrate different workloads like Spark and so on. But it also could be used to run entire process as we said before.
-
-The benefits of this approach is that notebooks runned could be stored and inspected for good or for bad executions. If something fails, is easy to run in a classical way: cell by cell in a local pc or in a remote server. 
+In 2022 Xavier Petit started working as a freelancer in [DymaxionLabs](https://dymaxionlabs.com/). They have a similar problem to be solved, but with two extra requirements: notebooks should be reproducible, and workloads usually require GPU hardware that should be provisioned on demand. With those two needs in mind, labfunctions was born adding: the idea of a “project” which match to a  Git Repository, the builds of docker containers (called runtimes in labfunctions) and the option to create servers on demand, each step with GPU support.   
 
 ## Status
 
@@ -84,6 +81,7 @@ See [Roadmap](/ROADMAP.md) *draft*
 - [Maintainable and collaborative pipelines](https://blog.jupyter.org/ploomber-maintainable-and-collaborative-pipelines-in-jupyter-acb3ad2101a7)
 - [The magic of Merlin](https://shopify.engineering/merlin-shopify-machine-learning-platform)
 - [Scale aware approach](https://queue.acm.org/detail.cfm?id=3025012)
+- [
 
 
 ## Contributing
