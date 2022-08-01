@@ -18,16 +18,6 @@ It was thought to empower different data roles to put notebooks into production 
 Although this tool allow different workflows in a data project, we propose this one as an example:
 ![Workflow](./docs/img/schemas-workflow.jpg)
 
-## History
-
-Labfunctions was initially developed by [Xavier Petit](https://www.linkedin.com/in/xavier-petit-de-meurville-90200b41/) in the context of the needs of [algorinfo.com](https://algorinfo.com) and inspired by the following posts:  [Netflix](https://netflixtechblog.com/notebook-innovation-591ee3221233) and [Maintainable and collaborative pipelines](https://blog.jupyter.org/ploomber-maintainable-and-collaborative-pipelines-in-jupyter-acb3ad2101a7), during the second half of 2021. 
-
-The common cycle of work before the idea of labfunctions was to start exploring and prototyping models and processes in Jupyter Notebooks and then migrate those notebooks to packages and modules in python, finally the code was deployed as containers into production. 
-
-At that time the problem to solve was to reduce the step required from notebooks to production, then labfunctions emerge first as a module in the context of [dataproc](https://github.com/algorinfo/dataproc) using Sanic, RQ and Papermill as main libraries to orchestrate and execute notebooks as workflows.  
-
-In 2022 Xavier Petit started working as a freelancer in [DymaxionLabs](https://dymaxionlabs.com/). They have a similar problem to be solved, but with two extra requirements: notebooks should be reproducible, and workloads usually require GPU hardware that should be provisioned on demand. With those two needs in mind, labfunctions was born adding: the idea of a “project” which match to a  Git Repository, the builds of docker containers (called runtimes in labfunctions) and the option to create servers on demand, each step with GPU support.   
-
 ## Status
 
 > ⚠️ Although the project is considered stable 
@@ -96,6 +86,17 @@ Please refer to [this
 document](https://github.com/dymaxionlabs/toolkit#dymaxion-labs-toolkit-charter)
 for more details about our current governance model and formal committers
 group.
+
+## History
+
+Labfunctions was initially developed by [Xavier Petit](https://www.linkedin.com/in/xavier-petit-de-meurville-90200b41/) in the context of the needs of [algorinfo.com](https://algorinfo.com) and inspired by the following posts:  [Netflix](https://netflixtechblog.com/notebook-innovation-591ee3221233) and [Maintainable and collaborative pipelines](https://blog.jupyter.org/ploomber-maintainable-and-collaborative-pipelines-in-jupyter-acb3ad2101a7), during the second half of 2021. 
+
+The common cycle of work before the idea of labfunctions was to start exploring and prototyping models and processes in Jupyter Notebooks and then migrate those notebooks to packages and modules in python, finally the code was deployed as containers into production. 
+
+At that time the problem to solve was to reduce the step required from notebooks to production, then labfunctions emerge first as a module in the context of [dataproc](https://github.com/algorinfo/dataproc) using Sanic, RQ and Papermill as main libraries to orchestrate and execute notebooks as workflows.  
+
+In 2022 Xavier Petit started working as a freelancer in [DymaxionLabs](https://dymaxionlabs.com/). They have a similar problem to be solved, but with two extra requirements: notebooks should be reproducible, and workloads usually require GPU hardware that should be provisioned on demand. With those two needs in mind, labfunctions was born adding: the idea of a “project” which match to a  Git Repository, the builds of docker containers (called runtimes in labfunctions) and the option to create servers on demand, each step with GPU support.   
+
 
 
 ## License

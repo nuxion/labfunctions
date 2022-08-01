@@ -7,14 +7,19 @@ clusters:
     name: default
     provider: "gce"
     machine: "gce-small-cpu"
-  gpu:
-    name: gpu
+  gpu-small:
+    name: gpu-small
     provider: "gce"
     machine: "gce-small-gpu"
   gpu-ubuntu:
     name: gpu-ub
     provider: "gce"
     machine: "gce-small-gpu-ubuntu"
+  gpu:
+    name: gpu
+    provider: "gce"
+    machine: "gce-gpu-medium"
+
 volumes:
   local:
     name: local
@@ -90,6 +95,21 @@ machines:
     location: "us-east1-c"
     machine_type:
       size: n1-standard-1
+      image: lab-nvidia-090
+    gpu:
+      name: tesla
+      gpu_type: nvidia-tesla-t4
+      count: 1
+    volumes:
+      - gce-agent-gpu
+  gce-gpu:
+    name: gpu
+    desc: "Small GPU Machine for gce"
+    machine: gce-gpu-medium
+    provider: gce
+    location: "us-east1-c"
+    machine_type:
+      size: n1-standard-4
       image: lab-nvidia-090
     gpu:
       name: tesla
