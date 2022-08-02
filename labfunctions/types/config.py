@@ -105,6 +105,11 @@ class ServerSettings(BaseSettings):
     SETTINGS_MODULE: Optional[str] = None
     DNS_IP_ADDRESS: str = "8.8.8.8"
 
+    # Sanic Server Settings
+    REQUEST_TIMEOUT = 120  # secs
+    RESPONSE_TIMEOUT = 60  # secs
+    REQUEST_MAX_SIZE = 900000000  # bytes
+
     class Config:
         env_prefix = "LF_"
 

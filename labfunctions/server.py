@@ -84,6 +84,10 @@ def create_app(
     # app.ext.openapi.secured()
     app.ext.openapi.secured("token")
 
+    app.config.REQUEST_TIMEOUT = settings.REQUEST_TIMEOUT
+    app.config.REQUEST_MAX_SIZE = settings.REQUEST_MAX_SIZE
+    app.config.RESPONSE_TIMEOUT = settings.RESPONSE_TIMEOUT
+
     _base_model_session_ctx = ContextVar("session")
 
     init_blueprints(app, list_bp)
