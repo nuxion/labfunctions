@@ -44,14 +44,14 @@ volumes:
     mount: /
   gce-agent-gpu:
     name: gce-agent-gpu
-    image: lab-nvidia-090
+    image: lab-nvidia-0100-alpha0
     location: "us-east1-c"
     size: 40
     kind: 'pd-standard'
     mount: /
   gce-agent-cpu:
     name: gce-agent-cpu
-    image: lab-agent-090
+    image: lab-agent-0100-alpha0
     location: "us-east1-c"
     size: 40
     kind: 'pd-standard'
@@ -84,7 +84,7 @@ machines:
     location: "us-east1-c"
     machine_type:
       size: "e2-small"
-      image: lab-agent-090
+      image: lab-agent-0100-alpha0
     volumes:
       - gce-agent-cpu
   gce-small-gpu:
@@ -95,7 +95,7 @@ machines:
     location: "us-east1-c"
     machine_type:
       size: n1-standard-1
-      image: lab-nvidia-090
+      image: lab-nvidia-0100-alpha0
     gpu:
       name: tesla
       gpu_type: nvidia-tesla-t4
@@ -110,7 +110,7 @@ machines:
     location: "us-east1-c"
     machine_type:
       size: n1-standard-4
-      image: lab-nvidia-090
+      image: lab-nvidia-0100-alpha0
     gpu:
       name: tesla
       gpu_type: nvidia-tesla-t4

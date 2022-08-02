@@ -2,7 +2,7 @@
 
 This file is used only as a kind of backlog or/and draft for ideas. 
 
-Current version: 0.8.0
+Current version: 0.9.0
 
 ## Next version 0.10.0
 
@@ -11,23 +11,26 @@ Current version: 0.8.0
 - [ ] Client unification between DiskClient and NBClient
 - [ ] Remove project information from labfile?
 - [ ] More login options like allow/disallow refresh token
+- [ ] Tests: >= 65%
+- [ ] Fix broken tests
+- [ ] Pull docker image before container execution (useful for current images)
+
 
 **MAY:**
 - [ ] plugin system for cli ?
 - [ ] allow user for custom tagging current images
 - [ ] Import or change a project in a existing lab functions repo
 - [ ] Registration endpoint?
+- [ ] Custom tagging current builds ?
 
 
-## Next version 0.9.0
+## version 0.9.0
 
 **MUST:**
 - [x] workflows.yaml file change to labfile.yaml
 - [x] GPU scaling
 - [x] migration rq to libq
-- [ ] cluster autoscaling as a background process (x)
-- [ ] Tests: >= 65%
-- [ ] Fix broken tests
+
 - [x] Refresh Token: rotates whit each refresh request (idea: tracks refresh token with access_token..)
 - [x] Cluster client and Cluster API for creation, destruction and listing of agents and machines
 - [x] Fix smart_open dependecy for the client

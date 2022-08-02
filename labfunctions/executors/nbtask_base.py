@@ -101,6 +101,8 @@ class NBTaskDocker(NBTaskExecBase):
             }
         )
         cmd = DockerCommand()
+        repo, tag = ctx.runtime.rsplit(":", maxsplit=1)
+        cmd.pull_image(repo, tag=tag)
         result = cmd.run(
             self.cmd,
             ctx.runtime,

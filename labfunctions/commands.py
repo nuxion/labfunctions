@@ -231,3 +231,20 @@ class DockerCommand:
             push_log_str = str(e)
 
         return DockerPushLog(logs=push_log_str, error=error)
+
+    def pull_image(self, repository, *, tag=None):
+        """
+        pull an image from a registry.
+
+        If the full image is:
+        http://localhost:5001/nuxion/python:3.8-slim
+        then:
+        repository="localhost:5001/nuxion/python
+        tag="3.8-slim"
+
+        :param repostory: simple image or repostory
+        :param tag: tag version
+        the registry url
+        """
+
+        self.docker.pull(repository, tag=tag)

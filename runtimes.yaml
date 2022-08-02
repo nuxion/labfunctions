@@ -23,7 +23,7 @@ runtimes:
       build_packages: build-essential 
       base_template: Dockerfile.internal
       extra:
-        pkg_version: 0.9.0
+        pkg_version: 0.10.0a0
   official-gpu:
     description: Official client with GPU support
     container:
@@ -39,7 +39,7 @@ runtimes:
         cuda: 11.5
         cudnn: 8.3.1.22-1+cuda11.5
       extra:
-        pkg_version: 0.9.0
+        pkg_version: 0.10.0a0
   official-all:
     description: Official server for labfunctions
     container:
@@ -51,7 +51,7 @@ runtimes:
       build_packages: build-essential 
       base_template: Dockerfile.internal
       extra:
-        pkg_version: 0.9.0
+        pkg_version: 0.10.0a0
         requirements: requirements/requirements_all.txt
   gpu:
     container:
