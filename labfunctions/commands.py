@@ -247,4 +247,4 @@ class DockerCommand:
         the registry url
         """
 
-        self.docker.pull(repository, tag=tag)
+        self.docker.images.pull(repository, tag=tag)
