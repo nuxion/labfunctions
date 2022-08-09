@@ -31,12 +31,12 @@ build {
   }
   provisioner "shell" {
     inline = [
-      "curl -Ls https://raw.githubusercontent.com/nuxion/cloudscripts/1442b4a3cbf027e64b9b58e453fb06c480fe3414/install.sh | sh",
+      "curl -Ls https://raw.githubusercontent.com/nuxion/cloudscripts/e1fdbf6594473f85e1b0fac2afb81ad4bfa0ae63/install.sh | sh",
       "sudo cscli -i nvidia-docker",
       "sudo usermod -aG docker `echo $USER`",
       "sudo usermod -aG op `echo $USER`",
       "curl -Ls https://raw.githubusercontent.com/labfunctions/labfunctions/055a9ae56bf41a0f66d232cda958fb7167c09a10/scripts/setup_agent.py -o /tmp/setup_agent.py",
-      "sudo python3 /tmp/setup_agent.py --registry ${var.docker_registry} --mirror ${var.docker_mirror} --image ${var.docker_lab_image} --version ${var.docker_lab_version} --insecure ${var.docker_registry_insecure}",
+      "sudo python3 /tmp/setup_agent.py --registry ${var.docker_registry} --image ${var.docker_lab_image} --version ${var.docker_lab_version} --insecure ${var.docker_registry_insecure}",
 
     ]
   }

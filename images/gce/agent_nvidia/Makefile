@@ -12,4 +12,4 @@ validate:
 
 .PHONY: build
 build: validate
-	packer build -var "docker_lab_version=${DOCKER_VERSION}" -var "img_version=${IMG_VERSION}" .
+	packer build -force -var "docker_lab_version=${DOCKER_VERSION}" -var "img_version=${IMG_VERSION}" .
